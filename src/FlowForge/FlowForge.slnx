@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="FlowForge.API/FlowForge.API.csproj" Id="19edf0e3-c210-4f9d-ad2a-56ee1dcdd4ed" />
   <Project Path="FlowForge.Application/FlowForge.Application.csproj" Id="e348b8f2-7fe1-4e72-8277-13ec53d97c2d" />
   <Project Path="FlowForge.Domain/FlowForge.Domain.csproj" />
+  <Project Path="FlowForge.Infrastructure/FlowForge.Infrastructure.csproj" Id="d35fa32e-5f26-47e4-8bbf-85398cb4cafb" />
 </Solution>
