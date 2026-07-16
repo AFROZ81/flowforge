@@ -3,6 +3,8 @@ using FlowForge.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using FlowForge.Infrastructure.Services.Organizations;
+using FlowForge.Application.Services.Organizations;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -16,6 +18,8 @@ public static class InfrastructureServiceCollection
         services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+        
+        services.AddScoped<IOrganizationService, OrganizationService>();
 
         return services;
     }
