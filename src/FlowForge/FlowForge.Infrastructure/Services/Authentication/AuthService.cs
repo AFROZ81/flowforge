@@ -2,6 +2,7 @@ using FlowForge.Application.Features.Authentication.Register;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Infrastructure.Identity;
+using FlowForge.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,13 +28,13 @@ public sealed class AuthService : IAuthService
         bool organizationExists = await _context.Organizations.AnyAsync(x => x.Id == request.OrganizationId, cancellationToken);
 
         if (!organizationExists)
-            throw new InvalidOperationException("Organization not found.");
+            throw new NotFoundException("Organization not found.");
 
         // Check whether the email already exists.
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
 
         if (existingUser is not null)
-            throw new InvalidOperationException("Email already registered.");
+            throw new ConflictException("Email already registered.");
 
         var user = new ApplicationUser
         {
@@ -48,7 +49,7 @@ public sealed class AuthService : IAuthService
 
         if (!result.Succeeded)
         {
-            throw new InvalidOperationException(string.Join(Environment.NewLine, result.Errors.Select(x => x.Description)));
+            throw new BadRequestException(string.Join(Environment.NewLine, result.Errors.Select(x => x.Description)));
         }
 
         return new RegisterResponse

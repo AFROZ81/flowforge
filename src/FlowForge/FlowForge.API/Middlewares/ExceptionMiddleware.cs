@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text.Json;
+using FlowForge.Application.Common.Responses;
+using FlowForge.Application.Common.Exceptions;
 
 namespace FlowForge.API.Middlewares;
 
@@ -33,15 +35,21 @@ public sealed class ExceptionMiddleware
 
         context.Response.StatusCode = exception switch
         {
-            InvalidOperationException => (int)HttpStatusCode.BadRequest, _ => (int)HttpStatusCode.InternalServerError
+            BadRequestException => StatusCodes.Status400BadRequest,
+
+            UnauthorizedException => StatusCodes.Status401Unauthorized,
+
+            ForbiddenException => StatusCodes.Status403Forbidden,
+
+            NotFoundException => StatusCodes.Status404NotFound,
+
+            ConflictException => StatusCodes.Status409Conflict,
+
+            _ => StatusCodes.Status500InternalServerError
         };
 
-        var response = new
-        {
-            StatusCode = context.Response.StatusCode,
-            Message = exception.Message
-        };
+        var response = ApiResponse<object>.FailureResponse(exception.Message);
 
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        await context.Response.WriteAsJsonAsync(response);
     }
 }

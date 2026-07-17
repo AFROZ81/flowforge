@@ -1,6 +1,7 @@
 using FlowForge.Application.Features.Authentication.Register;
 using FlowForge.Application.Services.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using FlowForge.Application.Common.Responses;
 
 namespace FlowForge.API.Controllers;
 
@@ -18,14 +19,11 @@ public sealed class AuthController : ControllerBase
         _authService = authService;
     }
 
-    /// <summary>
-    /// Registers a new user.
-    /// </summary>
     [HttpPost("register")]
-    public async Task<ActionResult<RegisterResponse>> Register(RegisterRequest request)
+    public async Task<ActionResult<ApiResponse<RegisterResponse>>> Register(RegisterRequest request)
     {
         RegisterResponse response = await _authService.RegisterAsync(request);
 
-        return Ok(response);
+        return Ok(ApiResponse<RegisterResponse>.SuccessResponse(response, "User registered successfully."));
     }
 }
