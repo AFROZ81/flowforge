@@ -7,6 +7,8 @@ using FlowForge.Infrastructure.Services.Organizations;
 using FlowForge.Application.Services.Organizations;
 using FlowForge.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
+using FlowForge.Application.Services.Authentication;
+using FlowForge.Infrastructure.Services.Authentication;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -22,6 +24,8 @@ public static class InfrastructureServiceCollection
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
         
         services.AddScoped<IOrganizationService, OrganizationService>();
+        
+        services.AddScoped<IAuthService, AuthService>();
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {
