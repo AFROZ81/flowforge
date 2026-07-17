@@ -1,4 +1,5 @@
 using FlowForge.Infrastructure.DependencyInjection;
+using FlowForge.API.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,7 +26,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<ExceptionMiddleware>();
+
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
