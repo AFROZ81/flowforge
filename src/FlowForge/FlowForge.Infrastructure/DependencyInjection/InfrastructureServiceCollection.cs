@@ -27,6 +27,12 @@ public static class InfrastructureServiceCollection
         
         services.AddScoped<IAuthService, AuthService>();
 
+        services.AddScoped<ITokenService, TokenService>();
+
+        services.AddHttpContextAccessor();
+
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {
             options.Password.RequiredLength = 8;
