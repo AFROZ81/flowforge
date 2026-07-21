@@ -1,45 +1,67 @@
 using FlowForge.Domain.Common.Base;
-using FlowForge.Domain.Enums;
 
 namespace FlowForge.Domain.Entities;
 
-/// <summary>
-/// Represents a project within an organization.
-/// </summary>
 public sealed class Project : EntityBase
 {
-    /// <summary>
-    /// Gets or sets the project name.
-    /// </summary>
-    public required string Name { get; init; }
-
-    /// <summary>
-    /// Gets or sets the project key.
-    /// </summary>
-    public required string Key { get; init; }
-
-    /// <summary>
-    /// Gets or sets the project description.
-    /// </summary>
-    public string? Description { get; set; }
-
-    /// <summary>
-    /// Gets or sets the planned start date.
-    /// </summary>
-    public DateOnly? StartDate { get; set; }
-
-    /// <summary>
-    /// Gets or sets the planned end date.
-    /// </summary>
-    public DateOnly? EndDate { get; set; }
-
-    /// <summary>
-    /// Gets or sets the current project status.
-    /// </summary>
-    public ProjectStatus Status { get; set; } = ProjectStatus.Planning;
-
-    /// <summary>
-    /// Gets or sets the owning organization identifier.
-    /// </summary>
     public Guid OrganizationId { get; set; }
+
+    public string Name { get; private set; } = string.Empty;
+
+    public string Key { get; private set; } = string.Empty;
+
+    public string? Description { get; private set; }
+
+    public string Color { get; private set; } = "#2563EB";
+
+    public string? Icon { get; private set; }
+
+    public bool IsArchived { get; private set; }
+
+    public Organization Organization { get; private set; } = null!;
+
+    private Project()
+    {
+    }
+
+    public Project(
+        Guid organizationId,
+        string name,
+        string key,
+        string? description,
+        string color,
+        string? icon)
+    {
+        Id = Guid.NewGuid();
+
+        OrganizationId = organizationId;
+        Name = name.Trim();
+        Key = key.Trim().ToUpperInvariant();
+        Description = description?.Trim();
+        Color = color;
+        Icon = icon;
+        IsArchived = false;
+    }
+
+    public void Archive()
+    {
+        IsArchived = true;
+    }
+
+    public void Restore()
+    {
+        IsArchived = false;
+    }
+
+    public void Update(
+        string name,
+        string? description,
+        string color,
+        string? icon)
+    {
+        Name = name.Trim();
+        Description = description?.Trim();
+        Color = color;
+        Icon = icon;
+    }
 }

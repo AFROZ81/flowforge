@@ -25,6 +25,7 @@ public sealed class ExceptionMiddleware
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex);
             await HandleExceptionAsync(context, ex);
         }
     }

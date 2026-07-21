@@ -21,6 +21,8 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
     /// </summary>
     public DbSet<Organization> Organizations => Set<Organization>();
 
+    public DbSet<Project> Projects => Set<Project>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
