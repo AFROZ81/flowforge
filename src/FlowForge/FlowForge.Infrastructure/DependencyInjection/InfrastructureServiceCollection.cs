@@ -9,6 +9,8 @@ using FlowForge.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Infrastructure.Services.Authentication;
+using FlowForge.Application.Features.Projects;
+using FlowForge.Application.Features.Boards;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -33,6 +35,10 @@ public static class InfrastructureServiceCollection
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+        services.AddScoped<ProjectRules>();
+
+        services.AddScoped<BoardRules>();
+
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {
             options.Password.RequiredLength = 8;
@@ -43,8 +49,7 @@ public static class InfrastructureServiceCollection
 
             options.User.RequireUniqueEmail = true;
         })
-        .AddEntityFrameworkStores<ApplicationDbContext>()
-        .AddDefaultTokenProviders();
+        .AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
         return services;
     }

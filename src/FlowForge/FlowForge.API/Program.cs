@@ -3,7 +3,7 @@ using FlowForge.Application.Behaviors;
 using FlowForge.Application.Common.Settings;
 using FlowForge.Application.DependencyInjection;
 using FlowForge.Infrastructure.DependencyInjection;
-
+using FlowForge.Domain.Entities;
 
 using FluentValidation;
 using FluentValidation.AspNetCore;

@@ -20,17 +20,13 @@ public sealed class Project : EntityBase
 
     public Organization Organization { get; private set; } = null!;
 
+    public ICollection<Board> Boards { get; private set; } = new List<Board>();
+
     private Project()
     {
     }
 
-    public Project(
-        Guid organizationId,
-        string name,
-        string key,
-        string? description,
-        string color,
-        string? icon)
+    public Project(Guid organizationId, string name, string key, string? description, string color, string? icon)
     {
         Id = Guid.NewGuid();
 
@@ -45,21 +41,24 @@ public sealed class Project : EntityBase
 
     public void Archive()
     {
+        if (IsArchived)
+            return;
+
         IsArchived = true;
     }
 
     public void Restore()
     {
+        if (!IsArchived)
+            return;
+
         IsArchived = false;
     }
 
-    public void Update(
-        string name,
-        string? description,
-        string color,
-        string? icon)
+    public void Update(string name, string key, string? description, string color, string? icon)
     {
         Name = name.Trim();
+        Key = key.Trim().ToUpperInvariant();
         Description = description?.Trim();
         Color = color;
         Icon = icon;

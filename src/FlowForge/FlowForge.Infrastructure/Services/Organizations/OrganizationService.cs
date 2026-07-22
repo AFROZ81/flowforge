@@ -35,9 +35,7 @@ public sealed class OrganizationService : IOrganizationService
             Name = request.Name,
             Slug = request.Slug,
             Description = request.Description,
-            CreatedAt = DateTime.UtcNow,
-            IsActive = true,
-            IsDeleted = false
+            IsActive = true
         };
 
         // Save.

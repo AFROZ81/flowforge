@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using FlowForge.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using FlowForge.Application.Services.Authentication;
+using FlowForge.Domain.Common.Base;
 
 namespace FlowForge.Infrastructure.Persistence;
 
@@ -12,9 +14,12 @@ namespace FlowForge.Infrastructure.Persistence;
 /// </summary>
 public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IApplicationDbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+    private readonly ICurrentUserService _currentUser;
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService currentUser) : base(options)
     {
-    }
+        _currentUser = currentUser;
+    }   
 
      /// <summary>
     /// Organizations within the system.
@@ -22,6 +27,8 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
     public DbSet<Organization> Organizations => Set<Organization>();
 
     public DbSet<Project> Projects => Set<Project>();
+
+    public DbSet<Board> Boards => Set<Board>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

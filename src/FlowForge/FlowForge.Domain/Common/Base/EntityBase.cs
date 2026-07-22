@@ -7,37 +7,37 @@ namespace FlowForge.Domain.Common.Base;
 public abstract class EntityBase
 {
     /// <summary>
-    /// Gets or sets the unique identifier of the entity.
+    /// Gets or internal sets the unique identifier of the entity.
     /// </summary>
     public Guid Id { get; set; }
 
     /// <summary>
-    /// Gets or sets the UTC timestamp when the entity was created.
+    /// Gets or internal sets the UTC timestamp when the entity was created.
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; internal set; }
 
     /// <summary>
-    /// Gets or sets the UTC timestamp when the entity was last updated.
+    /// Gets or internal sets the UTC timestamp when the entity was last updated.
     /// </summary>
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime? UpdatedAt { get; internal set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the user who created the entity.
+    /// Gets or internal sets the identifier of the user who created the entity.
     /// </summary>
-    public Guid? CreatedBy { get; set; }
+    public Guid? CreatedBy { get; internal set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the user who last updated the entity.
+    /// Gets or internal sets the identifier of the user who last updated the entity.
     /// </summary>
-    public Guid? UpdatedBy { get; set; }
+    public Guid? UpdatedBy { get; internal set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the entity has been soft deleted.
+    /// Gets or internal sets a value indicating whether the entity has been soft deleted.
     /// </summary>
-    public bool IsDeleted { get; set; }
+    public bool IsDeleted { get; internal set; }
 
     /// <summary>
-    /// Gets or sets the UTC timestamp when the entity was deleted.
+    /// Gets or internal sets the UTC timestamp when the entity was deleted.
     /// </summary>
-    public DateTime? DeletedAt { get; set; }
+    public DateTime? DeletedAt { get; internal set; }
 }
