@@ -21,4 +21,4 @@ public abstract record PagedRequest
     public string? SortBy { get; init; }
 
     public string SortDirection { get; init; } = "asc";
-}
+}   

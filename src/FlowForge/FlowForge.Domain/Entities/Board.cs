@@ -40,11 +40,17 @@ public sealed class Board : EntityBase
 
     public void Archive()
     {
+        if (IsArchived)
+            return;
+
         IsArchived = true;
     }
 
     public void Restore()
     {
+        if (!IsArchived)
+            return;
+
         IsArchived = false;
     }
 }

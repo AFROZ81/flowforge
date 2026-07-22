@@ -1,60 +1,39 @@
-using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace FlowForge.Application.Features.Boards.Create;
 
-public sealed class CreateBoardCommandHandler
-    : IRequestHandler<CreateBoardCommand, ApiResponse<CreateBoardResponse>>
+public sealed class CreateBoardCommandHandler : IRequestHandler<CreateBoardCommand, ApiResponse<CreateBoardResponse>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
+    private readonly BoardRules _boardRules;
 
-    public CreateBoardCommandHandler(
-        IApplicationDbContext context,
-        ICurrentUserService currentUser)
+    public CreateBoardCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, BoardRules boardRules)
     {
         _context = context;
         _currentUser = currentUser;
+        _boardRules = boardRules;
     }
 
-    public async Task<ApiResponse<CreateBoardResponse>> Handle(
-        CreateBoardCommand request,
-        CancellationToken cancellationToken)
+    public async Task<ApiResponse<CreateBoardResponse>> Handle(CreateBoardCommand request, CancellationToken cancellationToken)
     {
-        var projectExists = await _context.Projects
-            .AnyAsync(
-                x => x.Id == request.ProjectId &&
-                    x.OrganizationId == _currentUser.User.OrganizationId,
-                cancellationToken);
+        var project = await _boardRules.GetProjectAsync(request.ProjectId, _currentUser.User.OrganizationId, cancellationToken);
 
-        if (!projectExists)
-            throw new NotFoundException("Project not found.");
+        _boardRules.EnsureProjectNotArchived(project);
 
-        var boardExists = await _context.Boards
-            .AnyAsync(
-                x => x.ProjectId == request.ProjectId &&
-                     x.Name == request.Name,
-                cancellationToken);
+        await _boardRules.EnsureNameUniqueAsync(request.ProjectId, request.Name, null, cancellationToken);
 
-        if (boardExists)
-            throw new BadRequestException("A board with the same name already exists in this project.");
-
-        var board = new Board(
-            request.ProjectId,
-            request.Name,
-            request.Description);
+        var board = new Board(request.ProjectId, request.Name, request.Description);
 
         _context.Boards.Add(board);
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<CreateBoardResponse>.SuccessResponse(
-            new CreateBoardResponse
+        return ApiResponse<CreateBoardResponse>.SuccessResponse(new CreateBoardResponse
             {
                 Id = board.Id,
                 Name = board.Name,

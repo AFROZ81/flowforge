@@ -13,8 +13,7 @@ public static class PaginationExtensions
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
-        var totalPages = (int)Math.Ceiling(
-            totalCount / (double)request.PageSize);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
 
         return new PagedResponse<T>
         {
