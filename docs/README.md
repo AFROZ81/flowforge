@@ -23,9 +23,9 @@ The documentation is divided into four major sections:
 
 | Document | Description |
 |----------|-------------|
-| [01-Project-Vision.md](01-Project-Vision.md) | Vision, objectives and philosophy of FlowForge |
-| [02-Features.md](02-Features.md) | Functional and planned features |
-| [03-Roadmap.md](03-Roadmap.md) | Development roadmap and milestones |
+| [Project-Vision.md](Project-Vision.md) | Vision, objectives and philosophy of FlowForge |
+| [Features.md](Features.md) | Functional and planned features |
+| [Roadmap.md](Roadmap.md) | Development roadmap and milestones |
 
 ---
 
@@ -33,11 +33,11 @@ The documentation is divided into four major sections:
 
 | Document | Description |
 |----------|-------------|
-| [04-Architecture.md](04-Architecture.md) | Overall software architecture |
-| [05-Solution-Structure.md](05-Solution-Structure.md) | Solution organization and project responsibilities |
-| [06-Domain-Model.md](06-Domain-Model.md) | Domain entities and relationships |
-| [07-Database.md](07-Database.md) | Database design and conventions |
-| [08-API-Design.md](08-API-Design.md) | REST API standards and endpoint design |
+| [Architecture.md](Architecture.md) | Overall software architecture |
+| [Solution-Structure.md](Solution-Structure.md) | Solution organization and project responsibilities |
+| [Domain-Model.md](Domain-Model.md) | Domain entities and relationships |
+| [Database.md](Database.md) | Database design and conventions |
+| [Api-Design.md](Api-Design.md) | REST API standards and endpoint design |
 
 ---
 
@@ -45,12 +45,12 @@ The documentation is divided into four major sections:
 
 | Document | Description |
 |----------|-------------|
-| [09-CQRS.md](09-CQRS.md) | CQRS implementation |
-| [10-Vertical-Slice-Architecture.md](10-Vertical-Slice-Architecture.md) | Vertical Slice Architecture |
-| [11-Dependency-Injection.md](11-Dependency-Injection.md) | Dependency Injection strategy |
-| [12-Coding-Standards.md](12-Coding-Standards.md) | Coding conventions |
-| [13-DTOs.md](13-DTOs.md) | DTO design guidelines |
-| [14-EF-Core-Migrations.md](14-EF-Core-Migrations.md) | Migration workflow |
+| [CQRS.md](CQRS.md) | CQRS implementation |
+| [Vertical-Slice-Architecture.md](Vertical-Slice-Architecture.md) | Vertical Slice Architecture |
+| [Dependency-Injection.md](Dependency-Injection.md) | Dependency Injection strategy |
+| [Coding-Standards.md](Coding-Standards.md) | Coding conventions |
+| [DTOs.md](DTOs.md) | DTO design guidelines |
+| [EF-Core-Migrations.md](EF-Core-Migrations.md) | Migration workflow |
 | [15-Project-Dependencies.md](15-Project-Dependencies.md) | NuGet packages and dependencies |
 
 ---
@@ -59,9 +59,9 @@ The documentation is divided into four major sections:
 
 | Document | Description |
 |----------|-------------|
-| [16-Authentication.md](16-Authentication.md) | Authentication and Authorization |
-| [17-Projects.md](17-Projects.md) | Project Aggregate |
-| [18-Boards.md](18-Boards.md) | Board Aggregate |
+| [Authentication.md](Authentication.md) | Authentication and Authorization |
+| [Projects.md](Projects.md) | Project Aggregate |
+| [Boards.md](Boards.md) | Board Aggregate |
 
 ---
 
