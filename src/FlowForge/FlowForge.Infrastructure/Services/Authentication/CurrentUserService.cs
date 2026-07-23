@@ -24,6 +24,7 @@ public sealed class CurrentUserService : ICurrentUserService
                 throw new UnauthorizedAccessException("User is not authenticated.");
 
             var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
             var organizationId = user.FindFirst("organizationId")?.Value;
 
             if (string.IsNullOrWhiteSpace(userId))

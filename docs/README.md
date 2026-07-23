@@ -51,7 +51,7 @@ The documentation is divided into four major sections:
 | [Coding-Standards.md](Coding-Standards.md) | Coding conventions |
 | [DTOs.md](DTOs.md) | DTO design guidelines |
 | [EF-Core-Migrations.md](EF-Core-Migrations.md) | Migration workflow |
-| [15-Project-Dependencies.md](15-Project-Dependencies.md) | NuGet packages and dependencies |
+| [Project-Dependencies.md](Project-Dependencies.md) | NuGet packages and dependencies |
 
 ---
 

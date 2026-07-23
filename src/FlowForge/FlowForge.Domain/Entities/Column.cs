@@ -2,42 +2,46 @@ using FlowForge.Domain.Common.Base;
 
 namespace FlowForge.Domain.Entities;
 
-public sealed class Board : EntityBase
+public sealed class Column : EntityBase
 {
-    public Guid ProjectId { get; private set; }
+    public Guid BoardId { get; private set; }
 
     public string Name { get; private set; } = string.Empty;
 
     public string? Description { get; private set; }
 
+    public int DisplayOrder { get; private set; }
+
     public bool IsArchived { get; private set; }
 
-    public Project Project { get; private set; } = default!;
+    public Board Board { get; private set; } = default!;
 
-    public ICollection<Column> Columns { get; private set; } = new List<Column>();
-
-    private Board()
+    private Column()
     {
     }
 
-    public Board(Guid projectId, string name, string? description)
+    public Column(Guid boardId, string name, string? description, int displayOrder)
     {
         Id = Guid.NewGuid();
 
-        ProjectId = projectId;
+        BoardId = boardId;
 
         Name = name;
 
         Description = description;
+
+        DisplayOrder = displayOrder;
 
         IsArchived = false;
     }
 
-    public void Update(string name, string? description)
+    public void Update(string name, string? description, int displayOrder)
     {
         Name = name;
 
         Description = description;
+
+        DisplayOrder = displayOrder;
     }
 
     public void Archive()

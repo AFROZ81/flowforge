@@ -31,6 +31,17 @@ public sealed class CreateBoardCommandHandler : IRequestHandler<CreateBoardComma
 
         _context.Boards.Add(board);
 
+        var defaultColumns = new List<Column>
+        {
+            new(board.Id, "Backlog", null, 1),
+            new(board.Id, "To Do", null, 2),
+            new(board.Id, "In Progress", null, 3),
+            new(board.Id, "Review", null, 4),
+            new(board.Id, "Done", null, 5)
+        };
+
+        _context.Columns.AddRange(defaultColumns);
+
         await _context.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<CreateBoardResponse>.SuccessResponse(new CreateBoardResponse

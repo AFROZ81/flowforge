@@ -11,5 +11,7 @@ public interface IApplicationDbContext
 
     DbSet<Board> Boards { get; }
 
+    DbSet<Column> Columns { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

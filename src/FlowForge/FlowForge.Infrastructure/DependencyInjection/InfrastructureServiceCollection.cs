@@ -11,6 +11,7 @@ using FlowForge.Application.Services.Authentication;
 using FlowForge.Infrastructure.Services.Authentication;
 using FlowForge.Application.Features.Projects;
 using FlowForge.Application.Features.Boards;
+using FlowForge.Application.Features.Columns;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -38,6 +39,8 @@ public static class InfrastructureServiceCollection
         services.AddScoped<ProjectRules>();
 
         services.AddScoped<BoardRules>();
+
+        services.AddScoped<ColumnRules>();
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {

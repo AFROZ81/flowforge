@@ -11,33 +11,15 @@ public abstract class EntityBase
     /// </summary>
     public Guid Id { get; set; }
 
-    /// <summary>
-    /// Gets or internal sets the UTC timestamp when the entity was created.
-    /// </summary>
-    public DateTime CreatedAt { get; internal set; }
+    public DateTime CreatedAt { get; set; }
 
-    /// <summary>
-    /// Gets or internal sets the UTC timestamp when the entity was last updated.
-    /// </summary>
-    public DateTime? UpdatedAt { get; internal set; }
+    public DateTime? UpdatedAt { get; set; }
 
-    /// <summary>
-    /// Gets or internal sets the identifier of the user who created the entity.
-    /// </summary>
-    public Guid? CreatedBy { get; internal set; }
+    public Guid? CreatedBy { get; set; }
 
-    /// <summary>
-    /// Gets or internal sets the identifier of the user who last updated the entity.
-    /// </summary>
-    public Guid? UpdatedBy { get; internal set; }
+    public Guid? UpdatedBy { get; set; }
 
-    /// <summary>
-    /// Gets or internal sets a value indicating whether the entity has been soft deleted.
-    /// </summary>
-    public bool IsDeleted { get; internal set; }
+    public bool IsDeleted { get; set; }
 
-    /// <summary>
-    /// Gets or internal sets the UTC timestamp when the entity was deleted.
-    /// </summary>
-    public DateTime? DeletedAt { get; internal set; }
+    public DateTime? DeletedAt { get; set; }
 }
