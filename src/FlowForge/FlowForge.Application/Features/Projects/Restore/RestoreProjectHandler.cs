@@ -22,10 +22,7 @@ public sealed class RestoreProjectHandler
 
     public async Task<ApiResponse<RestoreProjectResponse>> Handle(RestoreProjectCommand request, CancellationToken cancellationToken)
     {
-        var project = await _projectRules.GetByIdAsync(
-            request.ProjectId,
-            _currentUser.User.OrganizationId,
-            cancellationToken);
+        var project = await _projectRules.GetByIdAsync(request.ProjectId, _currentUser.User.OrganizationId, cancellationToken);
 
         _projectRules.EnsureArchived(project);
 

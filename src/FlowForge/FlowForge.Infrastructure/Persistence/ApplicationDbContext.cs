@@ -32,6 +32,8 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
 
     public DbSet<Column> Columns => Set<Column>();
 
+    public DbSet<WorkItem> WorkItems => Set<WorkItem>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

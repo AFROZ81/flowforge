@@ -12,6 +12,9 @@ using FlowForge.Infrastructure.Services.Authentication;
 using FlowForge.Application.Features.Projects;
 using FlowForge.Application.Features.Boards;
 using FlowForge.Application.Features.Columns;
+using FlowForge.Application.Services.WorkItems;
+using FlowForge.Infrastructure.Services.WorkItems;
+using FlowForge.Application.Features.WorkItems;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -41,6 +44,10 @@ public static class InfrastructureServiceCollection
         services.AddScoped<BoardRules>();
 
         services.AddScoped<ColumnRules>();
+
+        services.AddScoped<WorkItemRules>();
+
+        services.AddScoped<IWorkItemOrderingService, WorkItemOrderingService>();
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {

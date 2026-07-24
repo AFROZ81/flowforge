@@ -16,6 +16,8 @@ public sealed class Column : EntityBase
 
     public Board Board { get; private set; } = default!;
 
+    public ICollection<WorkItem> WorkItems { get; private set; } = new List<WorkItem>();
+
     private Column()
     {
     }

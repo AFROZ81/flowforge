@@ -13,5 +13,7 @@ public interface IApplicationDbContext
 
     DbSet<Column> Columns { get; }
 
+    DbSet<WorkItem> WorkItems { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
