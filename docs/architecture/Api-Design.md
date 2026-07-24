@@ -1,82 +1,312 @@
-# API Design
+# 🌐 FlowForge API Design
 
-This document defines the API design principles and standards used throughout FlowForge.
+The FlowForge API provides a consistent and secure interface for clients to interact with the application's business capabilities.
 
-The objective is to provide a consistent, predictable, and developer-friendly REST API that follows modern HTTP conventions while remaining easy to maintain as the application grows.
+Built using **ASP.NET Core Web API**, the API follows REST principles while integrating seamlessly with **Clean Architecture**, **Vertical Slice Architecture**, and **CQRS**.
+
+Every endpoint is designed to be predictable, discoverable, and independent of internal implementation details.
 
 ---
 
-# Table of Contents
+# 📑 Table of Contents
 
-- Overview
-- Design Principles
-- REST Conventions
-- URL Structure
+- Introduction
+- API Philosophy
+- REST Principles
+- API Architecture
+- URL Design
 - HTTP Methods
-- Request Format
-- Response Format
-- ApiResponse Pattern
-- Error Handling
+- Request Lifecycle
+- Request & Response Format
+
+---
+
+# 📖 Introduction
+
+The API serves as the communication layer between external clients and the FlowForge application.
+
+Clients may include:
+
+- Web applications
+- Mobile applications
+- Third-party integrations
+- Automation tools
+- Future desktop applications
+
+Regardless of the client, every request follows the same execution pipeline and returns a standardized response.
+
+The API exposes business capabilities without exposing internal implementation details.
+
+---
+
+# 🎯 API Philosophy
+
+The FlowForge API is designed around several core principles.
+
+---
+
+## Consistency
+
+Every endpoint follows the same conventions for:
+
+- URL structure
+- HTTP methods
 - Validation
-- Pagination
-- Searching
-- Sorting
+- Error handling
 - Authentication
-- Authorization
-- Status Codes
-- API Versioning
-- Best Practices
-- Summary
+- Response formatting
+
+Consistency reduces the learning curve for developers consuming the API.
 
 ---
 
-# Overview
+## Predictability
 
-FlowForge exposes a RESTful API built with ASP.NET Core.
+Clients should be able to predict endpoint behavior without consulting implementation details.
 
-The API follows consistent naming conventions, standardized responses, and clear separation between commands (write operations) and queries (read operations).
+For example:
 
-Every endpoint should behave predictably regardless of the module it belongs to.
+```http
+GET    /api/projects
+
+POST   /api/projects
+
+PUT    /api/projects/{id}
+
+PATCH  /api/projects/{id}/archive
+
+PATCH  /api/projects/{id}/restore
+```
+
+Every resource follows the same pattern.
 
 ---
 
-# Design Principles
+## Separation of Concerns
 
-The API is designed around the following principles:
+Controllers do not contain business logic.
 
-- Consistency
-- Simplicity
-- Predictability
-- Discoverability
-- Explicit error handling
-- Secure by default
+Instead they:
+
+- Receive requests
+- Dispatch commands or queries
+- Return standardized responses
+
+Business behavior is delegated to the Application and Domain layers.
 
 ---
 
-# Base URL
+## Secure by Default
 
-Development
+Protected resources require authentication.
+
+Authorization is enforced before business operations execute.
+
+Security is considered a fundamental design principle rather than an optional feature.
+
+---
+
+# 🌍 REST Principles
+
+FlowForge follows the principles of Representational State Transfer (REST).
+
+REST emphasizes resources rather than actions.
+
+Resources include:
+
+```text
+Organizations
+
+Projects
+
+Boards
+
+Columns
+
+WorkItems
+```
+
+Each resource is identified by a unique URI.
+
+Clients manipulate resources using standard HTTP methods rather than custom endpoint names.
+
+---
+
+## Resource-Oriented Design
+
+Good examples:
+
+```http
+GET    /api/projects
+
+POST   /api/projects
+
+PUT    /api/projects/{id}
+
+PATCH  /api/projects/{id}/archive
+```
+
+Poor examples:
+
+```http
+POST /CreateProject
+
+GET  /GetProjects
+
+POST /UpdateBoard
+```
+
+URLs should identify resources—not operations.
+
+---
+
+## Stateless Communication
+
+Every request contains all information required for processing.
+
+The server does not rely on previous requests.
+
+Benefits include:
+
+- Better scalability
+- Simpler deployments
+- Easier load balancing
+- Improved reliability
+
+---
+
+# 🏗️ API Architecture
+
+The API integrates directly with the architectural patterns used throughout FlowForge.
+
+```text
+Client
+      │
+      ▼
+HTTP Request
+      │
+      ▼
+ASP.NET Core Controller
+      │
+      ▼
+MediatR
+      │
+      ▼
+Command / Query
+      │
+      ▼
+Handler
+      │
+      ▼
+Domain
+      │
+      ▼
+Infrastructure
+      │
+      ▼
+SQL Server
+```
+
+Each layer performs a single responsibility.
+
+---
+
+## Controller Responsibilities
+
+Controllers are intentionally lightweight.
+
+Responsibilities include:
+
+- Receive HTTP requests
+- Validate routing information
+- Dispatch MediatR requests
+- Return HTTP responses
+
+Controllers should never:
+
+- Contain business rules
+- Access Entity Framework directly
+- Manipulate domain entities
+- Implement workflow logic
+
+---
+
+## CQRS at the API Layer
+
+The API reflects the CQRS architecture used internally.
+
+Commands modify application state.
+
+Examples:
+
+```text
+Create Project
+
+Update Board
+
+Archive Column
+
+Move WorkItem
+```
+
+Queries retrieve information.
+
+Examples:
+
+```text
+Get Projects
+
+Get Boards
+
+Get Columns
+
+Get WorkItems
+```
+
+This separation improves maintainability and makes endpoint behavior easier to understand.
+
+---
+
+# 🔗 URL Design
+
+FlowForge follows predictable URL conventions.
+
+Base development URL:
 
 ```text
 https://localhost:5001/api
 ```
 
-Example
+Typical endpoints:
 
-```text
-/api/projects
-/api/boards
-/api/columns
-/api/tasks
+```http
+GET  /api/projects
+
+GET  /api/projects/{id}
+
+POST /api/projects
+
+PUT  /api/projects/{id}
+
+PATCH /api/projects/{id}/archive
+
+PATCH /api/projects/{id}/restore
 ```
+
+Every endpoint represents a business resource.
 
 ---
 
-# Resource Naming
+## Naming Rules
 
-Resources use plural nouns.
+Use:
 
-Examples
+- Plural nouns
+- Lowercase URLs
+- Resource identifiers
+- Hierarchical ownership where appropriate
+
+Examples:
 
 ```text
 /projects
@@ -85,86 +315,106 @@ Examples
 
 /columns
 
-/tasks
+/workitems
 
 /organizations
 ```
 
-Avoid verbs in URLs.
+Avoid:
 
-✔ Good
-
-```text
-GET /projects
-
-POST /projects
-
-PUT /projects/{id}
-
-PATCH /projects/{id}/archive
-```
-
-✘ Bad
-
-```text
-/createProject
-
-/getAllProjects
-
-/updateBoard
-```
+- Verbs
+- RPC-style URLs
+- Technology-specific naming
 
 ---
 
-# HTTP Methods
+## Nested Resources
+
+Nested resources should only be used when ownership adds meaningful context.
+
+Example:
+
+```http
+GET /api/projects/{projectId}/boards
+```
+
+Avoid unnecessary nesting that makes endpoints difficult to understand.
+
+---
+
+# ⚡ HTTP Methods
+
+FlowForge uses standard HTTP verbs according to their intended semantics.
+
+---
 
 ## GET
 
-Retrieve data.
+Retrieves data without modifying server state.
 
-Examples
+Examples:
 
 ```http
-GET /projects
+GET /api/projects
 
-GET /projects/{id}
+GET /api/projects/{id}
 ```
 
-Safe and idempotent.
+Characteristics:
+
+- Safe
+- Idempotent
+- Cacheable
 
 ---
 
 ## POST
 
-Create a new resource.
+Creates a new resource.
+
+Example:
 
 ```http
-POST /projects
+POST /api/projects
+```
+
+Typical response:
+
+```http
+201 Created
 ```
 
 ---
 
 ## PUT
 
-Replace or update an existing resource.
+Replaces or updates an existing resource.
+
+Example:
 
 ```http
-PUT /projects/{id}
+PUT /api/projects/{id}
 ```
+
+PUT requests are expected to be idempotent.
 
 ---
 
 ## PATCH
 
-Perform a partial update or state transition.
+Performs partial updates or business state transitions.
 
-Examples
+Examples:
 
 ```http
-PATCH /projects/{id}/archive
+PATCH /api/projects/{id}/archive
 
-PATCH /projects/{id}/restore
+PATCH /api/projects/{id}/restore
+
+PATCH /api/workitems/{id}/move
 ```
+
+PATCH is particularly useful for workflow-driven operations.
 
 ---
 
@@ -172,18 +422,245 @@ PATCH /projects/{id}/restore
 
 Reserved for permanent deletion.
 
-FlowForge currently prefers archiving over deletion.
+FlowForge currently favors **archiving** over physical deletion to preserve business history.
 
 ---
 
-# URL Structure
+# 🔄 Request Lifecycle
 
-Nested resources should reflect ownership.
-
-Example
+Every API request follows a predictable execution pipeline.
 
 ```text
-Organizations
+HTTP Request
+      │
+      ▼
+Controller
+      │
+      ▼
+MediatR
+      │
+      ▼
+Command / Query
+      │
+      ▼
+FluentValidation
+      │
+      ▼
+Handler
+      │
+      ▼
+Business Rules
+      │
+      ▼
+Domain Entity
+      │
+      ▼
+Persistence
+      │
+      ▼
+ApiResponse<T>
+      │
+      ▼
+HTTP Response
+```
+
+This consistent pipeline ensures that every request is validated, authorized and processed using the same architectural conventions.
+
+---
+
+# 📨 Request & Response Format
+
+Commands receive strongly typed request models.
+
+Example request:
+
+```json
+{
+  "name": "Website Redesign",
+  "description": "Enterprise UI modernization project"
+}
+```
+
+Validation occurs before the handler executes.
+
+Successful operations return standardized responses rather than raw entities.
+
+Example response:
+
+```json
+{
+  "success": true,
+  "message": "Project created successfully.",
+  "data": {
+    "id": "3dfef4d5-42a5-4e48-a6f5-fd6f7f6b0f31"
+  }
+}
+```
+
+A consistent response structure simplifies client development and ensures predictable API behavior across all modules.
+
+---
+
+# 📦 ApiResponse<T>
+
+Every successful API operation returns a standardized response model.
+
+Rather than exposing raw entities or inconsistent payloads, FlowForge wraps responses inside a generic response object.
+
+```csharp
+ApiResponse<T>
+```
+
+A typical response contains:
+
+```text
+Success
+
+Message
+
+Data
+
+Errors
+```
+
+Example:
+
+```json
+{
+    "success": true,
+    "message": "Project created successfully.",
+    "data": {
+        "id": "3dfef4d5-42a5-4e48-a6f5-fd6f7f6b0f31",
+        "name": "Website Redesign"
+    },
+    "errors": null
+}
+```
+
+Benefits include:
+
+- Consistent response structure
+- Simplified frontend integration
+- Predictable error handling
+- Easier debugging
+- Improved API documentation
+
+Every module returns responses using the same pattern.
+
+---
+
+# ❌ Error Handling
+
+Errors should communicate meaningful information without exposing implementation details.
+
+A failed request should clearly explain:
+
+- What went wrong
+- Why it failed
+- What the client can correct
+
+Example:
+
+```json
+{
+    "success": false,
+    "message": "Validation failed.",
+    "errors": [
+        "Project name is required.",
+        "Description cannot exceed 500 characters."
+    ]
+}
+```
+
+The API intentionally hides:
+
+- Stack traces
+- SQL exceptions
+- Internal server implementation
+- Connection strings
+- Sensitive configuration
+
+Unexpected exceptions are handled globally to ensure consistent responses.
+
+---
+
+# 📊 HTTP Status Codes
+
+FlowForge uses standard HTTP status codes.
+
+| Code | Meaning | Typical Usage |
+|------:|---------|---------------|
+| 200 | OK | Successful request |
+| 201 | Created | Resource created |
+| 204 | No Content | Successful request without response body |
+| 400 | Bad Request | Invalid request |
+| 401 | Unauthorized | Missing or invalid JWT |
+| 403 | Forbidden | User lacks permission |
+| 404 | Not Found | Resource does not exist |
+| 409 | Conflict | Business conflict (e.g. duplicate name) |
+| 422 | Unprocessable Entity *(optional)* | Validation failure |
+| 500 | Internal Server Error | Unexpected server error |
+
+Using standard status codes allows client applications to react consistently across all endpoints.
+
+---
+
+# 🔐 Authentication
+
+Protected endpoints require authentication using **JWT Bearer Tokens**.
+
+Example:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+Authentication is provided through:
+
+- ASP.NET Identity
+- JWT Bearer Authentication
+
+Typical authentication flow:
+
+```text
+User Login
+      │
+      ▼
+Identity Validation
+      │
+      ▼
+JWT Generation
+      │
+      ▼
+Client Stores Token
+      │
+      ▼
+Authenticated Requests
+```
+
+Only authenticated users can access protected resources.
+
+---
+
+# 🛡️ Authorization
+
+Authentication verifies **who** the user is.
+
+Authorization determines **what** the user is allowed to access.
+
+FlowForge enforces authorization through multiple layers.
+
+Examples include:
+
+- Authenticated user
+- Organization ownership
+- Resource ownership
+- Business rules
+
+Example:
+
+```text
+Organization A
 
 ↓
 
@@ -199,187 +676,65 @@ Columns
 
 ↓
 
-Tasks
+WorkItems
 ```
 
-Typical endpoints
+Users cannot access resources belonging to another Organization.
 
-```http
-GET /projects
-
-GET /projects/{id}
-
-GET /boards
-
-GET /boards/{id}
-```
-
-Avoid deeply nested URLs unless they provide meaningful context.
+This ownership boundary is enforced consistently across the application.
 
 ---
 
-# Request Format
+# 📄 Pagination
 
-Commands receive strongly typed request models.
+Collection endpoints should support pagination to improve performance and reduce payload sizes.
 
-Example
+Typical request:
+
+```http
+GET /api/projects?page=1&pageSize=10
+```
+
+Typical response:
 
 ```json
 {
-  "name": "Website Redesign",
-  "description": "Q4 redesign initiative"
+    "items": [],
+    "page": 1,
+    "pageSize": 10,
+    "totalCount": 150,
+    "totalPages": 15
 }
 ```
 
-Validation occurs before the handler executes.
+Pagination provides:
+
+- Faster responses
+- Reduced bandwidth
+- Improved scalability
+- Better user experience
+
+The same pagination model should be reused across all collection endpoints.
 
 ---
 
-# Response Format
+# 🔍 Filtering & Sorting
 
-Every endpoint returns a consistent response structure.
+Collection endpoints may support filtering and sorting.
 
-Example
-
-```json
-{
-  "success": true,
-  "message": "Project created successfully.",
-  "data": {
-    "id": "..."
-  }
-}
-```
-
-This consistency simplifies frontend development and error handling.
-
----
-
-# ApiResponse Pattern
-
-FlowForge wraps responses using a common response model.
-
-Example
-
-```csharp
-ApiResponse<T>
-```
-
-Typical properties
-
-```text
-Success
-
-Message
-
-Data
-
-Errors
-```
-
-Benefits
-
-- Consistent API shape
-- Easier client integration
-- Centralized error handling
-- Predictable responses
-
----
-
-# Error Handling
-
-Errors should provide meaningful information without exposing internal implementation details.
-
-Example
-
-```json
-{
-  "success": false,
-  "message": "Validation failed.",
-  "errors": [
-    "Project name is required."
-  ]
-}
-```
-
-Do not expose:
-
-- Stack traces
-- SQL errors
-- Internal exceptions
-- Sensitive configuration
-
----
-
-# Validation
-
-Validation is implemented using FluentValidation.
-
-Validation occurs before the request reaches the handler.
-
-Typical validations
-
-- Required fields
-- Maximum length
-- Minimum length
-- Invalid formats
-- Business-independent rules
-
-Business rules remain outside validators.
-
----
-
-# Pagination
-
-Collection endpoints should support pagination.
-
-Typical request
+Filtering example:
 
 ```http
-GET /projects?page=1&pageSize=10
+GET /api/projects?search=Website
 ```
 
-Typical response
-
-```json
-{
-  "items": [],
-  "page": 1,
-  "pageSize": 10,
-  "totalCount": 150,
-  "totalPages": 15
-}
-```
-
-FlowForge uses a shared pagination model across all modules.
-
----
-
-# Searching
-
-Collection endpoints may support keyword searching.
-
-Example
+Sorting example:
 
 ```http
-GET /projects?search=Website
+GET /api/projects?sortBy=name&sortDirection=asc
 ```
 
-Searching should be case-insensitive where practical.
-
----
-
-# Sorting
-
-Collection endpoints may support sorting.
-
-Example
-
-```http
-GET /projects?sortBy=name&sortDirection=asc
-```
-
-Supported directions
+Supported directions:
 
 ```text
 asc
@@ -387,131 +742,148 @@ asc
 desc
 ```
 
-Invalid sorting parameters should fall back to a sensible default.
+Invalid parameters should fall back to sensible defaults rather than producing unpredictable behavior.
+
+Filtering and sorting should remain consistent across all modules.
 
 ---
 
-# Authentication
+# ✅ Validation
 
-Protected endpoints require a valid JWT access token.
+FlowForge validates requests before business logic executes.
 
-Example
+Validation is performed using **FluentValidation**.
 
-```http
-Authorization: Bearer <token>
-```
+Typical validation includes:
 
-Authentication is configured using ASP.NET Identity and JWT Bearer authentication.
+- Required fields
+- Length constraints
+- Format validation
+- Numeric ranges
+- Enumeration values
 
----
-
-# Authorization
-
-Authorization is enforced at multiple levels.
-
-Examples
-
-- Authenticated user
-- Organization ownership
-- Resource access
-- Business rules
-
-Only users belonging to the owning organization may access its resources.
-
----
-
-# Status Codes
-
-FlowForge uses standard HTTP status codes.
-
-| Code | Meaning |
-|------|---------|
-| 200 | Success |
-| 201 | Resource Created |
-| 204 | No Content |
-| 400 | Bad Request |
-| 401 | Unauthorized |
-| 403 | Forbidden |
-| 404 | Resource Not Found |
-| 409 | Conflict |
-| 422 | Validation Error (optional) |
-| 500 | Internal Server Error |
-
----
-
-# API Versioning
-
-The initial release does not use explicit API versioning.
-
-Future versions may adopt URL-based versioning.
-
-Example
+Validation responsibilities:
 
 ```text
-/api/v1/projects
-
-/api/v2/projects
+Client
+      │
+      ▼
+Request Model
+      │
+      ▼
+FluentValidation
+      │
+      ▼
+Command Handler
 ```
 
-Introducing versioning should be considered only when breaking changes become necessary.
+Business rules remain inside the Domain and should not be duplicated inside validators.
 
 ---
 
-# Best Practices
+# 🔁 Idempotency
 
-✔ Use nouns instead of verbs.
+Certain HTTP methods should be idempotent.
 
-✔ Keep endpoints predictable.
+| Method | Idempotent |
+|---------|:----------:|
+| GET | ✅ |
+| PUT | ✅ |
+| DELETE | ✅ *(if implemented)* |
+| PATCH | Depends on operation |
+| POST | ❌ |
 
-✔ Return consistent response models.
+Example:
 
-✔ Validate requests before execution.
-
-✔ Return appropriate HTTP status codes.
-
-✔ Avoid exposing implementation details.
-
-✔ Keep controllers thin.
-
-✔ Delegate business logic to the Application layer.
-
-✔ Follow CQRS for write and read operations.
-
----
-
-# Example Endpoint
-
-Create Project
+Multiple requests:
 
 ```http
-POST /api/projects
+PUT /api/projects/{id}
 ```
 
-Request
+should always leave the resource in the same final state.
 
-```json
-{
-  "name": "FlowForge",
-  "description": "Enterprise Project Management Platform"
-}
-```
-
-Response
-
-```json
-{
-  "success": true,
-  "message": "Project created successfully.",
-  "data": {
-    "id": "0f4e4b9d..."
-  }
-}
-```
+Idempotent operations improve reliability when requests are retried due to network failures.
 
 ---
 
-# Summary
+# 🔒 Security Best Practices
 
-The FlowForge API is designed to be predictable, consistent, and easy to consume.
+FlowForge follows several API security practices.
 
-By following standardized URL conventions, response models, validation strategies, and HTTP semantics, every module provides a uniform developer experience while remaining flexible enough to support future growth.
+✔ Require authentication for protected endpoints.
+
+✔ Enforce organization ownership.
+
+✔ Validate all incoming requests.
+
+✔ Never trust client input.
+
+✔ Hide internal exception details.
+
+✔ Use HTTPS in production.
+
+✔ Return only necessary data.
+
+✔ Keep JWT secrets secure.
+
+✔ Apply authorization before business execution.
+
+✔ Log unexpected failures for operational monitoring.
+
+Security is considered an integral part of API design rather than an afterthought.
+
+---
+
+# 🚀 Future API Evolution
+
+The current API is designed to evolve without disrupting existing clients.
+
+Potential future enhancements include:
+
+- URL-based versioning (`/api/v1/...`)
+- OpenAPI enhancements
+- Rate limiting
+- Response caching
+- Batch operations
+- Webhooks
+- Real-time SignalR endpoints
+- GraphQL gateway (if appropriate)
+- Public developer API
+- SDK generation
+
+These capabilities can be introduced incrementally while preserving existing architectural principles.
+
+---
+
+# 📖 Summary
+
+The FlowForge API is designed to provide a predictable, secure and developer-friendly interface for interacting with the application's business capabilities.
+
+By combining:
+
+- REST principles
+- Clean Architecture
+- CQRS
+- MediatR
+- FluentValidation
+- JWT Authentication
+- Standardized `ApiResponse<T>`
+- Consistent URL conventions
+- Predictable HTTP semantics
+
+the API delivers a consistent experience for both client developers and backend contributors.
+
+As FlowForge evolves, these design principles will continue to ensure that the API remains easy to consume, secure to operate and flexible enough to support future business requirements.
+
+---
+
+<div align="center">
+
+# 🌐 FlowForge API Design
+
+### Building Consistent, Secure and Scalable APIs
+
+*"A great API is one that feels predictable—developers should spend their time building features, not learning exceptions."*
+
+</div>

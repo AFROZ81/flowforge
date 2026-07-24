@@ -1,56 +1,89 @@
-# Domain Model
+# 🏛️ FlowForge Domain Model
 
 The Domain Model represents the core business concepts of FlowForge.
 
-Unlike the database model, which focuses on data storage, the domain model focuses on business behavior, relationships, and rules.
+Unlike the database model, which focuses on how information is stored, the Domain Model focuses on **how the business behaves**.
 
-The Domain layer is the heart of the application and is intentionally independent of frameworks, databases, and infrastructure concerns.
+It defines the entities, relationships, responsibilities and business rules that make up the application while remaining completely independent of infrastructure, databases and frameworks.
+
+The Domain layer is the foundation of the entire application and serves as the single source of truth for business logic.
 
 ---
 
-# Table of Contents
+# 📑 Table of Contents
 
+- Introduction
 - What is the Domain Model?
-- Design Principles
-- Aggregate Overview
+- Domain Philosophy
+- Core Design Principles
+- Domain Hierarchy
+- Aggregate Roots
+- Core Entities
 - Entity Relationships
-- Aggregate Responsibilities
-- Entity Lifecycle
-- Business Rules
-- Future Expansion
-- Summary
 
 ---
 
-# What is the Domain Model?
+# 📖 Introduction
 
-The domain model describes the business objects that exist within FlowForge and the rules that govern them.
+Enterprise applications become increasingly difficult to maintain when business logic is scattered across controllers, services and data access code.
+
+FlowForge avoids this problem by placing business behavior inside a dedicated Domain layer.
+
+This approach provides several benefits:
+
+- Clear business boundaries
+- Consistent behavior
+- Better maintainability
+- Improved testability
+- Framework independence
+- Long-term scalability
+
+The Domain Model describes **what the business is**, not **how it is implemented**.
+
+---
+
+# 💡 What is the Domain Model?
+
+The Domain Model represents the business language of FlowForge.
 
 Examples include:
 
 - Organization
+- User
 - Project
 - Board
 - Column
-- Task
+- WorkItem
 
-These entities represent business concepts rather than database tables.
+These concepts are business entities—not database tables.
 
-Every entity encapsulates both state and behavior.
+Every entity contains:
+
+- State
+- Identity
+- Business behavior
+- Lifecycle
+- Validation rules
+
+The Domain Model answers questions such as:
+
+- What is a Project?
+- Who owns a Board?
+- How does a Work Item move through a workflow?
+- When can something be archived?
+- Which operations are allowed?
+
+It intentionally avoids discussing persistence, APIs or infrastructure.
 
 ---
 
-# Design Principles
+# 🎯 Domain Philosophy
 
-The FlowForge domain model follows several principles.
+FlowForge follows a business-first philosophy.
 
-## Rich Domain Model
+Rather than allowing external layers to manipulate entities directly, every business operation is expressed through meaningful domain behavior.
 
-Entities are responsible for protecting their own state.
-
-Instead of exposing mutable properties, they expose meaningful business operations.
-
-Example:
+Examples include:
 
 ```csharp
 project.Update(...);
@@ -58,20 +91,59 @@ project.Update(...);
 project.Archive();
 
 project.Restore();
+
+board.Update(...);
+
+column.Move(...);
+
+workItem.Move(...);
+
+workItem.Archive();
 ```
+
+Consumers describe **intent**, while entities decide whether that intent is valid.
+
+This keeps business knowledge centralized within the Domain layer.
+
+---
+
+# 🧱 Core Design Principles
+
+The FlowForge Domain Model is built upon several guiding principles.
+
+---
+
+## Rich Domain Model
+
+Entities own their behavior.
+
+Instead of acting as simple data containers, entities expose business operations that protect their own consistency.
+
+For example:
+
+```csharp
+project.Archive();
+
+project.Restore();
+
+board.Update();
+
+workItem.Move();
+```
+
+This approach keeps business logic close to the data it governs.
 
 ---
 
 ## Encapsulation
 
-Business behavior belongs inside the entity.
-
-Consumers should not directly manipulate entity state.
+Entity state should never be modified directly.
 
 Incorrect:
 
 ```csharp
-project.Name = "New Name";
+project.Name = "Website";
+
 project.IsArchived = true;
 ```
 
@@ -83,129 +155,212 @@ project.Update(...);
 project.Archive();
 ```
 
+Encapsulation prevents invalid state transitions and ensures that every change passes through business validation.
+
 ---
 
 ## Explicit Business Rules
 
 Complex business policies are implemented through dedicated rule classes.
 
-Examples:
+Examples include:
 
-- ProjectRules
-- BoardRules
+```text
+ProjectRules
 
-This keeps handlers small while ensuring business constraints remain reusable and consistent.
+BoardRules
+
+ColumnRules
+
+WorkItemRules
+```
+
+Separating reusable business policies from application orchestration keeps handlers focused and improves consistency across the application.
 
 ---
 
-# Aggregate Overview
+## Framework Independence
 
-The FlowForge domain is organized around several aggregates.
+The Domain layer contains no references to:
+
+- ASP.NET Core
+- Entity Framework Core
+- SQL Server
+- MediatR
+- ASP.NET Identity
+
+Business logic should remain independent of implementation technologies.
+
+---
+
+# 🌐 Domain Hierarchy
+
+The FlowForge business model follows a hierarchical structure.
 
 ```text
 Organization
-│
-├── Projects
-│      │
-│      ├── Boards
-│      │      │
-│      │      ├── Columns
-│      │      │      │
-│      │      │      └── Tasks
-│      │      │
-│      │      └── Members
-│      │
-│      └── Activity
-│
-└── Users
+      │
+      ▼
+Project
+      │
+      ▼
+Board
+      │
+      ▼
+Column
+      │
+      ▼
+WorkItem
 ```
 
-Each aggregate represents a business boundary.
+Each level owns the level beneath it.
 
-Changes should remain within a single aggregate whenever possible.
+Ownership determines:
+
+- Security boundaries
+- Lifecycle
+- Business responsibilities
+- Aggregate consistency
+
+This hierarchy mirrors how users naturally organize work inside the application.
 
 ---
 
-# Entity Relationships
+# 🏛️ Aggregate Roots
+
+FlowForge groups related entities into aggregates.
+
+An aggregate is a consistency boundary that protects related business data.
+
+```text
+Organization
+      │
+      ▼
+Projects
+      │
+      ▼
+Boards
+      │
+      ▼
+Columns
+      │
+      ▼
+WorkItems
+```
+
+Aggregate roots control access to the entities they own.
+
+External components should interact with the aggregate root rather than manipulating child entities directly.
+
+Benefits include:
+
+- Better consistency
+- Simpler validation
+- Predictable business behavior
+- Clear ownership boundaries
+
+---
+
+# ❤️ Core Entities
+
+The current implementation consists of six primary business entities.
+
+---
 
 ## Organization
 
-Represents a tenant within FlowForge.
+The Organization represents the highest-level business boundary.
 
-Responsibilities:
+It serves as the application's tenant and security boundary.
+
+### Responsibilities
 
 - Own users
 - Own projects
-- Isolate data
-- Define security boundary
+- Isolate business data
+- Define ownership boundaries
+- Prevent cross-organization access
 
-Relationship:
+Every business object ultimately belongs to an Organization.
 
-```text
-Organization
+---
 
-↓
+## User
 
-Projects
+A User represents an authenticated person interacting with the system.
 
-↓
+Users perform business operations within the scope of an Organization.
 
-Boards
+Typical responsibilities include:
 
-↓
+- Authentication
+- Authorization
+- Project participation
+- Work management
 
-Columns
-
-↓
-
-Tasks
-```
+Users never exist independently of organizational boundaries.
 
 ---
 
 ## Project
 
-Represents a logical workspace.
+A Project represents a logical workspace.
 
-Responsibilities:
+Projects organize work into manageable business initiatives.
 
-- Organize work
-- Contain boards
-- Maintain lifecycle
+### Responsibilities
 
-Current behavior:
+- Own Boards
+- Maintain project information
+- Coordinate project lifecycle
+- Support archival and restoration
 
-- Update()
-- Archive()
-- Restore()
+Current domain behavior includes:
+
+```csharp
+Update()
+
+Archive()
+
+Restore()
+```
+
+Projects cannot exist without an Organization.
 
 ---
 
 ## Board
 
-Represents a workflow inside a project.
+Boards represent workflows within a Project.
 
-Responsibilities:
+They divide work into meaningful stages.
 
-- Organize columns
-- Maintain workflow
-- Contain work stages
+### Responsibilities
 
-Current behavior:
+- Organize Columns
+- Define workflow
+- Support business processes
+- Maintain board lifecycle
 
-- Update()
-- Archive()
-- Restore()
+Typical domain behavior:
+
+```csharp
+Update()
+
+Archive()
+
+Restore()
+```
+
+Boards always belong to a single Project.
 
 ---
 
 ## Column
 
-*(Planned)*
+Columns represent workflow stages.
 
-Represents a workflow stage.
-
-Examples:
+Typical examples include:
 
 ```text
 Backlog
@@ -227,91 +382,358 @@ Review
 Done
 ```
 
-Responsibilities:
+### Responsibilities
 
-- Organize tasks
-- Preserve ordering
-- Support workflow progression
+- Organize Work Items
+- Maintain ordering
+- Support drag-and-drop workflows
+- Represent workflow progression
+
+Columns belong exclusively to one Board.
 
 ---
 
-## Task
+## WorkItem
 
-*(Planned)*
+The WorkItem represents the smallest unit of work within FlowForge.
 
-Represents an individual unit of work.
+It tracks individual tasks performed by users while remaining flexible enough to support future enhancements.
 
-Responsibilities:
+### Responsibilities
 
-- Assignment
-- Priority
-- Due dates
-- Status
+- Track work
+- Maintain status
+- Support prioritization
+- Preserve ordering
+- Move between Columns
+- Participate in workflow
+
+Future enhancements may include:
+
+- Assignments
+- Due Dates
+- Labels
 - Comments
 - Attachments
+- Activity History
+
+Work Items cannot exist outside a Column.
 
 ---
 
-# Aggregate Responsibilities
+# 🔗 Entity Relationships
 
-Each aggregate protects its own consistency.
+The relationships between entities establish clear ownership boundaries.
+
+```text
+Organization
+│
+├── Users
+│
+└── Projects
+      │
+      └── Boards
+             │
+             └── Columns
+                    │
+                    └── WorkItems
+```
+
+Relationship summary:
+
+| Parent | Child |
+|---------|-------|
+| Organization | Projects |
+| Organization | Users |
+| Project | Boards |
+| Board | Columns |
+| Column | WorkItems |
+
+Each relationship represents business ownership rather than simple database foreign keys.
+
+Ownership determines lifecycle, permissions and consistency throughout the domain.
+
+---
+
+# 🏗️ Aggregate Responsibilities
+
+Each aggregate in FlowForge protects its own business consistency.
+
+An aggregate is responsible not only for storing data, but also for enforcing the rules that govern that portion of the business.
+
+---
+
+## Organization Aggregate
+
+The Organization aggregate is the highest business boundary.
+
+Responsibilities include:
+
+- Owning Projects
+- Owning Users
+- Providing tenant isolation
+- Enforcing organization-level security
+- Preventing cross-organization access
+
+Everything inside FlowForge ultimately belongs to an Organization.
+
+---
+
+## Project Aggregate
+
+Projects organize business initiatives.
+
+Responsibilities include:
+
+- Maintaining project information
+- Owning Boards
+- Managing project lifecycle
+- Preventing invalid project operations
+- Coordinating board ownership
+
+Projects act as the aggregate root for everything contained within them.
+
+---
+
+## Board Aggregate
+
+Boards define project workflows.
+
+Responsibilities include:
+
+- Managing workflow stages
+- Owning Columns
+- Maintaining board ordering
+- Supporting board lifecycle
+
+A Board cannot exist independently of a Project.
+
+---
+
+## Column Aggregate
+
+Columns represent workflow stages.
+
+Responsibilities include:
+
+- Organizing Work Items
+- Maintaining display order
+- Supporting drag-and-drop movement
+- Preserving workflow integrity
+
+Columns ensure Work Items remain organized throughout the workflow.
+
+---
+
+## WorkItem Aggregate
+
+Work Items represent individual units of work.
+
+Responsibilities include:
+
+- Tracking progress
+- Maintaining status
+- Managing workflow movement
+- Supporting archival
+- Preserving ordering
+
+Each Work Item belongs to exactly one Column at any given time.
+
+---
+
+# ❤️ Rich Domain Model
+
+FlowForge follows the **Rich Domain Model** pattern.
+
+Business entities are responsible for protecting themselves rather than exposing unrestricted mutable properties.
+
+Instead of allowing external code to manipulate internal state directly, entities expose meaningful business operations.
 
 Example:
 
-Project Aggregate
+```csharp
+project.Update(...);
 
-Responsible for:
+project.Archive();
 
-- Project information
-- Board ownership
-- Lifecycle
+project.Restore();
 
-Board Aggregate
+board.Update(...);
 
-Responsible for:
+column.Move(...);
 
-- Board information
-- Columns
-- Workflow
+workItem.Move(...);
 
-Column Aggregate
+workItem.Archive();
+```
 
-Responsible for:
+This ensures that every state transition passes through business validation.
 
-- Ordering
-- Task placement
-
-Task Aggregate
-
-Responsible for:
-
-- Work tracking
-- Completion state
-- Collaboration
+The Domain remains the authoritative source of business behavior.
 
 ---
 
-# Entity Lifecycle
+# ⚙️ Business Behavior
+
+Business behavior describes what an entity is capable of doing.
+
+Examples include:
+
+## Project
+
+```text
+Update()
+
+Archive()
+
+Restore()
+```
+
+---
+
+## Board
+
+```text
+Update()
+
+Archive()
+
+Restore()
+```
+
+---
+
+## Column
+
+```text
+Rename()
+
+Move()
+
+Archive()
+
+Restore()
+```
+
+---
+
+## WorkItem
+
+```text
+Update()
+
+Move()
+
+Archive()
+
+Restore()
+```
+
+These methods express business intent rather than low-level data manipulation.
+
+---
+
+# 🛡️ Domain Invariants
+
+A **Domain Invariant** is a rule that must always remain true.
+
+If an invariant is violated, the Domain enters an invalid state.
+
+Examples include:
+
+- A Project must belong to an Organization.
+- A Board must belong to a Project.
+- A Column must belong to a Board.
+- A Work Item must belong to a Column.
+- Archived entities cannot be modified.
+- Cross-organization access is prohibited.
+- Display order must remain consistent within a workflow.
+
+These invariants are enforced regardless of how requests enter the application.
+
+Whether a request originates from the API, automated tests or future integrations, the Domain remains responsible for protecting its own consistency.
+
+---
+
+# 📏 Business Rules
+
+Business rules define policies that govern entity behavior.
+
+Unlike simple validation rules, business rules often depend on existing business state.
+
+FlowForge encapsulates these policies in dedicated rule classes.
+
+---
+
+## Project Rules
+
+Examples include:
+
+- Project names must be unique within an Organization.
+- Archived Projects cannot be updated.
+- Archived Projects cannot receive new Boards.
+- Users cannot access Projects owned by another Organization.
+
+---
+
+## Board Rules
+
+Examples include:
+
+- Board names must be unique within a Project.
+- Boards cannot belong to archived Projects.
+- Archived Boards cannot be modified.
+- Users cannot access Boards from another Organization.
+
+---
+
+## Column Rules
+
+Examples include:
+
+- Display order must remain unique.
+- Columns cannot exist without a Board.
+- Archived Columns cannot receive new Work Items.
+- Default workflow stages may have additional restrictions.
+
+---
+
+## WorkItem Rules
+
+Examples include:
+
+- Work Items must belong to a Column.
+- Archived Work Items become read-only.
+- Movement must preserve workflow ordering.
+- Future due dates must remain valid.
+- Business ownership boundaries must always be respected.
+
+Rule classes centralize business policies so they can be reused consistently across multiple application workflows.
+
+---
+
+# 🔄 Entity Lifecycle
+
+Every entity follows a predictable lifecycle.
+
+---
 
 ## Project Lifecycle
 
 ```text
 Create
-
-↓
-
+   │
+   ▼
 Active
-
-↓
-
-Archive
-
-↓
-
-Restore
+   │
+   ▼
+Archived
+   │
+   ▼
+Restored
 ```
 
-Archived projects remain available for historical purposes but cannot be modified.
+Archived Projects remain available for reporting and historical reference but cannot participate in active workflows.
 
 ---
 
@@ -319,165 +741,151 @@ Archived projects remain available for historical purposes but cannot be modifie
 
 ```text
 Create
-
-↓
-
+   │
+   ▼
 Active
-
-↓
-
-Archive
-
-↓
-
-Restore
+   │
+   ▼
+Archived
+   │
+   ▼
+Restored
 ```
 
-A board cannot exist without a project.
+Boards inherit ownership from their parent Project.
 
 ---
 
-## Future Task Lifecycle
+## Column Lifecycle
 
 ```text
 Create
+   │
+   ▼
+Active
+   │
+   ▼
+Archived
+   │
+   ▼
+Restored
+```
 
-↓
+Columns continue preserving workflow history even after archival.
 
+---
+
+## WorkItem Lifecycle
+
+```text
+Create
+   │
+   ▼
+Backlog
+   │
+   ▼
 To Do
-
-↓
-
+   │
+   ▼
 In Progress
-
-↓
-
+   │
+   ▼
 Review
-
-↓
-
+   │
+   ▼
 Done
-
-↓
-
+   │
+   ▼
 Archived
 ```
 
----
-
-# Business Rules
-
-Business rules protect the integrity of the domain.
-
-Examples currently implemented:
-
-## Projects
-
-- Project names must be unique within an organization.
-- Archived projects cannot be updated.
-- Archived projects cannot receive new boards.
-- Organizations cannot access each other's projects.
+As the application evolves, additional workflow stages can be introduced without changing the overall Domain structure.
 
 ---
 
-## Boards
+# ⚖️ Domain Services vs Entities
 
-- Board names must be unique within a project.
-- Archived boards cannot be updated.
-- Boards cannot belong to archived projects.
-- Organizations cannot access another organization's boards.
+FlowForge keeps business behavior inside entities whenever possible.
 
----
+General guideline:
 
-## Planned Rules
-
-Columns
-
-- Column positions must remain unique.
-- Default columns cannot be removed.
-- Archived columns cannot accept new tasks.
-
-Tasks
-
-- Completed tasks cannot be modified without reopening.
-- Archived tasks become read-only.
-- Due dates cannot be before creation dates.
-
----
-
-# Domain Services vs Entities
-
-FlowForge prefers placing behavior inside entities whenever possible.
-
-If behavior:
-
-- depends only on one entity → entity method
-- spans multiple entities → business rule/service
+- Behavior affecting a single entity belongs inside that entity.
+- Behavior involving multiple entities belongs in dedicated rule classes or domain services.
 
 Example:
 
-Inside Project
+Inside **Project**:
 
 ```csharp
+Update();
+
 Archive();
 
 Restore();
-
-Update();
 ```
 
-Inside ProjectRules
+Inside **ProjectRules**:
 
 ```text
 EnsureUniqueName()
 
-EnsureNotArchived()
+EnsureOrganizationOwnership()
 
-GetByIdAsync()
+EnsureNotArchived()
 ```
 
-This keeps responsibilities well separated.
+This separation keeps entities focused on their own behavior while allowing reusable business policies to remain centralized.
 
 ---
 
-# Future Expansion
+# 🚀 Future Domain Evolution
 
-The domain model is designed to evolve without major restructuring.
+The current Domain Model is intentionally designed for long-term growth.
 
-Planned additions include:
+Future concepts may include:
 
 - Labels
-- Milestones
-- Sprints
+- Comments
+- Attachments
 - Notifications
 - Activity Timeline
+- Milestones
+- Sprint Planning
 - Time Tracking
-- Attachments
-- Comments
+- Recurring Work Items
+- Automation Rules
 
-Each new concept will become its own aggregate or entity when appropriate.
+Each new concept will be introduced as an independent entity or aggregate while preserving existing ownership boundaries.
 
----
-
-# Domain Integrity
-
-The domain layer must never depend on:
-
-- ASP.NET Core
-- Entity Framework Core
-- SQL Server
-- Identity
-- MediatR
-- Controllers
-
-The domain should remain pure and framework-independent.
+Because the Domain remains framework-independent, these enhancements can be added without redesigning the application's architecture.
 
 ---
 
-# Summary
+# 📖 Summary
 
-The FlowForge domain model represents the business rather than the database.
+The FlowForge Domain Model represents the business rather than the database.
 
-Entities encapsulate behavior, business rules enforce consistency, and aggregates define clear ownership boundaries.
+By combining **Rich Domain Models**, **Aggregate Roots** and **Business Rules**, FlowForge ensures that business behavior remains centralized, consistent and protected from infrastructure concerns.
 
-This approach keeps business logic centralized, expressive, and resilient as the application grows.
+The Domain layer:
+
+- Defines business concepts.
+- Encapsulates behavior.
+- Protects invariants.
+- Enforces business rules.
+- Establishes ownership boundaries.
+- Supports long-term evolution.
+
+As FlowForge grows, the Domain Model will remain the foundation upon which every new feature is built, ensuring that the application continues to evolve without compromising business consistency.
+
+---
+
+<div align="center">
+
+# 🏛️ FlowForge Domain Model
+
+### Modeling Business Behavior, Not Database Tables
+
+*"A strong domain model reflects how the business thinks, speaks and behaves—not how data happens to be stored."*
+
+</div>

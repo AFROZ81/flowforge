@@ -1,45 +1,54 @@
-# Dependency Injection
+# 💉 FlowForge Dependency Injection
 
-This document describes how Dependency Injection (DI) is implemented in FlowForge and establishes the conventions that every new feature must follow.
+Dependency Injection (DI) is one of the core architectural mechanisms used throughout FlowForge.
 
-FlowForge uses the built-in Dependency Injection container provided by ASP.NET Core.
+Rather than allowing classes to create their own dependencies, FlowForge relies on the built-in ASP.NET Core Dependency Injection container to supply the services each component requires.
 
-Rather than treating DI as merely a way to instantiate objects, FlowForge uses it to enforce architectural boundaries, improve testability, and keep the application loosely coupled.
+Dependency Injection is more than a technique for object creation—it is the foundation that enables **Clean Architecture**, **CQRS**, **Vertical Slice Architecture**, and **testability** throughout the application.
 
 ---
 
-# Table of Contents
+# 📑 Table of Contents
 
-- Overview
+- Introduction
+- Dependency Injection Philosophy
 - Why Dependency Injection?
 - Dependency Inversion Principle
-- Service Registration
+- Constructor Injection
 - Service Lifetimes
-- Dependency Flow
-- Application Registration
-- Infrastructure Registration
-- MediatR Registration
-- FluentValidation Registration
-- CurrentUserService
-- DbContext Registration
-- Feature Development
-- Best Practices
-- Common Mistakes
-- Summary
+- Dependency Registration
+- Layered Registration
 
 ---
 
-# Overview
+# 📖 Introduction
 
-Dependency Injection allows classes to receive the dependencies they require instead of creating them directly.
+Every feature in FlowForge depends on services provided by other parts of the application.
+
+Examples include:
+
+- Database access
+- Current user information
+- Authentication
+- Business rules
+- Validation
+- Logging
+- File storage
+- External services
+
+Rather than creating these dependencies manually, FlowForge allows the Dependency Injection container to construct and supply them automatically.
 
 Instead of this:
 
 ```csharp
 var context = new ApplicationDbContext();
+
+var currentUser = new CurrentUserService();
+
+var projectRules = new ProjectRules();
 ```
 
-FlowForge relies on constructor injection.
+FlowForge uses constructor injection.
 
 ```csharp
 public CreateProjectHandler(
@@ -47,57 +56,157 @@ public CreateProjectHandler(
     ProjectRules projectRules,
     ICurrentUserService currentUser)
 {
+    _context = context;
+    _projectRules = projectRules;
+    _currentUser = currentUser;
 }
 ```
 
-The framework is responsible for creating and supplying these dependencies.
+The framework creates these objects and injects them when the handler is instantiated.
 
 ---
 
-# Why Dependency Injection?
+# 🎯 Dependency Injection Philosophy
 
-Dependency Injection provides several advantages.
+The philosophy behind Dependency Injection is simple:
+
+> **Classes should declare what they need, not create what they need.**
+
+Every class should focus exclusively on its own responsibility.
+
+Object creation is delegated to the Dependency Injection container.
+
+This results in:
 
 - Loose coupling
+- Better separation of concerns
 - Easier testing
-- Better maintainability
-- Centralized configuration
-- Clear dependency graph
-
-Every dependency should have a clear reason for existing.
+- Simpler maintenance
+- More flexible architecture
 
 ---
 
-# Dependency Inversion Principle
+## Responsibilities
 
-FlowForge follows the Dependency Inversion Principle (DIP).
+A class should:
 
-High-level modules should depend on abstractions rather than concrete implementations.
+✔ Declare its dependencies.
+
+✔ Use its dependencies.
+
+✔ Never create infrastructure objects directly.
+
+The Dependency Injection container is responsible for:
+
+- Creating objects
+- Managing lifetimes
+- Resolving dependencies
+- Supplying implementations
+
+---
+
+# ❓ Why Dependency Injection?
+
+Without Dependency Injection, every class becomes responsible for constructing the objects it depends upon.
 
 Example:
 
-Application depends on:
+```csharp
+public class CreateProjectHandler
+{
+    public void Handle()
+    {
+        var context = new ApplicationDbContext();
+
+        var currentUser = new CurrentUserService();
+
+        var rules = new ProjectRules();
+    }
+}
+```
+
+Problems with this approach include:
+
+- Tight coupling
+- Difficult unit testing
+- Duplicate object creation
+- Hidden dependencies
+- Hard-coded implementations
+
+Dependency Injection eliminates these problems by centralizing object creation.
+
+---
+
+## Benefits
+
+Using Dependency Injection provides several advantages.
+
+### Loose Coupling
+
+Classes depend on abstractions rather than concrete implementations.
+
+---
+
+### Easier Testing
+
+Dependencies can easily be replaced with mocks or test doubles.
+
+---
+
+### Better Maintainability
+
+Changing an implementation rarely requires changes to consuming classes.
+
+---
+
+### Centralized Configuration
+
+Object creation is configured in one place instead of being scattered throughout the application.
+
+---
+
+### Improved Scalability
+
+As new features are introduced, the container manages increasingly complex dependency graphs without requiring changes to existing classes.
+
+---
+
+# 🏛️ Dependency Inversion Principle
+
+Dependency Injection supports one of the SOLID principles:
+
+**Dependency Inversion Principle (DIP).**
+
+The principle states:
+
+> **High-level modules should depend on abstractions rather than concrete implementations.**
+
+In FlowForge, the Application layer depends on interfaces.
+
+Example:
 
 ```csharp
 IApplicationDbContext
 ```
 
-Infrastructure provides:
+The Infrastructure layer provides the implementation.
 
 ```csharp
 ApplicationDbContext
 ```
 
-The Application layer never directly references the implementation.
+The Application layer never references Entity Framework Core directly.
+
+This preserves the dependency direction required by Clean Architecture.
 
 ---
 
-# Dependency Flow
+## Dependency Flow
 
-Dependencies move inward toward the Domain.
+Dependencies always move inward.
 
 ```text
-API
+Presentation
 
 ↓
 
@@ -116,13 +225,179 @@ Infrastructure implements abstractions.
 
 Application consumes abstractions.
 
-The Domain consumes neither.
+The Domain layer depends on neither.
+
+This keeps business logic independent of infrastructure concerns.
 
 ---
 
-# Service Registration
+# 🏗️ Constructor Injection
 
-All service registration is centralized using extension methods.
+FlowForge exclusively uses constructor injection.
+
+Example:
+
+```csharp
+public CreateProjectHandler(
+    IApplicationDbContext context,
+    ProjectRules projectRules,
+    ICurrentUserService currentUser)
+{
+    _context = context;
+    _projectRules = projectRules;
+    _currentUser = currentUser;
+}
+```
+
+The constructor clearly communicates every dependency required by the handler.
+
+No hidden dependencies exist.
+
+---
+
+## Why Constructor Injection?
+
+Constructor injection offers several advantages.
+
+- Dependencies are explicit.
+- Objects are fully initialized before use.
+- Required services cannot be forgotten.
+- Testing becomes significantly easier.
+- Immutability is encouraged.
+
+Constructor injection is the preferred approach throughout the entire FlowForge solution.
+
+---
+
+## Avoid Manual Instantiation
+
+Avoid creating dependencies manually.
+
+```csharp
+var context = new ApplicationDbContext();
+
+var currentUser = new CurrentUserService();
+```
+
+Manual construction:
+
+- Bypasses the DI container
+- Makes testing difficult
+- Breaks centralized configuration
+- Couples code to implementations
+
+Always request dependencies through the constructor.
+
+---
+
+# ⏳ Service Lifetimes
+
+ASP.NET Core provides three primary service lifetimes.
+
+FlowForge uses each according to its intended purpose.
+
+---
+
+## Singleton
+
+A Singleton service is created once for the lifetime of the application.
+
+```text
+Application Starts
+
+↓
+
+Singleton Created
+
+↓
+
+Same Instance Used Everywhere
+
+↓
+
+Application Stops
+```
+
+Suitable for:
+
+- Application configuration
+- Stateless utilities
+- Shared caches
+- Global services
+
+Avoid storing request-specific information inside Singleton services.
+
+---
+
+## Scoped
+
+A Scoped service is created once per HTTP request.
+
+```text
+HTTP Request
+
+↓
+
+Scoped Service Created
+
+↓
+
+Shared Within Request
+
+↓
+
+Disposed
+```
+
+This is the most common lifetime in FlowForge.
+
+Examples include:
+
+- ApplicationDbContext
+- CurrentUserService
+- Business rule classes
+- Request-specific services
+
+Scoped services ensure that each request has its own isolated dependencies.
+
+---
+
+## Transient
+
+Transient services are created every time they are requested.
+
+```text
+Request Service
+
+↓
+
+New Instance
+
+↓
+
+Request Service Again
+
+↓
+
+Another New Instance
+```
+
+Suitable for:
+
+- Lightweight stateless services
+- Utility components
+- MediatR pipeline behaviors
+- Helper services
+
+Because a new instance is created each time, transient services should remain lightweight.
+
+---
+
+# 🧩 Dependency Registration
+
+All dependency registration is centralized using extension methods.
+
+Instead of placing dozens of registrations inside `Program.cs`, FlowForge groups registrations by architectural layer.
 
 Example:
 
@@ -132,122 +407,159 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 ```
 
-Avoid placing registration code directly inside `Program.cs` whenever possible.
-
-This keeps startup configuration clean and modular.
+This keeps application startup clean, readable, and modular.
 
 ---
 
-# Application Registration
+## Why Centralize Registration?
 
-The Application project registers:
+Centralized registration provides several advantages.
+
+- Easier maintenance
+- Better discoverability
+- Layer ownership is preserved
+- Cleaner startup configuration
+- Simpler onboarding for new developers
+
+Every service should be registered close to the layer that owns it.
+
+---
+
+# 🏛️ Layered Registration
+
+Each architectural layer is responsible for registering its own services.
+
+### Application Layer
+
+Registers:
 
 - MediatR
 - FluentValidation
 - Pipeline Behaviors
-- Shared Services
-
-Example:
-
-```csharp
-services.AddMediatR(...);
-
-services.AddValidatorsFromAssembly(...);
-
-services.AddTransient(
-    typeof(IPipelineBehavior<,>),
-    typeof(ValidationBehavior<,>)
-);
-```
-
-The Application layer should not register infrastructure services.
+- Application services
+- Rule classes
 
 ---
 
-# Infrastructure Registration
+### Infrastructure Layer
 
-Infrastructure registers:
+Registers:
 
-- DbContext
+- Entity Framework Core
 - Identity
 - Authentication
-- External Services
-- Persistence
-- File Storage
-- Email Providers
+- Authorization
+- External providers
+- File storage
+- Email services
+- Persistence implementations
+
+---
+
+### Presentation Layer
+
+Configures:
+
+- Controllers
+- Swagger
+- Middleware
+- Routing
+- CORS
+- API behaviors
+
+Each layer owns its own registrations, keeping responsibilities clearly separated.
+
+---
+
+# 🚀 MediatR Registration
+
+FlowForge uses **MediatR** to dispatch every command and query.
+
+Rather than controllers creating handlers directly, they send requests to the mediator.
+
+```csharp
+await _mediator.Send(command);
+```
+
+MediatR locates the appropriate handler through the Dependency Injection container.
+
+This approach provides:
+
+- Loose coupling
+- Automatic handler resolution
+- Simplified controllers
+- Consistent request processing
+
+---
+
+## Registration
+
+The Application layer is responsible for registering MediatR.
 
 Example:
 
 ```csharp
-services.AddDbContext<ApplicationDbContext>();
-
-services.AddIdentity<...>();
-
-services.AddAuthentication();
+services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
+});
 ```
 
-Infrastructure owns technical implementations.
+All handlers contained within the Application assembly are discovered automatically.
+
+No manual registration is required when adding new features.
 
 ---
 
-# Service Lifetimes
+# ✅ FluentValidation Registration
 
-FlowForge primarily uses three service lifetimes.
+FlowForge uses **FluentValidation** for request validation.
+
+Validators are automatically discovered during application startup.
+
+Example:
+
+```csharp
+services.AddValidatorsFromAssembly(
+    typeof(ApplicationAssemblyMarker).Assembly);
+```
+
+Whenever a new validator is added to the Application layer, it becomes available without additional configuration.
 
 ---
 
-## Singleton
+## Pipeline Behaviors
 
-Created once for the lifetime of the application.
+Cross-cutting concerns are implemented using MediatR pipeline behaviors.
 
-Suitable for:
+Current example:
 
-- Configuration
+```text
+ValidationBehavior
+```
+
+Future behaviors may include:
+
+- Logging
+- Performance monitoring
 - Caching
-- Stateless utilities
+- Transactions
+- Auditing
+- Exception handling
 
-Avoid storing request-specific data in singleton services.
-
----
-
-## Scoped
-
-Created once per HTTP request.
-
-Used for:
-
-- DbContext
-- CurrentUserService
-- Business Rule classes
-- Repository abstractions (if introduced)
-
-This is the most common lifetime in FlowForge.
+Pipeline behaviors execute before and after handlers, allowing infrastructure concerns to remain separate from business logic.
 
 ---
 
-## Transient
+# 🗄️ Database Context Registration
 
-A new instance is created every time it is requested.
-
-Suitable for:
-
-- Lightweight stateless services
-- Pipeline Behaviors
-- Utility components
-
----
-
-# DbContext Registration
-
-FlowForge exposes the database through an abstraction.
-
-Application depends on:
+The Application layer depends only on an abstraction.
 
 ```csharp
 IApplicationDbContext
 ```
 
-Infrastructure provides:
+The Infrastructure layer provides the implementation.
 
 ```csharp
 ApplicationDbContext
@@ -256,18 +568,83 @@ ApplicationDbContext
 Registration example:
 
 ```csharp
-services.AddScoped<IApplicationDbContext>(
-    provider => provider.GetRequiredService<ApplicationDbContext>()
-);
+services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+});
+
+services.AddScoped<IApplicationDbContext>(provider =>
+    provider.GetRequiredService<ApplicationDbContext>());
 ```
 
-This allows handlers to remain independent of Entity Framework Core.
+Handlers never instantiate or depend directly on `ApplicationDbContext`.
+
+This keeps the Application layer independent of Entity Framework Core.
 
 ---
 
-# CurrentUserService
+# 🔐 Authentication & JWT Registration
 
-The current authenticated user is accessed through an abstraction.
+Authentication services are registered by the Infrastructure layer.
+
+Typical registrations include:
+
+- ASP.NET Identity
+- JWT Bearer Authentication
+- Authorization Policies
+- Token Validation
+
+Example:
+
+```csharp
+services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        // JWT configuration
+    });
+
+services.AddAuthorization();
+```
+
+By centralizing authentication registration, security concerns remain isolated from business features.
+
+---
+
+# ⚙️ Configuration Binding
+
+FlowForge binds application settings to strongly typed configuration objects.
+
+Instead of reading configuration values directly throughout the codebase, settings are grouped into dedicated option classes.
+
+Example:
+
+```csharp
+services.Configure<JwtOptions>(
+    configuration.GetSection("Jwt"));
+```
+
+Services consume configuration using:
+
+```csharp
+IOptions<JwtOptions>
+```
+
+Benefits include:
+
+- Strong typing
+- Centralized configuration
+- Easier testing
+- Compile-time safety
+- Better discoverability
+
+---
+
+# 👤 CurrentUserService
+
+Business features frequently require information about the authenticated user.
+
+Rather than accessing `HttpContext` directly, FlowForge uses an abstraction.
 
 Application depends on:
 
@@ -281,153 +658,257 @@ Infrastructure provides:
 CurrentUserService
 ```
 
-This service exposes information such as:
+Typical information includes:
 
 - User ID
 - Organization ID
 - User Name
+- Email
 - Roles
 
-Handlers should never access `HttpContext` directly.
+Handlers remain independent of ASP.NET Core-specific APIs.
 
 ---
 
-# MediatR Registration
+# 🔄 Request Lifecycle
 
-All commands and queries are dispatched through MediatR.
-
-Registration is centralized.
-
-```csharp
-services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssembly(...);
-});
-```
-
-Controllers depend only on:
-
-```csharp
-IMediator
-```
-
-They do not instantiate handlers directly.
-
----
-
-# FluentValidation Registration
-
-Validators are automatically discovered.
-
-```csharp
-services.AddValidatorsFromAssembly(...);
-```
-
-No manual registration is required when adding a new validator.
-
----
-
-# Pipeline Behaviors
-
-Cross-cutting concerns are implemented as MediatR pipeline behaviors.
-
-Current example:
+The Dependency Injection container participates in every request processed by FlowForge.
 
 ```text
-ValidationBehavior
+HTTP Request
+      │
+      ▼
+ASP.NET Core
+      │
+      ▼
+Dependency Injection Container
+      │
+      ▼
+Controller
+      │
+      ▼
+MediatR
+      │
+      ▼
+Handler
+      │
+      ▼
+Dependencies Resolved
+      │
+      ▼
+Business Logic
+      │
+      ▼
+Database
+      │
+      ▼
+HTTP Response
 ```
 
-Future behaviors may include:
+The container resolves all required services before the handler executes.
 
-- Logging
-- Performance Monitoring
-- Caching
-- Transactions
-- Auditing
-
-This avoids duplicating infrastructure code across handlers.
+This ensures that each component receives fully configured dependencies without creating them manually.
 
 ---
 
-# Feature Development
+# 🧪 Testing Strategy
 
-When creating a new feature:
+Dependency Injection significantly improves testability.
 
-1. Define abstractions in the Application layer.
-2. Implement technical details in Infrastructure.
-3. Register services in the appropriate extension method.
-4. Inject dependencies through constructors.
-5. Never instantiate dependencies manually.
+Because handlers depend on abstractions rather than implementations, dependencies can easily be replaced with test doubles.
+
+Example:
+
+```text
+Handler
+
+↓
+
+Mock IApplicationDbContext
+
+↓
+
+Mock CurrentUserService
+
+↓
+
+Execute Handler
+
+↓
+
+Verify Result
+```
+
+This allows business logic to be tested without requiring:
+
+- SQL Server
+- ASP.NET Core
+- Entity Framework Core
+- Authentication infrastructure
+
+Unit tests remain fast, isolated, and reliable.
 
 ---
 
-# Constructor Injection
+# 📋 Best Practices
 
-FlowForge exclusively uses constructor injection.
+Follow these conventions throughout FlowForge.
 
-Preferred:
+✔ Depend on abstractions instead of implementations.
 
-```csharp
-public CreateBoardHandler(
-    IApplicationDbContext context,
-    BoardRules boardRules,
-    ICurrentUserService currentUser)
-{
-}
-```
+✔ Prefer constructor injection.
+
+✔ Register services in the layer that owns them.
+
+✔ Keep `Program.cs` minimal.
+
+✔ Use Scoped services for request-based dependencies.
+
+✔ Use Singleton services only for application-wide stateless components.
+
+✔ Keep constructors focused and inject only required dependencies.
+
+✔ Use strongly typed configuration with `IOptions<T>`.
+
+✔ Let the container create all objects.
+
+---
+
+# ⚠️ Common Anti-Patterns
+
+Avoid the following patterns.
+
+---
+
+## Manual Object Creation
 
 Avoid:
 
 ```csharp
-var db = new ApplicationDbContext();
-
-var currentUser = new CurrentUserService();
+var context = new ApplicationDbContext();
 ```
 
-Manual construction bypasses the DI container and makes testing difficult.
+Always allow the container to resolve dependencies.
 
 ---
 
-# Best Practices
+## Service Locator Pattern
 
-✔ Depend on abstractions.
+Avoid injecting `IServiceProvider` simply to retrieve services manually.
 
-✔ Keep registration centralized.
-
-✔ Prefer constructor injection.
-
-✔ Use Scoped for request-based services.
-
-✔ Use Singleton only for stateless, application-wide services.
-
-✔ Keep Program.cs minimal.
-
-✔ Register services close to their owning project.
+Constructor injection is preferred because dependencies remain explicit.
 
 ---
 
-# Common Mistakes
+## Injecting HttpContext
 
-Avoid the following.
+Handlers should never access `HttpContext` directly.
 
-❌ Injecting `HttpContext` into handlers.
-
-❌ Instantiating DbContext manually.
-
-❌ Registering services in multiple locations.
-
-❌ Depending on Infrastructure from the Application layer.
-
-❌ Using Singleton for services that depend on scoped objects.
-
-❌ Creating service locators.
+Use `ICurrentUserService` instead.
 
 ---
 
-# Summary
+## Incorrect Service Lifetimes
 
-Dependency Injection is one of the fundamental architectural mechanisms used throughout FlowForge.
+Avoid registering Singleton services that depend on Scoped services.
 
-By depending on abstractions, registering services centrally, and using constructor injection consistently, FlowForge maintains clear architectural boundaries, improves testability, and keeps infrastructure concerns isolated from business logic.
+Mismatched lifetimes can lead to runtime errors and unpredictable behavior.
 
-Every new feature should follow these conventions to ensure consistency across the application.
+---
+
+## Excessive Constructor Injection
+
+Large constructors often indicate that a class has too many responsibilities.
+
+Consider refactoring if a constructor requires numerous dependencies.
+
+---
+
+## Registering Services in Multiple Locations
+
+Each service should have a single registration point.
+
+Keeping registrations centralized improves maintainability and avoids duplicate configuration.
+
+---
+
+# 🚀 Future Evolution
+
+As FlowForge grows, additional infrastructure services will be introduced.
+
+Examples include:
+
+```text
+Caching
+
+↓
+
+Email Services
+
+↓
+
+Background Jobs
+
+↓
+
+Distributed Messaging
+
+↓
+
+File Storage
+
+↓
+
+Search
+
+↓
+
+Notifications
+```
+
+Each new service will follow the same principles:
+
+- Depend on abstractions
+- Register centrally
+- Inject through constructors
+- Keep business logic infrastructure-agnostic
+
+This ensures that new capabilities integrate seamlessly without compromising architectural boundaries.
+
+---
+
+# 📖 Summary
+
+Dependency Injection is one of the foundational mechanisms that enables FlowForge's architecture.
+
+By delegating object creation to the ASP.NET Core Dependency Injection container, FlowForge achieves:
+
+- Loose coupling
+- Improved testability
+- Centralized configuration
+- Clear architectural boundaries
+- Consistent dependency management
+
+Combined with:
+
+- Clean Architecture
+- CQRS
+- Vertical Slice Architecture
+- MediatR
+- FluentValidation
+
+Dependency Injection provides the infrastructure that allows every feature to remain focused on business behavior rather than object creation.
+
+As FlowForge evolves, these conventions will continue to ensure that the application remains scalable, maintainable, and easy to extend.
+
+---
+
+<div align="center">
+
+# 💉 FlowForge Dependency Injection
+
+### Building Loosely Coupled Components Through Explicit Dependencies
+
+*"Classes should focus on business behavior, not object creation. Dependency Injection keeps responsibilities clear, dependencies explicit, and architecture maintainable."*
+
+</div>

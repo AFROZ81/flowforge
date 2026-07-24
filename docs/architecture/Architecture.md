@@ -1,173 +1,308 @@
-# Architecture
+# 🏛️ FlowForge Architecture
 
-> "Architecture is the set of decisions that are difficult to change."
+> *"Architecture is the set of decisions that are difficult to change."*  
+> — Martin Fowler
 
-This document describes the architectural principles used throughout FlowForge and explains how different architectural patterns work together to create a maintainable, scalable, and testable application.
+This document describes the architectural foundation of FlowForge and explains how multiple architectural patterns work together to create a scalable, maintainable and production-ready enterprise application.
+
+Rather than relying on a single design pattern, FlowForge combines several complementary approaches to ensure that business logic remains protected while allowing the application to evolve with minimal technical debt.
 
 ---
 
-# Table of Contents
+# 📑 Table of Contents
 
-- Overview
+- Introduction
 - Architectural Goals
+- Architecture at a Glance
 - High-Level Architecture
+- Architectural Principles
+- Layer Responsibilities
+- Dependency Rule
 - Clean Architecture
 - Vertical Slice Architecture
-- CQRS
-- Rich Domain Model
-- Business Rules Pattern
-- Dependency Direction
-- Request Lifecycle
-- Benefits
-- Design Decisions
 
 ---
 
-# Overview
+# 📖 Introduction
 
 FlowForge is designed as a production-quality enterprise application rather than a traditional CRUD application.
 
-The architecture prioritizes:
+Many business applications begin with a clean structure but gradually become difficult to maintain as features are added. Controllers become larger, business logic spreads across multiple layers, dependencies become tightly coupled and changes become increasingly risky.
 
-- Maintainability
-- Scalability
-- Testability
-- Separation of Concerns
-- Explicit Business Logic
-- Long-term Evolution
+FlowForge is intentionally designed to avoid these problems.
 
-Rather than organizing code around technical layers such as *Controllers*, *Services*, and *Repositories*, FlowForge organizes code around business capabilities while keeping responsibilities clearly separated.
+From the beginning, every architectural decision has been made with long-term maintainability in mind.
+
+The architecture focuses on:
+
+- Clear separation of concerns
+- Explicit business rules
+- Independent business modules
+- Low coupling
+- High cohesion
+- Framework-independent domain logic
+- Predictable feature organization
+
+Instead of organizing the application around technical components such as Controllers, Services and Repositories, FlowForge organizes the codebase around business capabilities while maintaining clear architectural boundaries.
 
 ---
 
-# Architectural Goals
+# 🎯 Architectural Goals
 
-The architecture aims to achieve the following goals:
+The architecture of FlowForge is designed to satisfy several long-term objectives.
+
+---
 
 ## Maintainability
 
-Features should be easy to understand, modify, and extend without affecting unrelated parts of the system.
+Every feature should remain easy to understand, modify and extend.
+
+New functionality should integrate naturally into the existing codebase without requiring major restructuring.
 
 ---
 
 ## Scalability
 
-The project structure should support hundreds of features without becoming difficult to navigate.
+The architecture should support continuous growth.
+
+Adding new modules should primarily involve introducing new business slices rather than modifying existing ones.
 
 ---
 
 ## Testability
 
-Business logic should be isolated from infrastructure so that it can be tested independently.
+Business logic should remain isolated from infrastructure concerns.
+
+This enables reliable unit testing without depending on databases, web servers or external services.
 
 ---
 
-## Loose Coupling
+## Separation of Concerns
 
-Each layer should depend only on abstractions and never on implementation details.
+Each architectural layer has a clearly defined responsibility.
+
+Presentation, application coordination, business logic and infrastructure remain independent of one another.
 
 ---
 
 ## Business-Centric Design
 
-Business rules should live close to the domain rather than being scattered across controllers or infrastructure.
+Business rules are treated as the most valuable part of the system.
+
+They belong in the Domain layer where they remain reusable, explicit and independent of frameworks.
 
 ---
 
-# High-Level Architecture
+## Long-Term Evolution
 
-FlowForge follows **Clean Architecture**.
+The architecture should become easier—not harder—to extend over time.
+
+Every new feature should strengthen the existing architecture rather than introduce unnecessary complexity.
+
+---
+
+# 🏗️ Architecture at a Glance
+
+FlowForge combines several architectural patterns that complement one another.
+
+| Pattern | Responsibility |
+|----------|----------------|
+| Clean Architecture | Defines dependency boundaries |
+| Vertical Slice Architecture | Organizes features by business capability |
+| CQRS | Separates reads from writes |
+| Rich Domain Model | Encapsulates business behavior |
+| FluentValidation | Validates requests |
+| MediatR | Dispatches commands and queries |
+| Entity Framework Core | Data persistence |
+| ASP.NET Identity | Authentication and authorization |
+
+Each pattern addresses a specific architectural concern while working together as part of a unified system.
+
+---
+
+# 🌐 High-Level Architecture
+
+FlowForge follows the principles of Clean Architecture.
 
 ```text
-                  Client
-                     │
-                     ▼
-          ASP.NET Core API
-                     │
-                     ▼
-            Application Layer
-                     │
-                     ▼
-              Domain Layer
-                     ▲
-                     │
-          Infrastructure Layer
+                    Client
+                       │
+                       ▼
+              ASP.NET Core API
+                       │
+                       ▼
+              Application Layer
+                       │
+                       ▼
+                 Domain Layer
+                       ▲
+                       │
+             Infrastructure Layer
 ```
 
-Each layer has a clearly defined responsibility.
+The API receives incoming requests.
+
+The Application layer coordinates business use cases.
+
+The Domain layer contains business knowledge.
+
+The Infrastructure layer provides technical implementations such as database access and authentication.
+
+Each layer has a single responsibility and communicates through well-defined abstractions.
 
 ---
 
-# Layer Responsibilities
+# 🧭 Architectural Principles
 
-## API Layer
+Several principles guide every implementation within FlowForge.
 
-Responsible for:
+---
 
-- HTTP
+## Single Responsibility
+
+Every component should have one clearly defined purpose.
+
+Controllers handle HTTP concerns.
+
+Handlers coordinate use cases.
+
+Entities enforce business behavior.
+
+Infrastructure manages technical implementation.
+
+---
+
+## Explicit Business Logic
+
+Business rules should never be hidden inside controllers or persistence code.
+
+Instead, they are implemented within the Domain layer or dedicated rule classes.
+
+---
+
+## Framework Independence
+
+The Domain layer should not depend on:
+
+- ASP.NET Core
+- Entity Framework Core
+- SQL Server
+- MediatR
+- Identity
+
+This allows the business model to remain portable and independently testable.
+
+---
+
+## Predictable Structure
+
+Every feature follows the same implementation pattern.
+
+Developers should immediately know where to find:
+
+- Commands
+- Queries
+- Validators
+- Handlers
+- DTOs
+- Business Rules
+
+Consistency reduces maintenance costs and improves onboarding.
+
+---
+
+## Incremental Growth
+
+New features should extend the architecture rather than modify it.
+
+The architecture is designed to evolve one business capability at a time while preserving existing functionality.
+
+---
+
+# 🏢 Layer Responsibilities
+
+FlowForge separates responsibilities into four primary layers.
+
+---
+
+## 🌐 API Layer
+
+The API layer serves as the entry point into the application.
+
+Responsibilities include:
+
+- HTTP endpoints
 - Authentication
 - Authorization
-- Model Binding
-- Returning Responses
+- Model binding
+- Request routing
+- Response formatting
 
-The API layer should never contain business logic.
+The API layer should never contain business rules.
+
+Its responsibility is limited to translating HTTP requests into application requests.
 
 ---
 
-## Application Layer
+## ⚙️ Application Layer
 
-Responsible for:
+The Application layer coordinates business use cases.
 
-- Use Cases
-- CQRS
-- Validation
-- Orchestration
+Responsibilities include:
+
+- Commands
+- Queries
+- Handlers
 - DTOs
+- Validation
+- Application orchestration
 
-The Application layer coordinates work but does not implement business rules.
+This layer coordinates work but intentionally avoids implementing business policies.
+
+Business decisions belong in the Domain layer.
 
 ---
 
-## Domain Layer
+## ❤️ Domain Layer
 
-The Domain layer is the heart of the application.
+The Domain layer represents the heart of the application.
 
 Responsibilities include:
 
 - Entities
-- Value Objects (future)
-- Business Rules
-- Domain Behavior
+- Domain behavior
+- Business rules
+- Domain services (future)
+- Value objects (future)
 
-The Domain layer has no knowledge of:
+The Domain layer contains no knowledge of frameworks or infrastructure.
 
-- Entity Framework
+It defines the business model independently of how the application is implemented.
+
+---
+
+## 🗄️ Infrastructure Layer
+
+The Infrastructure layer provides technical implementations required by the application.
+
+Responsibilities include:
+
+- Entity Framework Core
 - SQL Server
-- ASP.NET Core
-- MediatR
-- Controllers
+- ASP.NET Identity
+- File storage
+- External services
+- Persistence
+
+Infrastructure depends on abstractions defined by the Application layer but is never referenced directly by the Domain.
 
 ---
 
-## Infrastructure Layer
+# 🔄 Dependency Rule
 
-Infrastructure implements technical concerns such as:
+FlowForge follows the fundamental rule of Clean Architecture:
 
-- Database
-- Identity
-- EF Core
-- File Storage
-- External Services
-
-Infrastructure depends on every other layer, but no other layer depends on Infrastructure.
-
----
-
-# Clean Architecture
-
-FlowForge follows the Dependency Rule.
-
-Dependencies always point inward.
+> **Dependencies always point inward.**
 
 ```text
 API
@@ -178,18 +313,61 @@ Application
  ▼
 Domain
 
-Infrastructure ───────────────┘
+Infrastructure ─────────────► Domain
+              └────────────► Application
 ```
 
-The Domain layer is independent.
+The Domain layer sits at the center of the architecture.
 
-It does not reference any external framework.
+Everything else depends on it.
 
-This makes the business model portable and easy to test.
+Nothing inside the Domain depends on external frameworks or technologies.
+
+This ensures that business logic remains stable even if implementation details change.
 
 ---
 
-# Vertical Slice Architecture
+# 🧱 Clean Architecture
+
+Clean Architecture provides the structural foundation of FlowForge.
+
+Its primary objective is to protect business logic from external concerns.
+
+Each layer communicates only with layers closer to the Domain.
+
+### Dependency Direction
+
+```text
+Presentation
+      │
+      ▼
+Application
+      │
+      ▼
+Domain
+
+Infrastructure
+      │
+      └────────────► Application
+                    ► Domain
+```
+
+This architecture offers several important advantages:
+
+- Independent business model
+- Easier testing
+- Reduced framework coupling
+- Better maintainability
+- Clear separation of responsibilities
+- Long-term scalability
+
+By keeping dependencies directed toward the Domain, FlowForge ensures that business knowledge remains the most stable part of the application.
+
+---
+
+# 📦 Vertical Slice Architecture
+
+While Clean Architecture defines **layer boundaries**, Vertical Slice Architecture defines **how features are organized**.
 
 Instead of grouping code by technical type:
 
@@ -201,7 +379,7 @@ DTOs/
 Validators/
 ```
 
-FlowForge groups code by business feature.
+FlowForge groups related code by business capability.
 
 Example:
 
@@ -218,133 +396,170 @@ Projects/
         GetById/
         GetProjects/
 
-    Rules/
     DTOs/
+    Rules/
 ```
 
-Every feature contains everything required for its implementation.
+Each feature contains everything required for its implementation, making it self-contained and easier to understand.
 
-Benefits include:
+### Benefits
 
-- Better discoverability
+- Better feature discoverability
+- Independent feature evolution
 - Lower coupling
-- Easier feature maintenance
-- Independent evolution of modules
+- Improved maintainability
+- Simplified onboarding
+- Predictable project structure
+
+Clean Architecture defines **where code belongs**.
+
+Vertical Slice Architecture defines **how code is organized**.
+
+Together, they provide a scalable foundation for enterprise software.
 
 ---
 
-# CQRS
+# ⚡ Command Query Responsibility Segregation (CQRS)
 
-FlowForge separates commands from queries.
+FlowForge adopts **Command Query Responsibility Segregation (CQRS)** to clearly separate operations that modify application state from those that retrieve data.
+
+Rather than implementing large service classes containing mixed responsibilities, each use case is represented as an independent request.
+
+---
 
 ## Commands
 
-Commands change application state.
+Commands perform actions that change the state of the system.
 
-Examples:
+Examples include:
 
 - Create Project
-- Update Project
-- Archive Board
+- Update Board
+- Archive Column
+- Restore Work Item
 
-Commands:
+A command typically performs the following steps:
 
-- Validate input
-- Execute business logic
-- Persist changes
+```text
+Command
+      │
+      ▼
+Validation
+      │
+      ▼
+Business Rules
+      │
+      ▼
+Domain Entity
+      │
+      ▼
+Persistence
+```
+
+Commands never return complex datasets.
+
+Their primary responsibility is to execute business behavior safely.
 
 ---
 
 ## Queries
 
-Queries return data.
+Queries retrieve information without modifying application state.
 
-Examples:
+Examples include:
 
 - Get Projects
-- Get Board
-- Get Dashboard
+- Get Boards
+- Get Columns
+- Get Work Items
 
-Queries never modify state.
+Queries are optimized for reading and remain free from business side effects.
 
 ---
 
-# Rich Domain Model
+## Why CQRS?
 
-Entities encapsulate business behavior.
+CQRS provides several advantages:
 
-Instead of exposing mutable state, entities provide meaningful methods.
+- Clear separation of responsibilities
+- Smaller handlers
+- Easier testing
+- Independent optimization
+- Better feature organization
+- Improved maintainability
+
+Every business feature within FlowForge follows this pattern consistently.
+
+---
+
+# ❤️ Rich Domain Model
+
+FlowForge follows the Rich Domain Model pattern.
+
+Business entities are responsible for protecting their own consistency.
+
+Instead of exposing mutable properties, entities provide meaningful business operations.
 
 Example:
 
 ```csharp
-project.Update(...)
+project.Update(...);
 
-project.Archive()
+project.Archive();
 
-project.Restore()
+project.Restore();
+
+board.Rename(...);
+
+workItem.Move(...);
 ```
 
-This prevents invalid state transitions and keeps business behavior inside the domain.
+This prevents invalid state transitions and keeps business behavior close to the data it governs.
+
+The Domain layer represents the source of truth for business logic.
 
 ---
 
-# Business Rules Pattern
+# 📏 Business Rules Pattern
 
-Complex business rules are extracted into dedicated rule classes.
+Business rules that involve validation beyond simple input constraints are extracted into dedicated rule classes.
 
-Example:
+Examples include:
+
+- Duplicate project names
+- Duplicate board names
+- Duplicate column names
+- Organization ownership validation
+- Archived entity restrictions
+- Workflow ordering validation
+
+Typical structure:
 
 ```text
-ProjectRules
+Projects/
+    Rules/
+        ProjectRules.cs
 
-BoardRules
+Boards/
+    Rules/
+        BoardRules.cs
+
+Columns/
+    Rules/
+        ColumnRules.cs
+
+WorkItems/
+    Rules/
+        WorkItemRules.cs
 ```
 
-Responsibilities include:
-
-- Duplicate detection
-- Organization validation
-- Archived entity checks
-- Ownership validation
-
-This keeps handlers focused on orchestration rather than business policy.
+Keeping these rules separate allows handlers to remain focused on application orchestration rather than business policy.
 
 ---
 
-# Dependency Direction
+# 🔄 Request Lifecycle
 
-Dependencies always flow toward the Domain.
-
-```text
-API
- │
- ▼
-Application
- │
- ▼
-Domain
-
-Infrastructure
-     │
-     └──────────────▶ Domain
-```
-
-The Domain layer never references:
-
-- EF Core
-- ASP.NET Core
-- SQL Server
-- MediatR
-- Identity
-
-This minimizes framework coupling.
-
----
-
-# Request Lifecycle
-
-The following diagram illustrates how a typical request flows through the application.
+Every request in FlowForge follows a predictable execution pipeline.
 
 ```text
 HTTP Request
@@ -359,7 +574,7 @@ MediatR
 Command / Query
       │
       ▼
-Validator
+FluentValidation
       │
       ▼
 Handler
@@ -371,136 +586,284 @@ Business Rules
 Domain Entity
       │
       ▼
-DbContext
+ApplicationDbContext
       │
       ▼
 SQL Server
       │
       ▼
-Response
+API Response
 ```
 
-Each component has a single responsibility.
+Each component performs one well-defined responsibility, making the overall request flow easy to understand and maintain.
 
 ---
 
-# Example: Create Project
+# 🚀 Feature Execution Flow
+
+Consider the process of creating a new Work Item.
 
 ```text
-POST /api/projects
-
+POST /api/workitems
         │
-
         ▼
-
 Controller
-
         │
-
         ▼
-
-CreateProjectCommand
-
+CreateWorkItemCommand
         │
-
         ▼
-
 FluentValidation
-
         │
-
         ▼
-
-CreateProjectHandler
-
+CreateWorkItemHandler
         │
-
         ▼
-
-ProjectRules
-
+WorkItemRules
         │
-
         ▼
-
-Project Entity
-
+WorkItem Entity
         │
-
         ▼
-
 ApplicationDbContext
-
         │
-
         ▼
-
 Database
+        │
+        ▼
+ApiResponse<WorkItemDto>
 ```
 
 The handler coordinates the workflow.
 
-Business decisions remain inside the domain and rule classes.
+Validation protects input.
+
+Business rules enforce policies.
+
+Entities protect domain integrity.
+
+Persistence stores the final result.
 
 ---
 
-# Why No Repository Pattern?
+# 🛡️ Cross-Cutting Concerns
+
+Some responsibilities apply across multiple features.
+
+Rather than duplicating them, FlowForge centralizes these concerns.
+
+---
+
+## Validation
+
+All incoming commands are validated using **FluentValidation** before business logic executes.
+
+This ensures invalid requests are rejected early.
+
+---
+
+## Authentication
+
+ASP.NET Identity manages user accounts.
+
+JWT Bearer Authentication secures protected endpoints.
+
+---
+
+## Authorization
+
+Only authenticated users can access protected resources.
+
+Business modules additionally enforce organization ownership rules.
+
+---
+
+## Exception Handling
+
+Custom exception types provide consistent error handling across the application.
+
+Examples include:
+
+- NotFoundException
+- ConflictException
+- BadRequestException
+- ForbiddenException
+- UnauthorizedException
+
+Global exception handling converts these exceptions into standardized API responses.
+
+---
+
+## API Response Standardization
+
+Every successful request returns a consistent response structure.
+
+```text
+ApiResponse<T>
+```
+
+This improves predictability for API consumers and simplifies client-side development.
+
+---
+
+# ❓ Why No Repository Pattern?
 
 FlowForge intentionally does **not** implement a generic repository layer.
 
-Entity Framework Core already provides:
+Entity Framework Core already provides the capabilities commonly associated with repositories:
 
-- Unit of Work
-- Repository behavior
 - Change Tracking
+- Unit of Work
 - Query Translation
+- Entity Tracking
+- CRUD Operations
 
-Adding another generic repository would introduce an unnecessary abstraction without solving a real problem.
+Adding another abstraction would duplicate functionality without providing additional value.
 
-Instead, the application depends directly on an abstraction (`IApplicationDbContext`) that exposes only the operations the application requires.
-
-This keeps the architecture simpler while preserving testability.
+Instead, FlowForge depends on an application abstraction that exposes only the operations required by the application.
 
 ---
 
-# Benefits
+# 🗃️ Why `IApplicationDbContext`?
 
-This architecture provides:
+Rather than depending directly on `ApplicationDbContext`, the Application layer depends on an abstraction.
 
-- Clear separation of concerns
-- Scalable project structure
+```text
+Application
+        │
+        ▼
+IApplicationDbContext
+        ▲
+        │
+ApplicationDbContext
+```
+
+This approach provides several benefits:
+
+- Reduced coupling
 - Easier testing
-- Explicit business rules
-- Better maintainability
-- Consistent feature development
-- Framework-independent domain model
+- Infrastructure independence
+- Better dependency inversion
+- Cleaner application boundaries
+
+The Application layer knows only what it needs—not how persistence is implemented.
 
 ---
 
-# Architectural Principles
+# 🏛️ Architectural Decisions
 
-Every new feature added to FlowForge should follow these principles:
+Several important architectural decisions shape FlowForge.
 
-- Follow Clean Architecture.
-- Follow Vertical Slice Architecture.
-- Separate Commands from Queries.
-- Keep business logic inside the Domain.
-- Keep handlers thin.
-- Keep controllers thinner.
-- Extract reusable business rules.
-- Validate requests before execution.
-- Document architectural decisions.
+| Decision | Reason |
+|----------|--------|
+| Clean Architecture | Protect business logic from infrastructure |
+| Vertical Slice Architecture | Organize code around business capabilities |
+| CQRS | Separate reads from writes |
+| Rich Domain Model | Keep business behavior inside entities |
+| FluentValidation | Centralize request validation |
+| MediatR | Decouple request dispatching |
+| EF Core | Reliable ORM with change tracking |
+| ASP.NET Identity | Secure authentication and authorization |
+| No Generic Repository | Avoid unnecessary abstractions |
+| `IApplicationDbContext` | Depend on abstractions instead of implementations |
+
+Each decision was made to solve a practical problem rather than to follow architectural trends.
 
 ---
 
-# Summary
+# ✅ Architectural Benefits
 
-FlowForge combines several complementary architectural patterns rather than relying on a single approach.
+The combination of these patterns provides significant long-term advantages.
 
-- **Clean Architecture** defines the dependency boundaries.
-- **Vertical Slice Architecture** organizes the codebase by business capability.
+### Maintainability
+
+Business features remain isolated and easy to modify.
+
+---
+
+### Scalability
+
+New modules integrate without restructuring existing features.
+
+---
+
+### Testability
+
+Business logic remains independent of infrastructure.
+
+---
+
+### Readability
+
+Developers can quickly understand feature organization and request flow.
+
+---
+
+### Consistency
+
+Every feature follows the same implementation pattern.
+
+---
+
+### Framework Independence
+
+Business logic remains protected from technology changes.
+
+---
+
+### Long-Term Evolution
+
+The architecture is designed to support continuous growth while minimizing technical debt.
+
+---
+
+# 🔮 Future Evolution
+
+As FlowForge evolves, the architecture is expected to support additional capabilities without fundamental redesign.
+
+Potential future enhancements include:
+
+- Domain Events
+- Value Objects
+- Background Processing
+- SignalR Integration
+- Distributed Caching
+- File Storage Providers
+- Cloud Deployment
+- Event-Driven Integrations
+- Advanced Monitoring
+- Modular Packages
+
+These enhancements can be introduced incrementally because the architectural boundaries are already well defined.
+
+---
+
+# 📖 Summary
+
+FlowForge combines several complementary architectural patterns to create a scalable, maintainable and production-ready application.
+
+Each pattern has a specific responsibility:
+
+- **Clean Architecture** defines dependency boundaries.
+- **Vertical Slice Architecture** organizes business features.
 - **CQRS** separates reads from writes.
 - **Rich Domain Models** encapsulate business behavior.
 - **Business Rules** centralize domain policies.
+- **FluentValidation** validates requests.
+- **MediatR** coordinates application workflows.
 
-Together, these patterns create a codebase that is easier to understand, extend, test, and maintain as the application grows.
+Together, these patterns create a codebase that is easier to understand, easier to test and easier to extend as the application grows.
+
+The architecture is intentionally designed to support long-term evolution while keeping business logic protected from infrastructure and framework concerns.
+
+---
+
+<div align="center">
+
+# 🏛️ FlowForge Architecture
+
+### Building Enterprise Software on a Strong Architectural Foundation
+
+*"Good architecture is not measured by how complex it is, but by how confidently software can evolve without breaking what already works."*
+
+</div>

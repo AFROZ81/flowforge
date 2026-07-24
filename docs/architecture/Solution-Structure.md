@@ -1,34 +1,55 @@
-# Solution Structure
+# 🏗️ FlowForge Solution Structure
 
-This document describes how the FlowForge solution is organized and explains the responsibility of each project, folder, and feature.
+This document describes how the FlowForge solution is organized and explains the purpose and responsibility of every project, folder and feature.
 
-The goal of the solution structure is to make the application easy to navigate, scalable as new features are added, and consistent across the entire codebase.
+The solution structure is designed to maximize clarity, maintainability and scalability by combining **Clean Architecture** with **Vertical Slice Architecture**.
+
+Rather than organizing code by technical layers alone, FlowForge organizes business capabilities into self-contained feature slices while maintaining strict architectural boundaries between projects.
 
 ---
 
-# Table of Contents
+# 📑 Table of Contents
 
-- Overview
-- Solution Layout
+- Introduction
+- Solution Overview
+- Repository Layout
+- Solution Projects
 - Project Responsibilities
-- Folder Structure
-- Feature Structure
-- Naming Conventions
-- Dependency Rules
-- Adding a New Feature
-- Best Practices
+- Solution Dependency Graph
+- Internal Folder Structure
 
 ---
 
-# Overview
+# 📖 Introduction
 
-FlowForge is organized using **Clean Architecture** and **Vertical Slice Architecture**.
+As enterprise applications grow, maintaining a predictable and scalable project structure becomes increasingly important.
 
-At the highest level, the solution is divided into four primary projects:
+A poorly organized solution often results in:
+
+- Large service classes
+- Difficult navigation
+- Tight coupling
+- Duplicate code
+- Inconsistent feature implementation
+
+FlowForge avoids these problems by organizing the solution around clearly defined responsibilities.
+
+Each project has a single purpose.
+
+Each feature follows the same implementation pattern.
+
+Each dependency follows the rules established by the architecture.
+
+This consistency allows new developers to understand the project quickly while enabling the application to grow without unnecessary complexity.
+
+---
+
+# 🌐 Solution Overview
+
+FlowForge is divided into multiple projects, each representing a specific architectural layer.
 
 ```text
 FlowForge.sln
-
 │
 ├── src
 │   ├── FlowForge.API
@@ -45,17 +66,123 @@ FlowForge.sln
 └── database
 ```
 
-Each project has a single, clearly defined responsibility.
+This separation ensures that:
+
+- Business logic remains independent.
+- Infrastructure can evolve without affecting the Domain.
+- Features remain modular.
+- Dependencies remain predictable.
+- Testing is simplified.
 
 ---
 
-# Project Responsibilities
+# 📂 Repository Layout
 
-## FlowForge.API
+The repository is organized into several top-level directories.
 
-The API project is the entry point of the application.
+---
 
-Responsibilities:
+## 📦 src
+
+Contains the application's source code.
+
+```text
+src/
+├── FlowForge.API
+├── FlowForge.Application
+├── FlowForge.Domain
+└── FlowForge.Infrastructure
+```
+
+These projects collectively implement the application's business functionality.
+
+---
+
+## 🎨 frontend
+
+Contains the client-side application.
+
+Future implementations may include:
+
+- React
+- Next.js
+- Mobile applications
+
+The frontend communicates exclusively through the REST API.
+
+---
+
+## 🧪 tests
+
+Contains automated tests.
+
+Examples include:
+
+- Unit Tests
+- Integration Tests
+- API Tests
+
+Keeping tests separate from production code improves organization and maintainability.
+
+---
+
+## 📚 docs
+
+Contains all project documentation.
+
+Examples include:
+
+- Foundation
+- Architecture
+- Engineering
+- Modules
+
+Documentation evolves alongside the implementation.
+
+---
+
+## 🗄️ database
+
+Contains database-related resources.
+
+Examples include:
+
+- SQL Scripts
+- Seed Data
+- Migrations
+- Backup Scripts
+
+This directory centralizes database artifacts outside of the application projects.
+
+---
+
+# 🏢 Solution Projects
+
+FlowForge consists of four primary application projects.
+
+```text
+FlowForge.sln
+
+│
+├── FlowForge.API
+├── FlowForge.Application
+├── FlowForge.Domain
+└── FlowForge.Infrastructure
+```
+
+Each project has a single architectural responsibility.
+
+---
+
+# 🌐 FlowForge.API
+
+The API project is the application's entry point.
+
+It exposes REST endpoints and translates HTTP requests into application requests.
+
+---
+
+## Responsibilities
 
 - Configure ASP.NET Core
 - Configure Dependency Injection
@@ -63,106 +190,185 @@ Responsibilities:
 - Configure Authorization
 - Configure Middleware
 - Configure Swagger
-- Expose REST endpoints
-
-Contains:
-
-```text
-Controllers
-Extensions
-Middleware
-Configuration
-Program.cs
-```
-
-The API project should never contain business logic.
+- Expose REST Endpoints
+- Return API Responses
 
 ---
 
-## FlowForge.Application
+## Typical Structure
 
-The Application project contains all use cases.
+```text
+FlowForge.API
 
-Responsibilities:
+├── Controllers
+├── Middleware
+├── Extensions
+├── Configuration
+└── Program.cs
+```
+
+The API project intentionally avoids implementing business rules.
+
+Its primary responsibility is communication with external clients.
+
+---
+
+# ⚙️ FlowForge.Application
+
+The Application project coordinates business use cases.
+
+It acts as the bridge between the API and the Domain.
+
+Business workflows are implemented using CQRS and MediatR.
+
+---
+
+## Responsibilities
 
 - Commands
 - Queries
+- Handlers
 - Validators
 - DTOs
-- Mapping
 - Behaviors
 - Interfaces
-
-This layer coordinates business operations but does not implement business rules.
-
-Typical structure:
-
-```text
-Application
-
-Features
-
-Shared
-
-Common
-
-Interfaces
-```
+- Application Services
 
 ---
 
-## FlowForge.Domain
+## Typical Structure
 
-The Domain project contains the core business model.
+```text
+FlowForge.Application
 
-Responsibilities:
+├── Features
+├── Common
+├── Interfaces
+├── Behaviors
+└── Shared
+```
+
+The Application layer coordinates work but delegates business decisions to the Domain.
+
+---
+
+# ❤️ FlowForge.Domain
+
+The Domain project contains the business model.
+
+It represents the heart of the application and remains completely independent of external technologies.
+
+---
+
+## Responsibilities
 
 - Entities
 - Domain Behavior
 - Business Rules
-- Value Objects (future)
 - Domain Exceptions
-
-Example:
-
-```text
-Entities
-
-Project
-
-Board
-
-Column
-
-Task
-```
-
-The Domain layer is completely independent of ASP.NET Core and Entity Framework.
+- Value Objects (Future)
+- Domain Services (Future)
 
 ---
 
-## FlowForge.Infrastructure
+## Example Structure
 
-Infrastructure provides technical implementations.
+```text
+FlowForge.Domain
 
-Responsibilities:
+├── Entities
+├── Rules
+├── Exceptions
+└── Common
+```
+
+The Domain project contains no references to:
+
+- ASP.NET Core
+- Entity Framework Core
+- SQL Server
+- MediatR
+- ASP.NET Identity
+
+This independence ensures that business logic remains portable and easy to test.
+
+---
+
+# 🗄️ FlowForge.Infrastructure
+
+The Infrastructure project provides technical implementations required by the application.
+
+It is responsible for persistence and integration with external systems.
+
+---
+
+## Responsibilities
 
 - Entity Framework Core
 - SQL Server
-- Identity
+- ASP.NET Identity
 - Persistence
-- External Services
 - File Storage
-- Email
+- Email Services
+- External APIs
 - Logging
-
-Infrastructure implements interfaces defined by the Application layer.
 
 ---
 
-# Folder Structure
+## Typical Structure
 
-A simplified view of the solution:
+```text
+FlowForge.Infrastructure
+
+├── Persistence
+├── Identity
+├── Services
+├── DependencyInjection
+└── Configurations
+```
+
+Infrastructure implements interfaces defined by the Application layer while remaining isolated from business logic.
+
+---
+
+# 🔗 Solution Dependency Graph
+
+Project dependencies follow the principles established by Clean Architecture.
+
+```text
+             FlowForge.API
+                    │
+                    ▼
+         FlowForge.Application
+                    │
+                    ▼
+            FlowForge.Domain
+                    ▲
+                    │
+      FlowForge.Infrastructure
+```
+
+### Allowed Dependencies
+
+- API → Application
+- Application → Domain
+- Infrastructure → Application
+- Infrastructure → Domain
+
+### Prohibited Dependencies
+
+- Domain → API
+- Domain → Infrastructure
+- Domain → ASP.NET Core
+- Application → API
+
+These dependency rules ensure that the Domain remains the most stable and independent part of the application.
+
+---
+
+# 📁 Internal Folder Structure
+
+Within each project, folders are organized according to their responsibility.
 
 ```text
 src/
@@ -170,10 +376,9 @@ src/
 FlowForge.API
 │
 ├── Controllers
-├── Extensions
 ├── Middleware
+├── Extensions
 └── Program.cs
-
 
 FlowForge.Application
 │
@@ -183,7 +388,6 @@ FlowForge.Application
 ├── Behaviors
 └── Shared
 
-
 FlowForge.Domain
 │
 ├── Entities
@@ -191,99 +395,142 @@ FlowForge.Domain
 ├── Exceptions
 └── Common
 
-
 FlowForge.Infrastructure
 │
 ├── Persistence
 ├── Identity
 ├── Services
+├── Configurations
 └── DependencyInjection
 ```
 
+Each project maintains a predictable internal structure, making navigation easier as the solution grows.
+
 ---
 
-# Feature Structure
+# 📦 Feature Organization
 
-Every business feature follows the same layout.
+FlowForge organizes business logic by **feature** rather than by technical component.
+
+Instead of placing all controllers, services and repositories into separate folders, each business capability owns everything required for its implementation.
+
+This approach is known as **Vertical Slice Architecture**.
+
+Example:
+
+```text
+Features
+│
+├── Organizations
+├── Projects
+├── Boards
+├── Columns
+└── WorkItems
+```
+
+Each feature evolves independently while following the same internal conventions.
+
+This improves discoverability and reduces coupling between unrelated business capabilities.
+
+---
+
+# 🧩 Internal Feature Structure
+
+Every feature follows a predictable layout.
 
 Example:
 
 ```text
 Projects
-
-├── Commands
 │
-│   ├── CreateProject
-│   ├── UpdateProject
-│   ├── ArchiveProject
-│   └── RestoreProject
+├── Commands
+│   ├── Create
+│   ├── Update
+│   ├── Archive
+│   └── Restore
 │
 ├── Queries
-│
-│   ├── GetProjectById
+│   ├── GetById
 │   └── GetProjects
+│
+├── DTOs
 │
 ├── Rules
 │
-│   └── ProjectRules.cs
-│
-└── DTOs
+└── Validators
 ```
 
-The Board module follows exactly the same convention.
+The **Boards**, **Columns** and **WorkItems** modules follow the same structure.
 
-Consistency is more important than creativity.
+Consistency is intentionally prioritized over creativity.
+
+Developers should immediately know where every component belongs.
 
 ---
 
-# Command Structure
+# ⚡ Command Structure
 
-Each command folder contains everything required for that operation.
+Every command represents a single business action.
+
+Commands contain everything required to execute that operation.
 
 Example:
 
 ```text
 CreateProject
-
-CreateProjectCommand.cs
-
-CreateProjectHandler.cs
-
-CreateProjectValidator.cs
-
-CreateProjectResponse.cs
+│
+├── CreateProjectCommand.cs
+├── CreateProjectHandler.cs
+├── CreateProjectValidator.cs
+└── CreateProjectResponse.cs
 ```
 
-Benefits:
+Responsibilities:
 
-- Self-contained feature
-- Easy navigation
-- Low coupling
-- Predictable structure
+- Accept user intent
+- Validate input
+- Coordinate business rules
+- Persist changes
+- Return a standardized response
+
+Commands never retrieve large datasets or implement unrelated business behavior.
 
 ---
 
-# Query Structure
+# 🔍 Query Structure
 
-Queries follow the same organization.
+Queries retrieve information without modifying application state.
+
+Each query remains independent of every other query.
 
 Example:
 
 ```text
 GetProjects
-
-GetProjectsQuery.cs
-
-GetProjectsHandler.cs
-
-GetProjectsResponse.cs
+│
+├── GetProjectsQuery.cs
+├── GetProjectsHandler.cs
+└── GetProjectsResponse.cs
 ```
+
+Queries focus on:
+
+- Reading data
+- Filtering
+- Pagination
+- Searching
+- Sorting
+- Mapping to DTOs
+
+Keeping queries independent allows them to evolve without affecting command behavior.
 
 ---
 
-# Shared Components
+# 🧱 Shared Components
 
-Common functionality lives under the Shared/Common folders.
+Some functionality is reused across multiple features.
+
+Shared components are placed in dedicated common folders rather than duplicated.
 
 Examples include:
 
@@ -291,17 +538,25 @@ Examples include:
 - Pagination
 - Sorting
 - Behaviors
-- Exceptions
 - Interfaces
 - Constants
+- Exceptions
+- Mapping Helpers
 
-Shared code should be generic and reusable.
+General rule:
 
-Feature-specific logic should remain within its feature.
+- **Shared** → Generic and reusable.
+- **Feature** → Business-specific.
+
+If a component exists only to support one feature, it belongs inside that feature.
 
 ---
 
-# Naming Conventions
+# 📝 Naming Conventions
+
+FlowForge follows consistent naming conventions across the solution.
+
+---
 
 ## Commands
 
@@ -311,6 +566,8 @@ CreateProjectCommand
 UpdateBoardCommand
 
 ArchiveColumnCommand
+
+RestoreWorkItemCommand
 ```
 
 ---
@@ -323,6 +580,8 @@ GetProjectByIdQuery
 GetProjectsQuery
 
 GetBoardQuery
+
+GetWorkItemsQuery
 ```
 
 ---
@@ -333,6 +592,8 @@ GetBoardQuery
 CreateProjectHandler
 
 UpdateBoardHandler
+
+CreateWorkItemHandler
 ```
 
 ---
@@ -343,16 +604,22 @@ UpdateBoardHandler
 CreateProjectValidator
 
 UpdateBoardValidator
+
+CreateWorkItemValidator
 ```
 
 ---
 
-## Responses
+## DTOs
 
 ```text
-CreateProjectResponse
+ProjectDto
 
-GetBoardResponse
+BoardDto
+
+ColumnDto
+
+WorkItemDto
 ```
 
 ---
@@ -365,158 +632,218 @@ ProjectRules
 BoardRules
 
 ColumnRules
+
+WorkItemRules
 ```
+
+Consistent naming reduces cognitive overhead and improves code discoverability.
 
 ---
 
-# Dependency Rules
+# 🔄 Request Flow Across Projects
 
-Dependencies always move inward.
+A request passes through several projects before reaching the database.
 
 ```text
-API
-
-↓
-
-Application
-
-↓
-
-Domain
-
-↑
-
-Infrastructure
+Client
+      │
+      ▼
+FlowForge.API
+      │
+      ▼
+FlowForge.Application
+      │
+      ▼
+FlowForge.Domain
+      │
+      ▼
+FlowForge.Infrastructure
+      │
+      ▼
+SQL Server
 ```
 
-Allowed:
+Responsibilities during execution:
 
-- API → Application
-- Application → Domain
-- Infrastructure → Application
-- Infrastructure → Domain
+**API**
 
-Not Allowed:
+- Receive HTTP request
+- Authenticate user
+- Route endpoint
+- Return response
 
-- Domain → Infrastructure
-- Domain → API
-- Application → API
+↓
 
----
+**Application**
 
-# Adding a New Feature
+- Dispatch command/query
+- Validate request
+- Coordinate workflow
 
-Every new feature should follow the same workflow.
+↓
 
-## Step 1
+**Domain**
 
-Design the domain entity.
+- Execute business behavior
+- Enforce business rules
+- Protect entity consistency
 
----
+↓
 
-## Step 2
+**Infrastructure**
 
-Define business rules.
+- Persist data
+- Communicate with SQL Server
+- Access external services
 
----
-
-## Step 3
-
-Create Commands.
-
----
-
-## Step 4
-
-Create Queries.
+This predictable flow makes every request easier to follow and debug.
 
 ---
 
-## Step 5
+# ➕ Adding a New Feature
 
-Add Validators.
+Every business module follows the same implementation process.
+
+```text
+Business Requirement
+        │
+        ▼
+Design Domain Model
+        │
+        ▼
+Define Business Rules
+        │
+        ▼
+Create Commands
+        │
+        ▼
+Create Queries
+        │
+        ▼
+Add Validators
+        │
+        ▼
+Implement Handlers
+        │
+        ▼
+Expose API Endpoints
+        │
+        ▼
+Update Documentation
+        │
+        ▼
+Testing
+        │
+        ▼
+Release
+```
+
+Following this workflow ensures that all features remain consistent across the entire solution.
 
 ---
 
-## Step 6
+# 📈 Scalability Strategy
 
-Implement Handlers.
+The solution structure is designed to support long-term growth.
+
+As new modules are introduced, existing features require little or no modification.
+
+Future business modules may include:
+
+```text
+Comments
+
+Attachments
+
+Notifications
+
+Dashboard
+
+Reports
+
+Labels
+
+Sprint Planning
+
+Time Tracking
+```
+
+Each new module simply becomes another feature slice.
+
+No restructuring of existing projects should be required.
 
 ---
 
-## Step 7
+# ✅ Best Practices
 
-Expose API endpoints.
-
----
-
-## Step 8
-
-Document the feature.
-
----
-
-## Step 9
-
-Test the feature.
-
----
-
-## Step 10
-
-Commit and tag the milestone.
-
----
-
-# Best Practices
+Every contributor should follow these architectural guidelines.
 
 ✔ Keep controllers thin.
 
 ✔ Keep handlers focused on orchestration.
 
-✔ Keep business logic inside entities and rule classes.
+✔ Keep business logic inside the Domain.
 
-✔ Reuse shared infrastructure where appropriate.
+✔ Keep rule classes reusable.
 
-✔ Follow the established feature structure.
+✔ Keep feature slices independent.
 
-✔ Avoid introducing new patterns without a clear architectural benefit.
+✔ Reuse shared components only when appropriate.
 
-✔ Maintain consistency across all modules.
+✔ Follow established naming conventions.
 
----
+✔ Respect dependency boundaries.
 
-# Example Module
+✔ Document architectural changes.
 
-A completed module typically looks like this:
-
-```text
-Projects
-
-├── Commands
-│   ├── CreateProject
-│   ├── UpdateProject
-│   ├── ArchiveProject
-│   └── RestoreProject
-│
-├── Queries
-│   ├── GetProjectById
-│   └── GetProjects
-│
-├── Rules
-│   └── ProjectRules.cs
-│
-└── DTOs
-```
-
-Every future module—Boards, Columns, Tasks, Comments, and beyond—should follow the same structure unless there is a compelling architectural reason to deviate.
+Consistency is more valuable than introducing new patterns for individual features.
 
 ---
 
-# Summary
+# 🚀 Future Expansion
 
-The FlowForge solution structure is designed to maximize clarity, consistency, and scalability.
+The current solution structure is intentionally designed to support future growth.
 
-By organizing code around business capabilities rather than technical layers, developers can quickly locate related code, understand feature boundaries, and extend the application without introducing unnecessary complexity.
+Potential additions include:
 
-As the application grows, maintaining this structure will be key to preserving long-term maintainability and developer productivity.
+- Domain Events
+- Value Objects
+- Background Processing
+- SignalR
+- Distributed Caching
+- Cloud Storage
+- Containerization
+- Microservice Extraction (if ever required)
+
+Because dependencies are well-defined, these enhancements can be introduced incrementally without disrupting the existing architecture.
+
+---
+
+# 📖 Summary
+
+The FlowForge solution structure provides a scalable foundation for enterprise software development.
+
+By combining **Clean Architecture** with **Vertical Slice Architecture**, the solution achieves:
+
+- Clear project responsibilities
+- Predictable feature organization
+- Independent business modules
+- Framework-independent business logic
+- Consistent development practices
+- Long-term maintainability
+
+Every project, folder and feature has a clearly defined purpose.
+
+As FlowForge grows, maintaining this structure will ensure that the codebase remains easy to understand, easy to extend and resilient to change.
+
+---
+
+<div align="center">
+
+# 🏗️ FlowForge Solution Structure
+
+### Organizing Enterprise Software for Long-Term Success
+
+*"A well-structured solution doesn't just make today's code easier to write—it makes tomorrow's features easier to build."*
+
+</div>

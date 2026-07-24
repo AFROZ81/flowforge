@@ -1,277 +1,640 @@
-# Roadmap
+# 🗺️ FlowForge Roadmap
 
-This document outlines the planned evolution of FlowForge from its initial foundation to a production-ready enterprise project management platform.
+This document outlines the strategic development roadmap for FlowForge, describing how the platform evolves from a foundational project management application into a comprehensive enterprise collaboration platform.
 
-The roadmap is organized into milestones. Each milestone represents a stable version of the application and focuses on delivering a complete business capability before moving to the next.
+Rather than focusing solely on feature delivery, the roadmap emphasizes architectural maturity, engineering quality, and long-term maintainability.
+
+Each milestone represents a stable, production-quality increment that builds upon previous capabilities while preserving the architectural principles established at the beginning of the project.
 
 ---
 
-# Roadmap Philosophy
+# 📑 Table of Contents
 
-FlowForge follows an incremental development strategy.
+- Introduction
+- Roadmap Philosophy
+- Development Strategy
+- Product Evolution
+- Current Progress
+- Version Milestones
+  - v0.1 Foundation
+  - v0.2 Boards
+  - v0.3 Columns
+  - v0.4 Work Items
 
-Instead of building many incomplete features simultaneously, each module is:
+---
 
-- Designed
-- Implemented
-- Tested
-- Documented
-- Versioned
+# 📖 Introduction
 
-Only after a module reaches a stable state does development continue to the next milestone.
+FlowForge is developed using an incremental and architecture-first approach.
 
-This approach provides:
+Every feature introduced into the platform is expected to satisfy functional requirements while also adhering to the project's engineering standards.
+
+Unlike rapid feature-first development, FlowForge prioritizes long-term sustainability by ensuring every module is:
+
+- Fully designed
+- Correctly implemented
+- Properly validated
+- Thoroughly documented
+- Ready for future extension
+
+This philosophy enables the platform to grow steadily without accumulating unnecessary technical debt.
+
+---
+
+# 🎯 Roadmap Philosophy
+
+FlowForge follows a quality-first development model.
+
+Rather than implementing many incomplete features simultaneously, development is divided into carefully planned milestones.
+
+Each milestone delivers a complete business capability before work begins on the next.
+
+Every completed module satisfies the following objectives:
+
+- Functional completeness
+- Business rule enforcement
+- Validation
+- Consistent architecture
+- Documentation
+- Production-ready code quality
+
+This strategy provides:
 
 - Stable releases
-- Predictable progress
+- Predictable development
 - Easier maintenance
-- Better documentation
-- Clear Git history
+- High-quality documentation
+- Clear project history
+- Reduced technical debt
 
 ---
 
-# Development Timeline
+# 🏗️ Development Strategy
+
+Every feature follows the same engineering lifecycle.
+
+```text
+Requirements
+      │
+      ▼
+Domain Design
+      │
+      ▼
+Application Layer
+      │
+      ▼
+Validation
+      │
+      ▼
+Business Rules
+      │
+      ▼
+Persistence
+      │
+      ▼
+API
+      │
+      ▼
+Documentation
+      │
+      ▼
+Testing
+      │
+      ▼
+Release
+```
+
+This disciplined workflow ensures that every module is completed to the same quality standard.
+
+---
+
+# 🚀 Product Evolution
+
+FlowForge evolves through progressively richer business capabilities.
 
 ```text
 Foundation
-    │
-    ▼
+      │
+      ▼
 Authentication
-    │
-    ▼
+      │
+      ▼
 Organizations
-    │
-    ▼
+      │
+      ▼
 Projects
-    │
-    ▼
+      │
+      ▼
 Boards
-    │
-    ▼
+      │
+      ▼
 Columns
-    │
-    ▼
-Tasks
-    │
-    ▼
-Comments
-    │
-    ▼
-Attachments
-    │
-    ▼
-Dashboard
-    │
-    ▼
-Notifications
-    │
-    ▼
-Production Release (v1.0)
+      │
+      ▼
+Work Items
+      │
+      ▼
+Collaboration
+      │
+      ▼
+Reporting
+      │
+      ▼
+Administration
+      │
+      ▼
+Enterprise Platform
 ```
+
+Each stage builds directly upon the previous one while maintaining a clean and scalable architecture.
 
 ---
 
-# Version Milestones
+# 📈 Current Progress
 
-## v0.1.0 — Foundation
+The following modules have been successfully completed.
+
+| Module | Status |
+|---------|--------|
+| Authentication | ✅ Complete |
+| Organizations | ✅ Complete |
+| Projects | ✅ Complete |
+| Boards | ✅ Complete |
+| Columns | ✅ Complete |
+| Work Items | ✅ Complete |
+
+The current implementation provides a complete Kanban workflow foundation upon which future collaboration and productivity features will be built.
+
+---
+
+# 📦 Version Milestones
+
+## 🚀 v0.1.0 — Foundation
 
 **Status:** ✅ Completed
 
-### Objectives
+### Objective
 
-- Solution structure
-- Clean Architecture
-- Dependency Injection
-- Authentication
-- Organizations
-- Projects
+Establish the architectural foundation of FlowForge and implement the core platform capabilities.
+
+---
 
 ### Delivered
+
+#### Architecture
+
+- Clean Architecture
+- Vertical Slice Architecture
+- CQRS
+- Dependency Injection
+- MediatR
+- FluentValidation
+
+#### Security
 
 - JWT Authentication
 - ASP.NET Identity
-- Current User Service
-- Organization Isolation
+- Current User Context
+- Authorization
+
+#### Business Modules
+
+- Organizations
+- Projects
+
+#### Features
+
 - Project CRUD
-- Project Archive / Restore
+- Archive / Restore
 - Pagination
 - Searching
 - Sorting
-- Business Rules
 - Validation Pipeline
+- Business Rules
+
+This milestone established the standards that all future modules follow.
 
 ---
 
-## v0.2.0 — Boards
+## 📋 v0.2.0 — Boards
 
 **Status:** ✅ Completed
 
-### Objectives
+### Objective
 
-Introduce project boards while maintaining the same architectural principles established by the Project aggregate.
+Introduce board management while maintaining the architectural consistency established in the Foundation release.
+
+---
 
 ### Delivered
 
+#### Business Module
+
+- Boards
+
+#### Features
+
 - Create Board
 - Update Board
-- Get Board
-- Get Boards
+- View Board
+- View Boards
 - Archive Board
 - Restore Board
 - Pagination
 - Searching
 - Sorting
-- Board Business Rules
+
+#### Business Rules
+
+- Unique board names
+- Organization ownership validation
+- Archived project restrictions
+- Board archive rules
+
+This milestone completed the second level of the business hierarchy.
 
 ---
 
-## v0.3.0 — Columns
+## 📌 v0.3.0 — Columns
 
-**Status:** 🚧 Current Development
+**Status:** ✅ Completed
 
-### Planned Features
+### Objective
+
+Implement configurable workflow stages for boards.
+
+---
+
+### Delivered
+
+#### Business Module
+
+- Columns
+
+#### Features
 
 - Create Column
 - Update Column
+- View Columns
 - Archive Column
 - Restore Column
-- Column Ordering
-- Default Workflow Stages
-- Position Management
+- Sparse Ordering
+- Display Order Management
+- Drag-and-Drop Ready Positioning
+
+#### Business Rules
+
+- Unique column names
+- Archived board restrictions
+- Workflow ordering
+- DisplayOrder validation
+
+This milestone introduced flexible workflow management and prepared the platform for work tracking.
 
 ---
 
-## v0.4.0 — Tasks
+## ✅ v0.4.0 — Work Items
 
-**Status:** ⏳ Planned
+**Status:** ✅ Completed
 
-### Planned Features
+### Objective
 
-- Create Task
-- Update Task
-- Archive Task
-- Restore Task
-- Task Assignment
-- Due Dates
-- Labels
-- Priorities
-- Checklists
+Introduce the core work tracking system used to manage tasks and business activities.
+
+Unlike traditional task systems, FlowForge adopts the more flexible **Work Item** model to support future expansion into features such as bugs, stories, epics and other work types.
 
 ---
 
-## v0.5.0 — Collaboration
+### Delivered
+
+#### Business Module
+
+- Work Items
+
+#### Features
+
+- Create Work Item
+- Update Work Item
+- View Work Items
+- Archive Work Item
+- Restore Work Item
+- Status Management
+- Sparse Ordering
+- Drag-and-Drop Ready Ordering
+- Pagination
+- Searching
+- Sorting
+
+#### Business Rules
+
+- Archived column restrictions
+- DisplayOrder management
+- Domain-driven business validation
+- Workflow consistency
+
+This milestone completes the core Kanban workflow and establishes the functional foundation for collaboration features in future releases.
+
+---
+
+## 🤝 v0.5.0 — Collaboration
 
 **Status:** ⏳ Planned
 
-### Planned Features
+### Objective
+
+Transform FlowForge from a project management platform into a collaborative workspace by enabling communication directly around Work Items.
+
+---
+
+### Planned Business Modules
 
 - Comments
 - Attachments
-- Activity Timeline
 - Mentions
+- Activity Timeline
 - Notifications
 
 ---
 
-## v0.6.0 — Dashboard
-
-**Status:** ⏳ Planned
-
 ### Planned Features
 
-- Analytics Dashboard
-- Project Statistics
-- Board Statistics
-- Productivity Charts
-- User Activity
+#### Comments
+
+- Create Comments
+- Edit Comments
+- Delete Comments
+- Rich Text Support
+- Threaded Discussions
+
+#### Attachments
+
+- File Upload
+- Image Upload
+- Document Management
+- Download Support
+
+#### Activity Timeline
+
+- Work Item Created
+- Status Updated
+- Column Changed
+- User Assigned
+- Comment Added
+- Attachment Uploaded
+
+#### Notifications
+
+- Assignment Notifications
+- Mention Notifications
+- Due Date Alerts
+- Activity Notifications
+
+This milestone introduces real-time collaboration while preserving the modular architecture established by earlier releases.
 
 ---
 
-## v0.7.0 — Administration
+## ⚡ v0.6.0 — Productivity
 
 **Status:** ⏳ Planned
 
+### Objective
+
+Improve planning, organization and execution of work through advanced productivity tools.
+
+---
+
 ### Planned Features
+
+- Labels
+- Priorities
+- Due Dates
+- Checklists
+- Time Tracking
+- Sprint Planning
+- Sprint Backlog
+- Burndown Charts
+
+These capabilities will support Agile development workflows while remaining flexible enough for general project management.
+
+---
+
+## 📊 v0.7.0 — Analytics & Reporting
+
+**Status:** ⏳ Planned
+
+### Objective
+
+Provide meaningful insights into project health, team productivity and workflow efficiency.
+
+---
+
+### Planned Features
+
+#### Dashboard
+
+- Organization Summary
+- Project Overview
+- Board Overview
+- Work Item Statistics
+- Team Activity
+
+#### Reports
+
+- Project Reports
+- Workflow Reports
+- Productivity Reports
+- Team Performance Reports
+
+#### Analytics
+
+- Workload Distribution
+- Completion Trends
+- Workflow Bottlenecks
+- Productivity Metrics
+
+This milestone focuses on helping teams make informed decisions through actionable data.
+
+---
+
+## 👨‍💼 v0.8.0 — Administration
+
+**Status:** ⏳ Planned
+
+### Objective
+
+Provide enterprise-grade administration capabilities for organizations.
+
+---
+
+### Planned Features
+
+#### User Management
+
+- Invite Users
+- Remove Users
+- Deactivate Accounts
+- User Profiles
+
+#### Role Management
+
+- Administrator
+- Project Manager
+- Team Member
+- Read-Only Access
+
+#### Organization Management
+
+- Organization Settings
+- Branding
+- Default Preferences
+- Security Policies
+
+#### Audit Logs
+
+- User Activity
+- Permission Changes
+- Security Events
+- Administrative Actions
+
+This milestone strengthens governance, security and operational management.
+
+---
+
+## 🏢 v0.9.0 — Enterprise Enhancements
+
+**Status:** 🔮 Future
+
+### Objective
+
+Prepare FlowForge for enterprise-scale deployments and advanced business requirements.
+
+---
+
+### Planned Features
+
+- Advanced Search
+- Saved Filters
+- Custom Workflows
+- Automation Rules
+- Advanced Permissions
+- Public API
+- Third-Party Integrations
+- Performance Optimization
+- Cloud Storage Integration
+- Background Processing
+- Real-Time Updates
+
+These enhancements will improve scalability, flexibility and integration with external systems.
+
+---
+
+## 🎉 v1.0.0 — Production Release
+
+**Status:** 🎯 Target Release
+
+### Objective
+
+Deliver a complete, production-ready enterprise project management platform.
+
+---
+
+### Expected Platform Capabilities
+
+#### Core Platform
+
+- Authentication
+- Organizations
+- Projects
+- Boards
+- Columns
+- Work Items
+
+#### Collaboration
+
+- Comments
+- Attachments
+- Notifications
+- Activity Timeline
+
+#### Productivity
+
+- Labels
+- Priorities
+- Due Dates
+- Checklists
+- Sprint Planning
+
+#### Administration
 
 - User Management
-- Role Management
+- Roles
 - Organization Settings
 - Audit Logs
-- Configuration
+
+#### Analytics
+
+- Dashboard
+- Reports
+- Productivity Metrics
 
 ---
 
-## v1.0.0 — Production Release
+### Engineering Goals
 
-**Target Goal**
+- Stable Architecture
+- Comprehensive Documentation
+- High Test Coverage
+- Production Readiness
+- Secure APIs
+- Performance Optimization
+- Consistent Development Standards
 
-Deliver a complete, production-ready project management platform.
-
-### Expected Capabilities
-
-- Multi-tenant architecture
-- Secure authentication
-- Project management
-- Board management
-- Workflow management
-- Task tracking
-- Collaboration
-- Reporting
-- Notifications
-- Comprehensive documentation
-- Automated testing
+Version 1.0 represents the first fully featured enterprise release of FlowForge.
 
 ---
 
-# Engineering Milestones
+# 🛠️ Engineering Roadmap
 
-In addition to features, FlowForge evolves its engineering quality.
+Alongside business features, FlowForge continuously improves its engineering quality.
 
-| Area | Goal |
-|------|------|
-| Architecture | Complete Clean Architecture implementation |
-| Documentation | Comprehensive project documentation |
+| Area | Target |
+|------|--------|
+| Architecture | Mature Clean Architecture implementation |
+| Domain Model | Rich business model with explicit rules |
+| Documentation | Comprehensive technical documentation |
 | Testing | Unit and integration test coverage |
-| CI/CD | Automated build and deployment |
-| Security | Secure authentication and authorization |
-| Performance | Optimized database queries and API responses |
+| Security | Hardened authentication and authorization |
+| Performance | Optimized queries and API responses |
+| Developer Experience | Consistent project structure and tooling |
+| Maintainability | Modular, scalable codebase |
+
+Engineering improvements are treated as first-class roadmap items rather than secondary tasks.
 
 ---
 
-# Future Enhancements
+# 💻 Technology Roadmap
 
-Beyond v1.0, FlowForge may expand with:
+FlowForge evolves alongside the modern .NET ecosystem.
 
-## Productivity
+Future technical improvements may include:
 
-- Sprint Planning
-- Backlog Management
-- Time Tracking
-- Workload Balancing
+- SignalR for real-time collaboration
+- Background processing
+- Distributed caching
+- Cloud file storage
+- Containerization
+- CI/CD automation
+- Cloud deployment
+- Monitoring and observability
+- Performance profiling
 
-## Integrations
-
-- GitHub
-- Azure DevOps
-- Slack
-- Microsoft Teams
-- Google Calendar
-
-## Artificial Intelligence
-
-Potential AI-powered capabilities include:
-
-- Smart task prioritization
-- Automatic summaries
-- Productivity insights
-- Risk detection
-- Workload recommendations
+Technology adoption is driven by project requirements rather than trends.
 
 ---
 
-# Versioning Strategy
+# 🔖 Semantic Versioning
 
-FlowForge follows Semantic Versioning (SemVer).
+FlowForge follows **Semantic Versioning (SemVer)**.
 
 ```text
 MAJOR.MINOR.PATCH
@@ -281,48 +644,98 @@ Example:
 
 ```text
 v1.2.3
-│ │ └── Bug fixes
-│ └──── New features
-└────── Breaking changes
+│ │ └── Bug Fixes
+│ └──── New Features
+└────── Breaking Changes
 ```
+
+### Versioning Principles
+
+- **MAJOR** — Breaking changes or significant architectural evolution.
+- **MINOR** — New features added without breaking existing functionality.
+- **PATCH** — Bug fixes, optimizations and minor improvements.
 
 ---
 
-# Release Workflow
+# 🚀 Release Workflow
 
-Each release follows the same process:
+Every release follows the same structured engineering process.
 
 ```text
-Design
-   │
-   ▼
+Requirements
+      │
+      ▼
+Architecture
+      │
+      ▼
 Implementation
-   │
-   ▼
+      │
+      ▼
 Validation
-   │
-   ▼
+      │
+      ▼
+Business Rules
+      │
+      ▼
 Testing
-   │
-   ▼
+      │
+      ▼
 Documentation
-   │
-   ▼
-Git Commit
-   │
-   ▼
+      │
+      ▼
+Code Review
+      │
+      ▼
 Version Tag
-   │
-   ▼
+      │
+      ▼
 Release
 ```
 
+This workflow ensures consistency, traceability and production-ready quality for every milestone.
+
 ---
 
-# Summary
+# 🌍 Long-Term Vision
 
-The FlowForge roadmap is designed to ensure steady, maintainable progress.
+FlowForge is designed to become more than a Kanban application.
 
-Rather than maximizing feature count, the focus is on delivering complete, well-designed modules supported by consistent architecture, documentation, and engineering standards.
+Its long-term vision is to evolve into a comprehensive enterprise collaboration platform capable of supporting:
 
-Every milestone represents a stable step toward a production-quality enterprise application.
+- Agile Teams
+- Software Development
+- Product Management
+- Business Operations
+- Cross-Functional Collaboration
+
+Future innovations may include intelligent automation, AI-assisted productivity, advanced integrations and enterprise-scale deployment capabilities while maintaining the architectural principles established from the beginning.
+
+---
+
+# 📖 Summary
+
+The FlowForge roadmap represents a commitment to deliberate, sustainable software development.
+
+Each milestone delivers a complete business capability while preserving architectural consistency, engineering quality and maintainability.
+
+Rather than maximizing the number of features delivered, the roadmap prioritizes:
+
+- Stable architecture
+- Incremental progress
+- Clear documentation
+- Predictable releases
+- Long-term scalability
+
+Every completed milestone strengthens the platform and prepares it for the next stage of its evolution toward a production-ready enterprise application.
+
+---
+
+<div align="center">
+
+# 🗺️ FlowForge Roadmap
+
+### Building Tomorrow's Platform Through Today's Milestones
+
+*"A roadmap is more than a list of features—it is a commitment to deliberate progress, architectural discipline and continuous improvement."*
+
+</div>
