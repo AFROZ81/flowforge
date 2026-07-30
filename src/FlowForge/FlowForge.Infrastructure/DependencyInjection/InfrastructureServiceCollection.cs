@@ -16,6 +16,9 @@ using FlowForge.Application.Services.WorkItems;
 using FlowForge.Infrastructure.Services.WorkItems;
 using FlowForge.Application.Features.WorkItems;
 using FlowForge.Application.Features.Comments;
+using FlowForge.Application.Services.Attachments;
+using FlowForge.Infrastructure.Services.Attachments;
+using FlowForge.Application.Features.Attachments;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -50,7 +53,11 @@ public static class InfrastructureServiceCollection
 
         services.AddScoped<CommentRules>();
 
+        services.AddScoped<AttachmentRules>();
+
         services.AddScoped<IWorkItemOrderingService, WorkItemOrderingService>();
+
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {

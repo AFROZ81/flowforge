@@ -17,5 +17,7 @@ public interface IApplicationDbContext
 
     DbSet<Comment> Comments { get; }
 
+    DbSet<Attachment> Attachments { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
