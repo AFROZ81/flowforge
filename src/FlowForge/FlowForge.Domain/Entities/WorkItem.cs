@@ -23,6 +23,10 @@ public sealed class WorkItem : EntityBase
 
     public Column Column { get; private set; } = default!;
 
+    private readonly List<Comment> _comments = new();
+
+    public IReadOnlyCollection<Comment> Comments => _comments.AsReadOnly();
+
     private WorkItem()
     {
     }

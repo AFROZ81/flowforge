@@ -15,5 +15,7 @@ public interface IApplicationDbContext
 
     DbSet<WorkItem> WorkItems { get; }
 
+    DbSet<Comment> Comments { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

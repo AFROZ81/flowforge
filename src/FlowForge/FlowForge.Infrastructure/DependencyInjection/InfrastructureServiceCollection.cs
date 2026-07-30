@@ -15,6 +15,7 @@ using FlowForge.Application.Features.Columns;
 using FlowForge.Application.Services.WorkItems;
 using FlowForge.Infrastructure.Services.WorkItems;
 using FlowForge.Application.Features.WorkItems;
+using FlowForge.Application.Features.Comments;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -46,6 +47,8 @@ public static class InfrastructureServiceCollection
         services.AddScoped<ColumnRules>();
 
         services.AddScoped<WorkItemRules>();
+
+        services.AddScoped<CommentRules>();
 
         services.AddScoped<IWorkItemOrderingService, WorkItemOrderingService>();
 
