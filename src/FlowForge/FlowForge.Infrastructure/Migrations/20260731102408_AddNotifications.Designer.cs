@@ -4,6 +4,7 @@ using FlowForge.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FlowForge.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260731102408_AddNotifications")]
+    partial class AddNotifications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -462,9 +465,6 @@ namespace FlowForge.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AssigneeId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid>("ColumnId")
                         .HasColumnType("uniqueidentifier");
 
@@ -513,8 +513,6 @@ namespace FlowForge.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AssigneeId");
 
                     b.HasIndex("ColumnId", "DisplayOrder");
 
@@ -861,11 +859,6 @@ namespace FlowForge.Infrastructure.Migrations
 
             modelBuilder.Entity("FlowForge.Domain.Entities.WorkItem", b =>
                 {
-                    b.HasOne("FlowForge.Infrastructure.Identity.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("AssigneeId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("FlowForge.Domain.Entities.Column", "Column")
                         .WithMany("WorkItems")
                         .HasForeignKey("ColumnId")

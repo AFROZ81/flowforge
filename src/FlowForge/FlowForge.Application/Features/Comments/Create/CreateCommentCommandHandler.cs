@@ -1,6 +1,9 @@
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
+using FlowForge.Application.Services.Notifications;
+using FlowForge.Domain.Enums;
+
 using FlowForge.Domain.Entities;
 using MediatR;
 
@@ -11,11 +14,14 @@ public sealed class CreateCommentCommandHandler : IRequestHandler<CreateCommentC
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
     private readonly CommentRules _commentRules;
+    private readonly INotificationService _notificationService;
 
-    public CreateCommentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, CommentRules commentRules)
+    public CreateCommentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, CommentRules commentRules, INotificationService notificationService)
     {
         _context = context;
         _currentUser = currentUser;
+        _commentRules = commentRules;
+        _notificationService = notificationService;
         _commentRules = commentRules;
     }
 
@@ -30,6 +36,11 @@ public sealed class CreateCommentCommandHandler : IRequestHandler<CreateCommentC
         var comment = new Comment(request.WorkItemId, currentUser.UserId, request.Content);
 
         _context.Comments.Add(comment);
+
+        if (workItem.AssigneeId.HasValue && workItem.AssigneeId.Value != currentUser.UserId)
+        {
+            await _notificationService.CreateAsync(currentUser.OrganizationId, workItem.AssigneeId.Value, NotificationType.CommentAdded, "New comment", $"A new comment was added to \"{workItem.Title}\".", workItem.Id, cancellationToken);
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
 

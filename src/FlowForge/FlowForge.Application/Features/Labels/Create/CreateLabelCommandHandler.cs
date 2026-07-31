@@ -12,7 +12,7 @@ public sealed class CreateLabelCommandHandler : IRequestHandler<CreateLabelComma
     private readonly ICurrentUserService _currentUser;
     private readonly LabelRules _labelRules;
 
-    public CreateLabelCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, LabelRules labelRules) 
+    public CreateLabelCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, LabelRules labelRules)
     {
         _context = context;
         _currentUser = currentUser;

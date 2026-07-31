@@ -3,6 +3,8 @@ using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Attachments;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
+using FlowForge.Application.Services.Notifications;
+using FlowForge.Domain.Enums;
 using MediatR;
 
 namespace FlowForge.Application.Features.Attachments.Upload;
@@ -13,13 +15,15 @@ public sealed class UploadAttachmentCommandHandler : IRequestHandler<UploadAttac
     private readonly ICurrentUserService _currentUser;
     private readonly AttachmentRules _attachmentRules;
     private readonly IFileStorageService _fileStorage;
+    private readonly INotificationService _notificationService;
 
-    public UploadAttachmentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, AttachmentRules attachmentRules, IFileStorageService fileStorage)
+    public UploadAttachmentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, AttachmentRules attachmentRules, IFileStorageService fileStorage, INotificationService notificationService)
     {
         _context = context;
         _currentUser = currentUser;
         _attachmentRules = attachmentRules;
         _fileStorage = fileStorage;
+        _notificationService = notificationService;
     }
 
     public async Task<ApiResponse<UploadAttachmentResponse>> Handle(UploadAttachmentCommand request, CancellationToken cancellationToken)
@@ -45,6 +49,18 @@ public sealed class UploadAttachmentCommandHandler : IRequestHandler<UploadAttac
             var attachment = new Attachment(request.WorkItemId, currentUser.UserId, request.FileName, storedFile.StoredFileName, request.ContentType, request.FileSize, storedFile.StoragePath);
 
             _context.Attachments.Add(attachment);
+
+            if (workItem.AssigneeId.HasValue && workItem.AssigneeId.Value != currentUser.UserId)
+            {
+                await _notificationService.CreateAsync(
+                    currentUser.OrganizationId,
+                    workItem.AssigneeId.Value,
+                    NotificationType.AttachmentAdded,
+                    "New attachment",
+                    $"A new attachment was added to \"{workItem.Title}\".",
+                    workItem.Id,
+                    cancellationToken);
+            }
 
             await _context.SaveChangesAsync(cancellationToken);
 

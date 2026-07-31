@@ -19,6 +19,8 @@ public sealed class WorkItem : EntityBase
 
     public DateTime? DueDate { get; private set; }
 
+    public Guid? AssigneeId { get; private set; }
+
     public bool IsArchived { get; private set; }
 
     public Column Column { get; private set; } = default!;
@@ -29,11 +31,15 @@ public sealed class WorkItem : EntityBase
 
     private readonly List<WorkItemLabel> _workItemLabels = new();
 
+    private readonly List<Notification> _notifications = new();
+
     public IReadOnlyCollection<Comment> Comments => _comments.AsReadOnly();
 
     public IReadOnlyCollection<Attachment> Attachments => _attachments.AsReadOnly();
 
     public IReadOnlyCollection<WorkItemLabel> WorkItemLabels => _workItemLabels.AsReadOnly();
+
+    public IReadOnlyCollection<Notification> Notifications => _notifications.AsReadOnly();
 
     private WorkItem()
     {
@@ -111,5 +117,15 @@ public sealed class WorkItem : EntityBase
         {
             IsArchived = false;
         }
+    }
+
+    public void AssignTo(Guid userId)
+    {
+        AssigneeId = userId;
+    }
+
+    public void Unassign()
+    {
+        AssigneeId = null;
     }
 }

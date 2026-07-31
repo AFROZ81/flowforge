@@ -23,5 +23,7 @@ public interface IApplicationDbContext
 
     DbSet<WorkItemLabel> WorkItemLabels { get; }
 
+    DbSet<Notification> Notifications { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

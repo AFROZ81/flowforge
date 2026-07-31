@@ -17,4 +17,6 @@ public sealed class Organization : EntityBase
     public ICollection<Project> Projects { get; private set; } = new List<Project>();
 
     public ICollection<Label> Labels { get; private set; } = new List<Label>();
+
+    public ICollection<Notification> Notifications { get; private set; } = new List<Notification>();
 }

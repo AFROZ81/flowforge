@@ -1,4 +1,5 @@
 using FlowForge.Domain.Entities;
+using FlowForge.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -30,6 +31,9 @@ public sealed class WorkItemConfiguration : IEntityTypeConfiguration<WorkItem>
 
         builder.Property(x => x.DueDate);
 
+        builder.Property(x => x.AssigneeId)
+            .IsRequired(false);
+
         builder.Property(x => x.IsArchived)
             .HasDefaultValue(false);
 
@@ -37,6 +41,13 @@ public sealed class WorkItemConfiguration : IEntityTypeConfiguration<WorkItem>
             .WithMany(c => c.WorkItems)
             .HasForeignKey(x => x.ColumnId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(x => x.AssigneeId)
+            .OnDelete(DeleteBehavior.Restrict);    
+
+        builder.HasIndex(x => x.AssigneeId);
 
         builder.HasIndex(x => new
         {

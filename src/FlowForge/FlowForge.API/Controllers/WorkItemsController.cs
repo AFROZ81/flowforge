@@ -10,6 +10,9 @@ using FlowForge.Application.Features.WorkItems.GetWorkItems;
 using FlowForge.Application.Features.WorkItems.Move;
 using FlowForge.Application.Features.WorkItems.Rename;
 using FlowForge.Application.Features.WorkItems.Restore;
+using FlowForge.Application.Features.WorkItems.Assign;
+using FlowForge.Application.Features.WorkItems.Unassign;
+
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -180,4 +183,32 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     #endregion
+
+    
+    [HttpPatch("{workItemId:guid}/assign/{userId:guid}")]
+    public async Task<IActionResult> Assign(Guid workItemId, Guid userId, CancellationToken cancellationToken)
+    {
+        var response = await _mediator.Send(
+            new AssignWorkItemCommand
+            {
+                WorkItemId = workItemId,
+                AssigneeId = userId
+            },
+            cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpPatch("{workItemId:guid}/unassign")]
+    public async Task<IActionResult> Unassign(Guid workItemId, CancellationToken cancellationToken)
+    {
+        var response = await _mediator.Send(
+            new UnassignWorkItemCommand
+            {
+                WorkItemId = workItemId
+            },
+            cancellationToken);
+
+        return Ok(response);
+    }
 }

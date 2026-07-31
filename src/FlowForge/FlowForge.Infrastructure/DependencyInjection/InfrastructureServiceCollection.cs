@@ -20,6 +20,11 @@ using FlowForge.Application.Services.Attachments;
 using FlowForge.Infrastructure.Services.Attachments;
 using FlowForge.Application.Features.Attachments;
 using FlowForge.Application.Features.Labels;
+using FlowForge.Application.Services.Notifications;
+using FlowForge.Infrastructure.Services.Notifications;
+using FlowForge.Application.Features.Notifications;
+using FlowForge.Application.Services.Users;
+using FlowForge.Infrastructure.Services.Users;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -58,9 +63,15 @@ public static class InfrastructureServiceCollection
 
         services.AddScoped<LabelRules>();
 
+        services.AddScoped<NotificationRules>();
+
         services.AddScoped<IWorkItemOrderingService, WorkItemOrderingService>();
 
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
+        services.AddScoped<INotificationService, NotificationService>();
+
+        services.AddScoped<IUserService, UserService>();
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {

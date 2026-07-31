@@ -3,6 +3,8 @@ using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
 using FlowForge.Application.Common.Exceptions;
+using FlowForge.Application.Services.Notifications;
+using FlowForge.Domain.Enums;
 using MediatR;
 
 namespace FlowForge.Application.Features.Labels.Assign;
@@ -12,11 +14,14 @@ public sealed class AssignLabelCommandHandler : IRequestHandler<AssignLabelComma
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
     private readonly LabelRules _labelRules;
+    private readonly INotificationService _notificationService;
 
-    public AssignLabelCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, LabelRules labelRules)
+    public AssignLabelCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, LabelRules labelRules, INotificationService notificationService)
     {
         _context = context;
         _currentUser = currentUser;
+        _labelRules = labelRules;
+        _notificationService = notificationService;
         _labelRules = labelRules;
     }
 
@@ -44,6 +49,18 @@ public sealed class AssignLabelCommandHandler : IRequestHandler<AssignLabelComma
             workItemLabel = new WorkItemLabel(workItem.Id, label.Id);
 
             _context.WorkItemLabels.Add(workItemLabel);
+        }
+
+        if (workItem.AssigneeId.HasValue && workItem.AssigneeId.Value != currentUser.UserId)
+        {
+            await _notificationService.CreateAsync(
+                currentUser.OrganizationId,
+                workItem.AssigneeId.Value,
+                NotificationType.LabelAssigned,
+                "Label assigned",
+                $"The label \"{label.Name}\" was added to \"{workItem.Title}\".",
+                workItem.Id,
+                cancellationToken);
         }
 
         await _context.SaveChangesAsync(cancellationToken);
