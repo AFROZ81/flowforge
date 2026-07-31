@@ -19,5 +19,9 @@ public interface IApplicationDbContext
 
     DbSet<Attachment> Attachments { get; }
 
+    DbSet<Label> Labels { get; }
+
+    DbSet<WorkItemLabel> WorkItemLabels { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

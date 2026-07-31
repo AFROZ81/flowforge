@@ -27,9 +27,13 @@ public sealed class WorkItem : EntityBase
 
     private readonly List<Attachment> _attachments = new();
 
+    private readonly List<WorkItemLabel> _workItemLabels = new();
+
     public IReadOnlyCollection<Comment> Comments => _comments.AsReadOnly();
 
     public IReadOnlyCollection<Attachment> Attachments => _attachments.AsReadOnly();
+
+    public IReadOnlyCollection<WorkItemLabel> WorkItemLabels => _workItemLabels.AsReadOnly();
 
     private WorkItem()
     {

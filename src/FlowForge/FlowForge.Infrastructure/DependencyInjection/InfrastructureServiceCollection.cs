@@ -19,6 +19,7 @@ using FlowForge.Application.Features.Comments;
 using FlowForge.Application.Services.Attachments;
 using FlowForge.Infrastructure.Services.Attachments;
 using FlowForge.Application.Features.Attachments;
+using FlowForge.Application.Features.Labels;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -54,6 +55,8 @@ public static class InfrastructureServiceCollection
         services.AddScoped<CommentRules>();
 
         services.AddScoped<AttachmentRules>();
+
+        services.AddScoped<LabelRules>();
 
         services.AddScoped<IWorkItemOrderingService, WorkItemOrderingService>();
 

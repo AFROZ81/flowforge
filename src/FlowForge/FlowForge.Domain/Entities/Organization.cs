@@ -15,4 +15,6 @@ public sealed class Organization : EntityBase
     public bool IsActive { get; set; } = true;
 
     public ICollection<Project> Projects { get; private set; } = new List<Project>();
+
+    public ICollection<Label> Labels { get; private set; } = new List<Label>();
 }

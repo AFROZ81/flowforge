@@ -38,6 +38,10 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
 
     public DbSet<Attachment> Attachments => Set<Attachment>();
 
+    public DbSet<Label> Labels => Set<Label>();
+
+    public DbSet<WorkItemLabel> WorkItemLabels => Set<WorkItemLabel>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
