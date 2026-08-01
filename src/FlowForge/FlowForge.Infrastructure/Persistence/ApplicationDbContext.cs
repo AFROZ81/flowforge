@@ -46,6 +46,8 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
 
     public DbSet<ChecklistItem> ChecklistItems => Set<ChecklistItem>();
 
+    public DbSet<WorkItemWatcher> WorkItemWatchers => Set<WorkItemWatcher>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

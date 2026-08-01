@@ -27,5 +27,7 @@ public interface IApplicationDbContext
 
     DbSet<ChecklistItem> ChecklistItems { get; }
 
+    DbSet<WorkItemWatcher> WorkItemWatchers { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

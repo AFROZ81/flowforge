@@ -43,4 +43,20 @@ public sealed class UserService : IUserService
             })
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<Dictionary<Guid, UserInfo>> GetDictionaryAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken = default)
+    {
+        return await _userManager.Users
+            .Where(x => userIds.Contains(x.Id))
+            .Select(x => new UserInfo
+            {
+                Id = x.Id,
+                OrganizationId = x.OrganizationId,
+                FullName = x.FullName,
+                Email = x.Email ?? string.Empty
+            })
+            .ToDictionaryAsync(
+                x => x.Id,
+                cancellationToken);
+    }
 }
