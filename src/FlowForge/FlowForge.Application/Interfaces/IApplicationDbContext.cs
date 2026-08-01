@@ -25,5 +25,7 @@ public interface IApplicationDbContext
 
     DbSet<Notification> Notifications { get; }
 
+    DbSet<ChecklistItem> ChecklistItems { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

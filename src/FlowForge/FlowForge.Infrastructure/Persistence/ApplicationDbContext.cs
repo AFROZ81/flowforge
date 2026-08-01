@@ -44,6 +44,8 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
 
     public DbSet<Notification> Notifications => Set<Notification>();
 
+    public DbSet<ChecklistItem> ChecklistItems => Set<ChecklistItem>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

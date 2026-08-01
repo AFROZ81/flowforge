@@ -25,6 +25,7 @@ using FlowForge.Infrastructure.Services.Notifications;
 using FlowForge.Application.Features.Notifications;
 using FlowForge.Application.Services.Users;
 using FlowForge.Infrastructure.Services.Users;
+using FlowForge.Application.Features.Checklists;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -72,6 +73,8 @@ public static class InfrastructureServiceCollection
         services.AddScoped<INotificationService, NotificationService>();
 
         services.AddScoped<IUserService, UserService>();
+
+        services.AddScoped<ChecklistRules>();
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {

@@ -41,6 +41,8 @@ public sealed class WorkItem : EntityBase
 
     public IReadOnlyCollection<Notification> Notifications => _notifications.AsReadOnly();
 
+    public ICollection<ChecklistItem> ChecklistItems { get; private set; } = new List<ChecklistItem>();
+
     private WorkItem()
     {
     }
