@@ -48,6 +48,8 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
 
     public DbSet<WorkItemWatcher> WorkItemWatchers => Set<WorkItemWatcher>();
 
+    public DbSet<WorkItemHistory> WorkItemHistories => Set<WorkItemHistory>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

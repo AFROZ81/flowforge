@@ -1,6 +1,9 @@
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
+using FlowForge.Application.Services.WorkItemHistories;
+using FlowForge.Domain.Enums;
+
 using MediatR;
 
 namespace FlowForge.Application.Features.Labels.Remove;
@@ -10,12 +13,14 @@ public sealed class RemoveLabelCommandHandler : IRequestHandler<RemoveLabelComma
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
     private readonly LabelRules _labelRules;
+    private readonly IWorkItemHistoryService _historyService;
 
-    public RemoveLabelCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, LabelRules labelRules)
+    public RemoveLabelCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, LabelRules labelRules, IWorkItemHistoryService historyService)
     {
         _context = context;
         _currentUser = currentUser;
         _labelRules = labelRules;
+        _historyService = historyService;
     }
 
     public async Task<ApiResponse<RemoveLabelResponse>> Handle(RemoveLabelCommand request, CancellationToken cancellationToken)
@@ -33,6 +38,13 @@ public sealed class RemoveLabelCommandHandler : IRequestHandler<RemoveLabelComma
         assignment.Remove();
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _historyService.CreateAsync(
+            workItem.Id,
+            currentUser.UserId,
+            WorkItemHistoryAction.LabelRemoved,
+            $"{currentUser.FullName} removed label \"{label.Name}\".",
+            cancellationToken);
 
         return ApiResponse<RemoveLabelResponse>.SuccessResponse(
             new RemoveLabelResponse

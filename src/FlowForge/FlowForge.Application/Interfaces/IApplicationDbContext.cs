@@ -29,5 +29,7 @@ public interface IApplicationDbContext
 
     DbSet<WorkItemWatcher> WorkItemWatchers { get; }
 
+    DbSet<WorkItemHistory> WorkItemHistories { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

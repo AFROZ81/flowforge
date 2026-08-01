@@ -27,6 +27,9 @@ using FlowForge.Application.Services.Users;
 using FlowForge.Infrastructure.Services.Users;
 using FlowForge.Application.Features.Checklists;
 using FlowForge.Application.Features.WorkItemWatchers;
+using FlowForge.Application.Features.WorkItemHistories;
+using FlowForge.Application.Services.WorkItemHistories;
+using FlowForge.Infrastructure.Services.WorkItemHistories;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -78,6 +81,10 @@ public static class InfrastructureServiceCollection
         services.AddScoped<ChecklistRules>();
 
         services.AddScoped<WorkItemWatcherRules>();
+
+        services.AddScoped<WorkItemHistoryRules>();
+
+        services.AddScoped<IWorkItemHistoryService, WorkItemHistoryService>();
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {

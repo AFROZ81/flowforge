@@ -3,6 +3,8 @@ using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
 using FlowForge.Application.Services.WorkItems;
+using FlowForge.Application.Services.WorkItemHistories;
+using FlowForge.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,13 +16,15 @@ public sealed class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkIte
     private readonly ICurrentUserService _currentUser;
     private readonly WorkItemRules _workItemRules;
     private readonly IWorkItemOrderingService _orderingService;
+    private readonly IWorkItemHistoryService _historyService;
 
-    public CreateWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, WorkItemRules workItemRules, IWorkItemOrderingService orderingService)
+    public CreateWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, WorkItemRules workItemRules, IWorkItemOrderingService orderingService, IWorkItemHistoryService historyService)
     {
         _context = context;
         _currentUser = currentUser;
         _workItemRules = workItemRules;
         _orderingService = orderingService;
+        _historyService = historyService;
     }
 
     public async Task<ApiResponse<CreateWorkItemResponse>> Handle(CreateWorkItemCommand request, CancellationToken cancellationToken)
@@ -38,6 +42,15 @@ public sealed class CreateWorkItemCommandHandler : IRequestHandler<CreateWorkIte
         _context.WorkItems.Add(workItem);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        var currentUser = _currentUser.User;
+
+        await _historyService.CreateAsync(
+            workItem.Id,
+            currentUser.UserId,
+            WorkItemHistoryAction.Created,
+            $"{currentUser.FullName} created the Work Item.",
+            cancellationToken);
 
         return ApiResponse<CreateWorkItemResponse>.SuccessResponse(
             new CreateWorkItemResponse

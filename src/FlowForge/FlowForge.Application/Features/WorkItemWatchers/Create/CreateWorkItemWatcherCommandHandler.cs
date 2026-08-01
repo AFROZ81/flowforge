@@ -4,6 +4,9 @@ using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Services.Users;
 using FlowForge.Domain.Entities;
+using FlowForge.Application.Services.WorkItemHistories;
+using FlowForge.Domain.Enums;
+
 using MediatR;
 
 namespace FlowForge.Application.Features.WorkItemWatchers.Create;
@@ -14,13 +17,15 @@ public sealed class CreateWorkItemWatcherCommandHandler : IRequestHandler<Create
     private readonly ICurrentUserService _currentUser;
     private readonly IUserService _userService;
     private readonly WorkItemWatcherRules _rules;
+    private readonly IWorkItemHistoryService _historyService;
 
-    public CreateWorkItemWatcherCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, IUserService userService, WorkItemWatcherRules rules)
+    public CreateWorkItemWatcherCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, IUserService userService, WorkItemWatcherRules rules, IWorkItemHistoryService historyService)
     {
         _context = context;
         _currentUser = currentUser;
         _userService = userService;
         _rules = rules;
+        _historyService = historyService;
     }
 
     public async Task<ApiResponse<CreateWorkItemWatcherResponse>> Handle(CreateWorkItemWatcherCommand request, CancellationToken cancellationToken)
@@ -53,6 +58,13 @@ public sealed class CreateWorkItemWatcherCommandHandler : IRequestHandler<Create
         _context.WorkItemWatchers.Add(watcher);
 
         await _rules.SaveChangesAsync(cancellationToken);
+
+        await _historyService.CreateAsync(
+            workItem.Id,
+            currentUser.UserId,
+            WorkItemHistoryAction.WatcherAdded,
+            $"{currentUser.FullName} added {user.FullName} as a watcher.",
+            cancellationToken);
 
         return ApiResponse<CreateWorkItemWatcherResponse>
             .SuccessResponse(

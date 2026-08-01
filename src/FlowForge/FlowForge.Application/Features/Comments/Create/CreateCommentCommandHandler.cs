@@ -2,6 +2,7 @@ using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Services.Notifications;
+using FlowForge.Application.Services.WorkItemHistories;
 using FlowForge.Domain.Enums;
 
 using FlowForge.Domain.Entities;
@@ -15,13 +16,15 @@ public sealed class CreateCommentCommandHandler : IRequestHandler<CreateCommentC
     private readonly ICurrentUserService _currentUser;
     private readonly CommentRules _commentRules;
     private readonly INotificationService _notificationService;
+    private readonly IWorkItemHistoryService _historyService;
 
-    public CreateCommentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, CommentRules commentRules, INotificationService notificationService)
+    public CreateCommentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, CommentRules commentRules, INotificationService notificationService, IWorkItemHistoryService historyService)
     {
         _context = context;
         _currentUser = currentUser;
         _commentRules = commentRules;
         _notificationService = notificationService;
+        _historyService = historyService;
         _commentRules = commentRules;
     }
 
@@ -44,6 +47,13 @@ public sealed class CreateCommentCommandHandler : IRequestHandler<CreateCommentC
 
         await _context.SaveChangesAsync(cancellationToken);
 
+        await _historyService.CreateAsync(
+            workItem.Id,
+            currentUser.UserId,
+            WorkItemHistoryAction.CommentAdded,
+            $"{currentUser.FullName} added a comment.",
+            cancellationToken);
+            
         return ApiResponse<CreateCommentResponse>.SuccessResponse(
             new CreateCommentResponse
             {

@@ -4,6 +4,7 @@ using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
 using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Services.Notifications;
+using FlowForge.Application.Services.WorkItemHistories;
 using FlowForge.Domain.Enums;
 using MediatR;
 
@@ -15,13 +16,15 @@ public sealed class AssignLabelCommandHandler : IRequestHandler<AssignLabelComma
     private readonly ICurrentUserService _currentUser;
     private readonly LabelRules _labelRules;
     private readonly INotificationService _notificationService;
+    private readonly IWorkItemHistoryService _historyService;
 
-    public AssignLabelCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, LabelRules labelRules, INotificationService notificationService)
+    public AssignLabelCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, LabelRules labelRules, INotificationService notificationService, IWorkItemHistoryService historyService)
     {
         _context = context;
         _currentUser = currentUser;
         _labelRules = labelRules;
         _notificationService = notificationService;
+        _historyService = historyService;
         _labelRules = labelRules;
     }
 
@@ -64,6 +67,13 @@ public sealed class AssignLabelCommandHandler : IRequestHandler<AssignLabelComma
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _historyService.CreateAsync(
+            workItem.Id,
+            currentUser.UserId,
+            WorkItemHistoryAction.LabelAdded,
+            $"{currentUser.FullName} added label \"{label.Name}\".",
+            cancellationToken);
 
         return ApiResponse<AssignLabelResponse>.SuccessResponse(
             new AssignLabelResponse

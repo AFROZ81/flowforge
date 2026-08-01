@@ -5,6 +5,7 @@ using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Services.Notifications;
 using FlowForge.Application.Services.Users;
 using FlowForge.Domain.Enums;
+using FlowForge.Application.Services.WorkItemHistories;
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -17,13 +18,15 @@ public sealed class AssignWorkItemCommandHandler : IRequestHandler<AssignWorkIte
     private readonly ICurrentUserService _currentUser;
     private readonly IUserService _userService;
     private readonly INotificationService _notificationService;
+    private readonly IWorkItemHistoryService _historyService;
 
-    public AssignWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, IUserService userService, INotificationService notificationService)
+    public AssignWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, IUserService userService, INotificationService notificationService, IWorkItemHistoryService historyService)
     {
         _context = context;
         _currentUser = currentUser;
         _userService = userService;
         _notificationService = notificationService;
+        _historyService = historyService;
     }
 
     public async Task<ApiResponse<AssignWorkItemResponse>> Handle(AssignWorkItemCommand request, CancellationToken cancellationToken)
@@ -67,6 +70,13 @@ public sealed class AssignWorkItemCommandHandler : IRequestHandler<AssignWorkIte
         await _notificationService.CreateAsync(currentUser.OrganizationId, assignee.Id, NotificationType.WorkItemAssigned, "Work Item assigned", $"You have been assigned to \"{workItem.Title}\".", workItem.Id, cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _historyService.CreateAsync(
+            workItem.Id,
+            currentUser.UserId,
+            WorkItemHistoryAction.Assigned,
+            $"{currentUser.FullName} assigned the Work Item to {assignee.FullName}.",
+            cancellationToken);
 
         return ApiResponse<AssignWorkItemResponse>
             .SuccessResponse(

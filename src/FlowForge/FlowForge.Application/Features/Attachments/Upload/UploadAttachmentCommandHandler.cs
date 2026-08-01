@@ -4,6 +4,7 @@ using FlowForge.Application.Services.Attachments;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
 using FlowForge.Application.Services.Notifications;
+using FlowForge.Application.Services.WorkItemHistories;
 using FlowForge.Domain.Enums;
 using MediatR;
 
@@ -16,14 +17,16 @@ public sealed class UploadAttachmentCommandHandler : IRequestHandler<UploadAttac
     private readonly AttachmentRules _attachmentRules;
     private readonly IFileStorageService _fileStorage;
     private readonly INotificationService _notificationService;
+    private readonly IWorkItemHistoryService _historyService;
 
-    public UploadAttachmentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, AttachmentRules attachmentRules, IFileStorageService fileStorage, INotificationService notificationService)
+    public UploadAttachmentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, AttachmentRules attachmentRules, IFileStorageService fileStorage, INotificationService notificationService, IWorkItemHistoryService historyService)
     {
         _context = context;
         _currentUser = currentUser;
         _attachmentRules = attachmentRules;
         _fileStorage = fileStorage;
         _notificationService = notificationService;
+        _historyService = historyService;
     }
 
     public async Task<ApiResponse<UploadAttachmentResponse>> Handle(UploadAttachmentCommand request, CancellationToken cancellationToken)
@@ -63,6 +66,13 @@ public sealed class UploadAttachmentCommandHandler : IRequestHandler<UploadAttac
             }
 
             await _context.SaveChangesAsync(cancellationToken);
+
+            await _historyService.CreateAsync(
+                workItem.Id,
+                currentUser.UserId,
+                WorkItemHistoryAction.AttachmentAdded,
+                $"{currentUser.FullName} uploaded \"{attachment.FileName}\".",
+                cancellationToken);
 
             return ApiResponse<UploadAttachmentResponse>.SuccessResponse(
                 new UploadAttachmentResponse

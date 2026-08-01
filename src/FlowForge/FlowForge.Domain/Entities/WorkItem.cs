@@ -45,6 +45,8 @@ public sealed class WorkItem : EntityBase
 
     public ICollection<ChecklistItem> ChecklistItems { get; private set; } = new List<ChecklistItem>();
 
+    public ICollection<WorkItemHistory> Histories { get; private set; } = new List<WorkItemHistory>();
+
     private WorkItem()
     {
     }
