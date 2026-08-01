@@ -1,6 +1,7 @@
 using FlowForge.Application.Services.Users;
 using FlowForge.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace FlowForge.Infrastructure.Services.Users;
 
@@ -27,5 +28,19 @@ public sealed class UserService : IUserService
             FullName = user.FullName,
             Email = user.Email ?? string.Empty
         };
+    }
+
+    public async Task<List<UserInfo>> GetByOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        return await _userManager.Users
+            .Where(x => x.OrganizationId == organizationId)
+            .Select(x => new UserInfo
+            {
+                Id = x.Id,
+                OrganizationId = x.OrganizationId,
+                FullName = x.FullName,
+                Email = x.Email ?? string.Empty
+            })
+            .ToListAsync(cancellationToken);
     }
 }
