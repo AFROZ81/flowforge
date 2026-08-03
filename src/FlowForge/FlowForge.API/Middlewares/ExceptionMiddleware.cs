@@ -1,20 +1,18 @@
-using System.Net;
-using System.Text.Json;
-using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Common.Exceptions;
+using FlowForge.Application.Common.Responses;
+using Microsoft.Extensions.Logging;
 
 namespace FlowForge.API.Middlewares;
 
-/// <summary>
-/// Handles all unhandled exceptions in one place.
-/// </summary>
 public sealed class ExceptionMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<ExceptionMiddleware> _logger;
 
-    public ExceptionMiddleware(RequestDelegate next)
+    public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -25,7 +23,8 @@ public sealed class ExceptionMiddleware
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
+            _logger.LogError(ex, "Unhandled exception while processing {Method} {Path}", context.Request.Method, context.Request.Path);
+
             await HandleExceptionAsync(context, ex);
         }
     }
@@ -37,19 +36,28 @@ public sealed class ExceptionMiddleware
         context.Response.StatusCode = exception switch
         {
             BadRequestException => StatusCodes.Status400BadRequest,
-
             UnauthorizedException => StatusCodes.Status401Unauthorized,
-
             ForbiddenException => StatusCodes.Status403Forbidden,
-
             NotFoundException => StatusCodes.Status404NotFound,
-
             ConflictException => StatusCodes.Status409Conflict,
-
             _ => StatusCodes.Status500InternalServerError
         };
 
-        var response = ApiResponse<object>.FailureResponse(exception.Message);
+        var message = exception switch
+        {
+            BadRequestException
+            or UnauthorizedException
+            or ForbiddenException
+            or NotFoundException
+            or ConflictException
+                => exception.Message,
+
+            _ => "An unexpected error occurred. Please contact support if the problem persists."
+        };
+
+        var response = ApiResponse<object>.FailureResponse(message);
+
+        response.TraceId = context.TraceIdentifier;
 
         await context.Response.WriteAsJsonAsync(response);
     }

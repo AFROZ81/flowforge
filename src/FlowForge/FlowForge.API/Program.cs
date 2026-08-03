@@ -4,6 +4,8 @@ using FlowForge.Application.Common.Settings;
 using FlowForge.Application.DependencyInjection;
 using FlowForge.Infrastructure.DependencyInjection;
 using FlowForge.Domain.Entities;
+using FlowForge.Infrastructure.Persistence;
+using FlowForge.Application.Common.Responses;
 
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -12,51 +14,62 @@ using MediatR;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication;
-
+using Microsoft.AspNetCore.ResponseCompression;
+using System.IO.Compression;
 using System.Text;
+using Serilog;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger();
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
 
 builder.Services.AddControllers();
 
+builder.Services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>("SQL Server", tags: new[] { "database" });
+
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
-        Title = "FlowForge.API",
-        Version = "v1"
+        Title = "FlowForge API",
+        Version = "v1",
+        Description = "FlowForge Project Management Platform API"
     });
 
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter your JWT token below.\n\nExample:\nBearer eyJhbGc..."
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+    options.AddSecurityDefinition("Bearer",
+        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
         {
-            new OpenApiSecurityScheme
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Description = "Enter JWT token"
+        });
+
+    options.AddSecurityRequirement(
+        new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+        {
             {
-                Reference = new OpenApiReference
+                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
                 {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
+                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    {
+                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
 });
 
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -93,13 +106,12 @@ builder.Services.AddAuthentication(options =>
         {
             OnAuthenticationFailed = context =>
             {
-                Console.WriteLine("JWT Authentication Failed:");
-                Console.WriteLine(context.Exception);
+                Log.Warning(context.Exception, "JWT authentication failed.");
                 return Task.CompletedTask;
             },
             OnTokenValidated = context =>
             {
-                Console.WriteLine("JWT Token Validated Successfully");
+                Log.Information("JWT token validated successfully.");
                 return Task.CompletedTask;
             }
         };
@@ -107,13 +119,11 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddAuthorization();
-
 builder.Services.PostConfigure<AuthenticationOptions>(options =>
 {
-    Console.WriteLine($"DefaultAuthenticateScheme: {options.DefaultAuthenticateScheme}");
-    Console.WriteLine($"DefaultChallengeScheme: {options.DefaultChallengeScheme}");
-    Console.WriteLine($"DefaultScheme: {options.DefaultScheme}");
+    Log.Information("DefaultAuthenticateScheme: {Scheme}", options.DefaultAuthenticateScheme);
+    Log.Information("DefaultChallengeScheme: {Scheme}", options.DefaultChallengeScheme);
+    Log.Information("DefaultScheme: {Scheme}", options.DefaultScheme);
 });
 
 builder.Services.ConfigureApplicationCookie(options =>
@@ -140,6 +150,73 @@ builder.Services.AddValidatorsFromAssembly(typeof(ApplicationAssemblyReference).
 
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.Headers.RetryAfter = "60";
+
+        await context.HttpContext.Response.WriteAsJsonAsync(ApiResponse<object>.FailureResponse("Too many requests. Please try again later."), cancellationToken);
+    };
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        var key = httpContext.User.Identity?.IsAuthenticated == true
+            ? httpContext.User.Identity!.Name ?? "authenticated"
+            : httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            key,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+
+    options.AddPolicy("LoginPolicy", httpContext =>
+    {
+        var key = httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            key,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+});
+
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "application/json"
+    });
+});
+
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = CompressionLevel.Fastest;
+});
+
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+{
+    options.Level = CompressionLevel.Fastest;
+});
+
 var app = builder.Build();
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
@@ -153,9 +230,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+
 app.UseMiddleware<ExceptionMiddleware>();
 
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
 app.UseHttpsRedirection();
+
+app.UseResponseCompression();
+
+app.UseRateLimiter();
+
+app.UseSerilogRequestLogging();
 
 app.UseAuthentication();
 
@@ -163,4 +250,19 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.MapHealthChecks("/health");
+
+try
+{
+    Log.Information("Starting FlowForge API");
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

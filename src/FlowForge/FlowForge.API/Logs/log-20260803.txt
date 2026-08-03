@@ -1,0 +1,193 @@
+2026-08-03 12:45:14.872 +05:30 [INF] Starting FlowForge API
+2026-08-03 12:45:14.951 +05:30 [INF] DefaultAuthenticateScheme: Bearer
+2026-08-03 12:45:14.953 +05:30 [INF] DefaultChallengeScheme: Bearer
+2026-08-03 12:45:14.953 +05:30 [INF] DefaultScheme: Bearer
+2026-08-03 12:45:14.982 +05:30 [INF] Now listening on: http://localhost:5045
+2026-08-03 12:45:14.985 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2026-08-03 12:45:14.985 +05:30 [INF] Hosting environment: Development
+2026-08-03 12:45:14.986 +05:30 [INF] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 12:45:21.368 +05:30 [WRN] Failed to determine the https port for redirect.
+2026-08-03 12:45:22.518 +05:30 [INF] HTTP GET / responded 302 in 1147.1884 ms
+2026-08-03 12:45:40.147 +05:30 [INF] HTTP POST /api/Auth/login responded 200 in 2358.9895 ms
+2026-08-03 12:48:24.603 +05:30 [INF] HTTP GET /health responded 200 in 95.6796 ms
+2026-08-03 12:48:24.642 +05:30 [INF] HTTP GET /favicon.ico responded 404 in 0.2026 ms
+2026-08-03 12:57:45.858 +05:30 [INF] Application is shutting down...
+2026-08-03 12:58:30.625 +05:30 [INF] Starting FlowForge API
+2026-08-03 12:58:30.682 +05:30 [INF] DefaultAuthenticateScheme: Bearer
+2026-08-03 12:58:30.683 +05:30 [INF] DefaultChallengeScheme: Bearer
+2026-08-03 12:58:30.684 +05:30 [INF] DefaultScheme: Bearer
+2026-08-03 12:58:30.711 +05:30 [INF] Now listening on: http://localhost:5045
+2026-08-03 12:58:30.714 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2026-08-03 12:58:30.715 +05:30 [INF] Hosting environment: Development
+2026-08-03 12:58:30.715 +05:30 [INF] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 12:58:32.983 +05:30 [WRN] Failed to determine the https port for redirect.
+2026-08-03 12:58:33.001 +05:30 [INF] HTTP GET / responded 302 in 15.1443 ms
+2026-08-03 12:58:50.477 +05:30 [ERR] HTTP POST /api/Auth/login responded 500 in 1685.8242 ms
+FlowForge.Application.Common.Exceptions.UnauthorizedException: Invalid email or password.
+   at FlowForge.Infrastructure.Services.Authentication.AuthService.LoginAsync(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Infrastructure\Services\Authentication\AuthService.cs:line 78
+   at FlowForge.API.Controllers.AuthController.Login(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\AuthController.cs:line 34
+   at lambda_method9(Closure, Object)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.AwaitableObjectResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-08-03 12:58:50.519 +05:30 [ERR] Unhandled exception while processing POST /api/Auth/login
+FlowForge.Application.Common.Exceptions.UnauthorizedException: Invalid email or password.
+   at FlowForge.Infrastructure.Services.Authentication.AuthService.LoginAsync(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Infrastructure\Services\Authentication\AuthService.cs:line 78
+   at FlowForge.API.Controllers.AuthController.Login(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\AuthController.cs:line 34
+   at lambda_method9(Closure, Object)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.AwaitableObjectResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at FlowForge.API.Middlewares.ExceptionMiddleware.InvokeAsync(HttpContext context) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Middlewares\ExceptionMiddleware.cs:line 22
+2026-08-03 12:59:41.974 +05:30 [INF] HTTP POST /api/Auth/login responded 200 in 174.1766 ms
+2026-08-03 13:00:13.328 +05:30 [INF] JWT token validated successfully.
+2026-08-03 13:00:13.346 +05:30 [WRN] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-08-03 13:00:13.393 +05:30 [ERR] HTTP GET /api/Projects/8F5CD28E-17D3-42FE-8217-E5EE03999BA9 responded 500 in 106.8677 ms
+FlowForge.Application.Common.Exceptions.NotFoundException: Project not found.
+   at FlowForge.Application.Features.Projects.GetById.GetProjectByIdQueryHandler.Handle(GetProjectByIdQuery request, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Features\Projects\GetById\GetProjectByIdQueryHandler.cs:line 42
+   at FlowForge.Application.Behaviors.ValidationBehavior`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Behaviors\ValidationBehavior.cs:line 34
+   at FlowForge.API.Controllers.ProjectsController.GetById(Guid id, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\ProjectsController.cs:line 47
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-08-03 13:00:13.411 +05:30 [ERR] Unhandled exception while processing GET /api/Projects/8F5CD28E-17D3-42FE-8217-E5EE03999BA9
+FlowForge.Application.Common.Exceptions.NotFoundException: Project not found.
+   at FlowForge.Application.Features.Projects.GetById.GetProjectByIdQueryHandler.Handle(GetProjectByIdQuery request, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Features\Projects\GetById\GetProjectByIdQueryHandler.cs:line 42
+   at FlowForge.Application.Behaviors.ValidationBehavior`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Behaviors\ValidationBehavior.cs:line 34
+   at FlowForge.API.Controllers.ProjectsController.GetById(Guid id, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\ProjectsController.cs:line 47
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at FlowForge.API.Middlewares.ExceptionMiddleware.InvokeAsync(HttpContext context) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Middlewares\ExceptionMiddleware.cs:line 22
+2026-08-03 13:00:37.935 +05:30 [INF] Application is shutting down...
+2026-08-03 13:26:38.828 +05:30 [INF] Starting FlowForge API
+2026-08-03 13:26:38.885 +05:30 [INF] DefaultAuthenticateScheme: Bearer
+2026-08-03 13:26:38.887 +05:30 [INF] DefaultChallengeScheme: Bearer
+2026-08-03 13:26:38.887 +05:30 [INF] DefaultScheme: Bearer
+2026-08-03 13:26:38.915 +05:30 [INF] Now listening on: http://localhost:5045
+2026-08-03 13:26:38.917 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2026-08-03 13:26:38.917 +05:30 [INF] Hosting environment: Development
+2026-08-03 13:26:38.918 +05:30 [INF] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 13:26:40.700 +05:30 [WRN] Failed to determine the https port for redirect.
+2026-08-03 13:26:40.718 +05:30 [INF] HTTP GET / responded 302 in 14.7492 ms
+2026-08-03 13:26:50.705 +05:30 [INF] HTTP GET /health responded 200 in 1069.9973 ms
+2026-08-03 13:27:12.601 +05:30 [INF] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 2.0516 ms
+2026-08-03 13:28:27.221 +05:30 [INF] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 0.1269 ms
+2026-08-03 13:28:43.555 +05:30 [INF] HTTP GET /health responded 200 in 24.1317 ms
+2026-08-03 13:28:43.591 +05:30 [INF] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 0.0998 ms
+2026-08-03 13:30:21.743 +05:30 [INF] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 0.1601 ms
+2026-08-03 13:30:21.769 +05:30 [INF] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 0.0879 ms
+2026-08-03 13:30:46.390 +05:30 [INF] HTTP POST /api/Auth/login responded 200 in 642.5226 ms
+2026-08-03 13:31:18.375 +05:30 [INF] HTTP GET /health responded 200 in 19.5593 ms
+2026-08-03 13:31:18.416 +05:30 [INF] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 0.1060 ms
+2026-08-03 13:32:31.658 +05:30 [INF] Application is shutting down...
+2026-08-03 13:35:00.500 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 13:35:00.554 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 13:35:00.556 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 13:35:00.556 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 13:35:00.584 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 13:35:00.587 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 13:35:00.587 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 13:35:00.588 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 13:35:04.144 +05:30 [WRN] [5735e181-6328-4734-bb2e-1c0dc8f2e701] Failed to determine the https port for redirect.
+2026-08-03 13:35:04.163 +05:30 [INF] [5735e181-6328-4734-bb2e-1c0dc8f2e701] HTTP GET / responded 302 in 15.1160 ms
+2026-08-03 13:35:16.723 +05:30 [INF] [a533f2c5-48d5-40e9-b318-730e4b15a3c0] HTTP GET /health responded 200 in 1073.7688 ms
+2026-08-03 13:35:52.377 +05:30 [INF] [f867fe25-9abe-46f6-93b2-58f8b1981ac1] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 2.8451 ms
+2026-08-03 13:35:56.279 +05:30 [INF] [8b30c6c0-8220-4f79-bdc8-656c766d2bc9] HTTP GET /health responded 200 in 25.8936 ms
+2026-08-03 13:35:56.300 +05:30 [INF] [6df914da-af8e-4a19-85fd-6673452b4747] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 0.1214 ms
+2026-08-03 13:36:25.886 +05:30 [INF] [] Application is shutting down...
+2026-08-03 13:39:25.882 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 13:39:25.933 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 13:39:25.936 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 13:39:25.937 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 13:39:25.969 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 13:39:25.971 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 13:39:25.972 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 13:39:25.972 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 13:39:35.502 +05:30 [WRN] [c4a6b4c1-7cea-46ec-81b3-75ae1ca63b5d] Failed to determine the https port for redirect.
+2026-08-03 13:39:35.540 +05:30 [INF] [c4a6b4c1-7cea-46ec-81b3-75ae1ca63b5d] HTTP GET / responded 302 in 24.8995 ms
+2026-08-03 13:39:53.146 +05:30 [INF] [aae7c342-dce4-4a6f-9f25-ae0625482a7c] HTTP POST /api/Auth/login responded 200 in 1688.2912 ms
+2026-08-03 13:39:55.374 +05:30 [INF] [69d509ba-54e7-4f2b-bc16-3d45175a3afa] HTTP POST /api/Auth/login responded 200 in 129.7757 ms
+2026-08-03 13:39:55.923 +05:30 [INF] [4c491c4f-fab9-4c3c-a7ad-301c65f3feca] HTTP POST /api/Auth/login responded 200 in 97.7168 ms
+2026-08-03 13:39:56.254 +05:30 [INF] [d142308c-cfa1-4100-b66c-8e4f10602c11] HTTP POST /api/Auth/login responded 200 in 71.0005 ms
+2026-08-03 13:39:56.577 +05:30 [INF] [3661dce2-431a-4bd0-874f-4e6a68bb8915] HTTP POST /api/Auth/login responded 200 in 71.4696 ms
+2026-08-03 13:41:31.160 +05:30 [INF] [] Application is shutting down...
+2026-08-03 14:33:27.077 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 14:33:27.137 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 14:33:27.139 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 14:33:27.140 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 14:33:27.173 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 14:33:27.176 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 14:33:27.176 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 14:33:27.177 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 14:33:28.695 +05:30 [WRN] [c6ca056d-d378-4070-8fd2-209bcf5b62fd] Failed to determine the https port for redirect.
+2026-08-03 14:33:28.720 +05:30 [INF] [c6ca056d-d378-4070-8fd2-209bcf5b62fd] HTTP GET / responded 302 in 15.7723 ms
+2026-08-03 14:33:37.686 +05:30 [INF] [75956bc4-875f-4c48-8bc3-404f79fbcf84] HTTP GET /health responded 200 in 1115.3493 ms
+2026-08-03 14:33:40.091 +05:30 [INF] [22491ad1-4b95-44e2-9663-a46b0fe7c456] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 2.1041 ms
+2026-08-03 14:33:43.262 +05:30 [INF] [f9ad26e0-7698-4fe2-83bb-1f4a346c0011] HTTP GET /health responded 200 in 24.0309 ms
+2026-08-03 14:33:43.302 +05:30 [INF] [fa6292a5-954f-4d3f-8120-8c427881477a] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 0.0802 ms
+2026-08-03 14:34:51.568 +05:30 [INF] [] Application is shutting down...
+2026-08-03 14:37:00.191 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 14:37:00.248 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 14:37:00.250 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 14:37:00.250 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 14:37:00.285 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 14:37:00.287 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 14:37:00.288 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 14:37:00.289 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 14:37:01.974 +05:30 [WRN] [0537f8cf-cd45-474e-98aa-43258080ed8a] Failed to determine the https port for redirect.
+2026-08-03 14:37:01.999 +05:30 [INF] [0537f8cf-cd45-474e-98aa-43258080ed8a] HTTP GET / responded 302 in 15.0338 ms
+2026-08-03 14:37:19.666 +05:30 [INF] [5eb748be-b0ba-4161-8032-f4bf988dc390] HTTP POST /api/Auth/login responded 200 in 1714.6707 ms
+2026-08-03 14:37:44.656 +05:30 [INF] [46fcf4df-7a66-471e-8689-581ce626d04a] HTTP GET /api/Projects responded 401 in 13.6436 ms
+2026-08-03 14:37:53.525 +05:30 [INF] [087e63b5-74c9-4478-9c59-77be35c5b91f] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 0.1410 ms
+2026-08-03 14:37:57.878 +05:30 [INF] [900c7b2c-e989-4ab4-9434-eb8efb55085f] JWT token validated successfully.
+2026-08-03 14:37:57.898 +05:30 [WRN] [900c7b2c-e989-4ab4-9434-eb8efb55085f] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-08-03 14:37:58.063 +05:30 [INF] [900c7b2c-e989-4ab4-9434-eb8efb55085f] HTTP GET /api/Projects responded 200 in 228.0887 ms
+2026-08-03 14:46:53.150 +05:30 [INF] [] Application is shutting down...
+2026-08-03 15:00:36.330 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 15:00:36.383 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 15:00:36.384 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 15:00:36.385 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 15:00:36.417 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 15:00:36.419 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 15:00:36.419 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 15:00:36.420 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 15:00:37.653 +05:30 [WRN] [9dd42085-117b-484c-a33f-a3712bdbefac] Failed to determine the https port for redirect.
+2026-08-03 15:00:38.832 +05:30 [INF] [9dd42085-117b-484c-a33f-a3712bdbefac] HTTP GET / responded 302 in 1169.9050 ms
+2026-08-03 15:01:41.303 +05:30 [INF] [] Application is shutting down...

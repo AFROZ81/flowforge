@@ -11,6 +11,8 @@ public sealed class ApiResponse<T>
 
     public T? Data { get; init; }
 
+    public string? TraceId { get; set; }
+
     public IEnumerable<string>? Errors { get; init; }
 
     public static ApiResponse<T> SuccessResponse(T data, string message = "")

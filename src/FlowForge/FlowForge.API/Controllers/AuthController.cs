@@ -3,6 +3,7 @@ using FlowForge.Application.Services.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Features.Authentication.Login;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FlowForge.API.Controllers;
 
@@ -29,6 +30,7 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("LoginPolicy")]
     public async Task<ActionResult<ApiResponse<LoginResponse>>> Login(LoginRequest request)
     {
         var response = await _authService.LoginAsync(request);
