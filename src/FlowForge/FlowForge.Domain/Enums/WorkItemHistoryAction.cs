@@ -25,5 +25,9 @@ public enum WorkItemHistoryAction
 
     WatcherAdded,
 
-    WatcherRemoved
+    WatcherRemoved,
+
+    ReminderUpdated,
+
+    ReminderRemoved
 }

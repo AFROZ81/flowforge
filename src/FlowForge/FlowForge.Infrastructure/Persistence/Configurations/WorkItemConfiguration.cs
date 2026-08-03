@@ -37,6 +37,8 @@ public sealed class WorkItemConfiguration : IEntityTypeConfiguration<WorkItem>
         builder.Property(x => x.IsArchived)
             .HasDefaultValue(false);
 
+        builder.Property(x => x.ReminderDate);
+
         builder.HasOne(x => x.Column)
             .WithMany(c => c.WorkItems)
             .HasForeignKey(x => x.ColumnId)

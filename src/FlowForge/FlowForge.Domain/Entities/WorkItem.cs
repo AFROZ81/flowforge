@@ -19,6 +19,8 @@ public sealed class WorkItem : EntityBase
 
     public DateTime? DueDate { get; private set; }
 
+    public DateTime? ReminderDate { get; private set; }
+
     public Guid? AssigneeId { get; private set; }
 
     public bool IsArchived { get; private set; }
@@ -133,5 +135,17 @@ public sealed class WorkItem : EntityBase
     public void Unassign()
     {
         AssigneeId = null;
+    }
+
+    public void SetReminder(DateTime? dueDate, DateTime? reminderDate)
+    {
+        DueDate = dueDate;
+        ReminderDate = reminderDate;
+    }
+
+    public void ClearReminder()
+    {
+        DueDate = null;
+        ReminderDate = null;
     }
 }
