@@ -6,6 +6,10 @@ using FlowForge.Infrastructure.DependencyInjection;
 using FlowForge.Domain.Entities;
 using FlowForge.Infrastructure.Persistence;
 using FlowForge.Application.Common.Responses;
+using FlowForge.API.Hubs;
+using FlowForge.API.SignalR;
+using FlowForge.API.Services.Realtime;
+using FlowForge.Application.Services.Realtime;
 
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -16,10 +20,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.SignalR;
+
 using System.IO.Compression;
 using System.Text;
-using Serilog;
 using System.Threading.RateLimiting;
+
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +37,10 @@ builder.Host.UseSerilog();
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+builder.Services.AddSignalR();
+
+builder.Services.AddSingleton<IUserIdProvider, SignalRUserIdProvider>();
 
 builder.Services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>("SQL Server", tags: new[] { "database" });
 
@@ -74,6 +85,8 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
+builder.Services.AddScoped<IRealtimeNotifier, SignalRNotifier>();
+
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.SectionName));
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>() ?? throw new InvalidOperationException("JWT configuration is missing.");
@@ -104,11 +117,27 @@ builder.Services.AddAuthentication(options =>
 
         options.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hubs/notifications"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            },
+
             OnAuthenticationFailed = context =>
             {
                 Log.Warning(context.Exception, "JWT authentication failed.");
                 return Task.CompletedTask;
             },
+
             OnTokenValidated = context =>
             {
                 Log.Information("JWT token validated successfully.");
@@ -248,7 +277,12 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapControllers();
+
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.MapHealthChecks("/health");
 

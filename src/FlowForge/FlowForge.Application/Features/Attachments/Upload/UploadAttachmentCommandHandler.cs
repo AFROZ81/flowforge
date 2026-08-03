@@ -5,6 +5,7 @@ using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
 using FlowForge.Application.Services.Notifications;
 using FlowForge.Application.Services.WorkItemHistories;
+using FlowForge.Application.Services.Realtime;
 using FlowForge.Domain.Enums;
 using MediatR;
 
@@ -18,8 +19,9 @@ public sealed class UploadAttachmentCommandHandler : IRequestHandler<UploadAttac
     private readonly IFileStorageService _fileStorage;
     private readonly INotificationService _notificationService;
     private readonly IWorkItemHistoryService _historyService;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
-    public UploadAttachmentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, AttachmentRules attachmentRules, IFileStorageService fileStorage, INotificationService notificationService, IWorkItemHistoryService historyService)
+    public UploadAttachmentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, AttachmentRules attachmentRules, IFileStorageService fileStorage, INotificationService notificationService, IWorkItemHistoryService historyService, IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _currentUser = currentUser;
@@ -27,6 +29,7 @@ public sealed class UploadAttachmentCommandHandler : IRequestHandler<UploadAttac
         _fileStorage = fileStorage;
         _notificationService = notificationService;
         _historyService = historyService;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     public async Task<ApiResponse<UploadAttachmentResponse>> Handle(UploadAttachmentCommand request, CancellationToken cancellationToken)
@@ -53,9 +56,11 @@ public sealed class UploadAttachmentCommandHandler : IRequestHandler<UploadAttac
 
             _context.Attachments.Add(attachment);
 
+            Notification? notification = null;
+
             if (workItem.AssigneeId.HasValue && workItem.AssigneeId.Value != currentUser.UserId)
             {
-                await _notificationService.CreateAsync(
+                notification = await _notificationService.CreateAsync(
                     currentUser.OrganizationId,
                     workItem.AssigneeId.Value,
                     NotificationType.AttachmentAdded,
@@ -66,6 +71,24 @@ public sealed class UploadAttachmentCommandHandler : IRequestHandler<UploadAttac
             }
 
             await _context.SaveChangesAsync(cancellationToken);
+
+            if (notification is not null)
+            {
+                await _realtimeNotifier.NotifyUserAsync(
+                    notification.RecipientId,
+                    "NotificationReceived",
+                    new
+                    {
+                        notification.Id,
+                        notification.Title,
+                        notification.Message,
+                        notification.Type,
+                        notification.CreatedAt,
+                        notification.WorkItemId,
+                        notification.IsRead
+                    },
+                    cancellationToken);
+            }
 
             await _historyService.CreateAsync(
                 workItem.Id,

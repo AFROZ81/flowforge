@@ -2,7 +2,9 @@ using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Services.Notifications;
+using FlowForge.Application.Services.Realtime;
 using FlowForge.Domain.Enums;
+using FlowForge.Domain.Entities;
 using MediatR;
 
 namespace FlowForge.Application.Features.WorkItems.Complete;
@@ -14,17 +16,20 @@ public sealed class CompleteWorkItemCommandHandler
     private readonly ICurrentUserService _currentUser;
     private readonly WorkItemRules _rules;
     private readonly INotificationService _notificationService;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
     public CompleteWorkItemCommandHandler(
         IApplicationDbContext context,
         ICurrentUserService currentUser,
         WorkItemRules rules,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _currentUser = currentUser;
         _rules = rules;
         _notificationService = notificationService;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     public async Task<ApiResponse<CompleteWorkItemResponse>> Handle(
@@ -43,12 +48,14 @@ public sealed class CompleteWorkItemCommandHandler
         var previousStatus = workItem.Status;
 
         workItem.MarkCompleted();
+        
+        Notification? notification = null;
 
         if (previousStatus != workItem.Status &&
             workItem.AssigneeId.HasValue &&
             workItem.AssigneeId.Value != currentUser.UserId)
         {
-            await _notificationService.CreateAsync(
+            notification = await _notificationService.CreateAsync(
                 currentUser.OrganizationId,
                 workItem.AssigneeId.Value,
                 NotificationType.WorkItemStatusChanged,
@@ -59,6 +66,24 @@ public sealed class CompleteWorkItemCommandHandler
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (notification is not null)
+        {
+            await _realtimeNotifier.NotifyUserAsync(
+                notification.RecipientId,
+                "NotificationReceived",
+                new
+                {
+                    notification.Id,
+                    notification.Title,
+                    notification.Message,
+                    notification.Type,
+                    notification.CreatedAt,
+                    notification.WorkItemId,
+                    notification.IsRead
+                },
+                cancellationToken);
+        }
 
         return ApiResponse<CompleteWorkItemResponse>.SuccessResponse(
             new CompleteWorkItemResponse

@@ -32,6 +32,7 @@ using FlowForge.Application.Services.WorkItemHistories;
 using FlowForge.Infrastructure.Services.WorkItemHistories;
 using FlowForge.Application.Features.Search;
 using FlowForge.Application.Features.Reminders;
+using FlowForge.Application.Services.Realtime;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 

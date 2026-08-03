@@ -3,6 +3,7 @@ using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Services.Notifications;
 using FlowForge.Application.Services.WorkItemHistories;
+using FlowForge.Application.Services.Realtime;
 using FlowForge.Domain.Enums;
 
 using FlowForge.Domain.Entities;
@@ -17,8 +18,9 @@ public sealed class CreateCommentCommandHandler : IRequestHandler<CreateCommentC
     private readonly CommentRules _commentRules;
     private readonly INotificationService _notificationService;
     private readonly IWorkItemHistoryService _historyService;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
-    public CreateCommentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, CommentRules commentRules, INotificationService notificationService, IWorkItemHistoryService historyService)
+    public CreateCommentCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, CommentRules commentRules, INotificationService notificationService, IWorkItemHistoryService historyService, IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _currentUser = currentUser;
@@ -26,6 +28,7 @@ public sealed class CreateCommentCommandHandler : IRequestHandler<CreateCommentC
         _notificationService = notificationService;
         _historyService = historyService;
         _commentRules = commentRules;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     public async Task<ApiResponse<CreateCommentResponse>> Handle(CreateCommentCommand request, CancellationToken cancellationToken)
@@ -39,13 +42,33 @@ public sealed class CreateCommentCommandHandler : IRequestHandler<CreateCommentC
         var comment = new Comment(request.WorkItemId, currentUser.UserId, request.Content);
 
         _context.Comments.Add(comment);
+        
+        Notification? notification = null;
 
         if (workItem.AssigneeId.HasValue && workItem.AssigneeId.Value != currentUser.UserId)
         {
-            await _notificationService.CreateAsync(currentUser.OrganizationId, workItem.AssigneeId.Value, NotificationType.CommentAdded, "New comment", $"A new comment was added to \"{workItem.Title}\".", workItem.Id, cancellationToken);
+            notification = await _notificationService.CreateAsync(currentUser.OrganizationId, workItem.AssigneeId.Value, NotificationType.CommentAdded, "New comment", $"A new comment was added to \"{workItem.Title}\".", workItem.Id, cancellationToken);
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (notification is not null)
+        {
+            await _realtimeNotifier.NotifyUserAsync(
+                notification.RecipientId,
+                "NotificationReceived",
+                new
+                {
+                    notification.Id,
+                    notification.Title,
+                    notification.Message,
+                    notification.Type,
+                    notification.CreatedAt,
+                    notification.WorkItemId,
+                    notification.IsRead
+                },
+                cancellationToken);
+        }
 
         await _historyService.CreateAsync(
             workItem.Id,

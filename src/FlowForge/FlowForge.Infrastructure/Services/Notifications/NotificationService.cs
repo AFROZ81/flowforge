@@ -14,12 +14,12 @@ public sealed class NotificationService : INotificationService
         _context = context;
     }
 
-    public Task CreateAsync(Guid organizationId, Guid recipientId, NotificationType type, string title, string message, Guid? workItemId = null, CancellationToken cancellationToken = default)
+    public Task<Notification> CreateAsync(Guid organizationId, Guid recipientId, NotificationType type, string title, string message, Guid? workItemId = null, CancellationToken cancellationToken = default)
     {
         var notification = new Notification(organizationId, recipientId, type, title, message, workItemId);
 
         _context.Notifications.Add(notification);
 
-        return Task.CompletedTask;
+        return Task.FromResult(notification);
     }
 }

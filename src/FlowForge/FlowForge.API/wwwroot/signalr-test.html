@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FlowForge SignalR Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+</head>
+<body>
+
+<h2>FlowForge SignalR Test</h2>
+
+<input id="token" style="width:700px" placeholder="Paste JWT Token">
+
+<button onclick="connect()">Connect</button>
+
+<pre id="log"></pre>
+
+<script>
+
+let connection;
+
+function log(msg){
+    document.getElementById("log").textContent += msg + "\n";
+}
+
+async function connect(){
+
+    const token=document.getElementById("token").value;
+
+    connection=new signalR.HubConnectionBuilder()
+        .withUrl("http://localhost:5045/hubs/notifications",{
+            accessTokenFactory:()=>token
+        })
+        .withAutomaticReconnect()
+        .build();
+
+    connection.on("NotificationReceived",data=>{
+        log("Notification Received:");
+        log(JSON.stringify(data,null,2));
+    });
+
+    try{
+        await connection.start();
+        log("Connected");
+    }
+    catch(e){
+        log(e);
+    }
+
+}
+
+</script>
+
+</body>
+</html>

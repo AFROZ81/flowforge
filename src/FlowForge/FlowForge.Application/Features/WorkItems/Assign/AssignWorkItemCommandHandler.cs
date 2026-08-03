@@ -6,6 +6,7 @@ using FlowForge.Application.Services.Notifications;
 using FlowForge.Application.Services.Users;
 using FlowForge.Domain.Enums;
 using FlowForge.Application.Services.WorkItemHistories;
+using FlowForge.Application.Services.Realtime;
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -19,14 +20,16 @@ public sealed class AssignWorkItemCommandHandler : IRequestHandler<AssignWorkIte
     private readonly IUserService _userService;
     private readonly INotificationService _notificationService;
     private readonly IWorkItemHistoryService _historyService;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
-    public AssignWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, IUserService userService, INotificationService notificationService, IWorkItemHistoryService historyService)
+    public AssignWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, IUserService userService, INotificationService notificationService, IWorkItemHistoryService historyService, IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _currentUser = currentUser;
         _userService = userService;
         _notificationService = notificationService;
         _historyService = historyService;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     public async Task<ApiResponse<AssignWorkItemResponse>> Handle(AssignWorkItemCommand request, CancellationToken cancellationToken)
@@ -67,9 +70,31 @@ public sealed class AssignWorkItemCommandHandler : IRequestHandler<AssignWorkIte
 
         workItem.AssignTo(assignee.Id);
 
-        await _notificationService.CreateAsync(currentUser.OrganizationId, assignee.Id, NotificationType.WorkItemAssigned, "Work Item assigned", $"You have been assigned to \"{workItem.Title}\".", workItem.Id, cancellationToken);
+        var notification = await _notificationService.CreateAsync(
+            currentUser.OrganizationId,
+            assignee.Id,
+            NotificationType.WorkItemAssigned,
+            "Work Item assigned",
+            $"You have been assigned to \"{workItem.Title}\".",
+            workItem.Id,
+            cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _realtimeNotifier.NotifyUserAsync(
+            notification.RecipientId,
+            "NotificationReceived",
+            new
+            {
+                notification.Id,
+                notification.Title,
+                notification.Message,
+                notification.Type,
+                notification.CreatedAt,
+                notification.WorkItemId,
+                notification.IsRead
+            },
+            cancellationToken);
 
         await _historyService.CreateAsync(
             workItem.Id,

@@ -5,6 +5,7 @@ using FlowForge.Domain.Entities;
 using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Services.Notifications;
 using FlowForge.Application.Services.WorkItemHistories;
+using FlowForge.Application.Services.Realtime;
 using FlowForge.Domain.Enums;
 using MediatR;
 
@@ -17,8 +18,9 @@ public sealed class AssignLabelCommandHandler : IRequestHandler<AssignLabelComma
     private readonly LabelRules _labelRules;
     private readonly INotificationService _notificationService;
     private readonly IWorkItemHistoryService _historyService;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
-    public AssignLabelCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, LabelRules labelRules, INotificationService notificationService, IWorkItemHistoryService historyService)
+    public AssignLabelCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, LabelRules labelRules, INotificationService notificationService, IWorkItemHistoryService historyService, IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _currentUser = currentUser;
@@ -26,6 +28,7 @@ public sealed class AssignLabelCommandHandler : IRequestHandler<AssignLabelComma
         _notificationService = notificationService;
         _historyService = historyService;
         _labelRules = labelRules;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     public async Task<ApiResponse<AssignLabelResponse>> Handle(AssignLabelCommand request, CancellationToken cancellationToken)
@@ -54,9 +57,11 @@ public sealed class AssignLabelCommandHandler : IRequestHandler<AssignLabelComma
             _context.WorkItemLabels.Add(workItemLabel);
         }
 
+        Notification? notification = null;
+
         if (workItem.AssigneeId.HasValue && workItem.AssigneeId.Value != currentUser.UserId)
         {
-            await _notificationService.CreateAsync(
+            notification = await _notificationService.CreateAsync(
                 currentUser.OrganizationId,
                 workItem.AssigneeId.Value,
                 NotificationType.LabelAssigned,
@@ -67,6 +72,24 @@ public sealed class AssignLabelCommandHandler : IRequestHandler<AssignLabelComma
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (notification is not null)
+        {
+            await _realtimeNotifier.NotifyUserAsync(
+                notification.RecipientId,
+                "NotificationReceived",
+                new
+                {
+                    notification.Id,
+                    notification.Title,
+                    notification.Message,
+                    notification.Type,
+                    notification.CreatedAt,
+                    notification.WorkItemId,
+                    notification.IsRead
+                },
+                cancellationToken);
+        }
 
         await _historyService.CreateAsync(
             workItem.Id,

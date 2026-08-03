@@ -191,3 +191,246 @@ FlowForge.Application.Common.Exceptions.NotFoundException: Project not found.
 2026-08-03 15:00:37.653 +05:30 [WRN] [9dd42085-117b-484c-a33f-a3712bdbefac] Failed to determine the https port for redirect.
 2026-08-03 15:00:38.832 +05:30 [INF] [9dd42085-117b-484c-a33f-a3712bdbefac] HTTP GET / responded 302 in 1169.9050 ms
 2026-08-03 15:01:41.303 +05:30 [INF] [] Application is shutting down...
+2026-08-03 15:11:22.955 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 15:11:23.008 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 15:11:23.010 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 15:11:23.011 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 15:11:23.046 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 15:11:23.050 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 15:11:23.050 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 15:11:23.051 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 15:11:42.404 +05:30 [INF] [] Application is shutting down...
+2026-08-03 15:48:05.020 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 15:48:05.082 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 15:48:05.084 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 15:48:05.084 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 15:48:05.120 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 15:48:05.122 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 15:48:05.123 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 15:48:05.123 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 15:48:06.279 +05:30 [WRN] [339703f6-9430-488c-ab89-7dc80776f432] Failed to determine the https port for redirect.
+2026-08-03 15:48:06.305 +05:30 [INF] [339703f6-9430-488c-ab89-7dc80776f432] HTTP GET / responded 302 in 16.2852 ms
+2026-08-03 15:48:30.515 +05:30 [INF] [b3bfbd3c-04cb-4753-9ba0-9d29d1c392a5] HTTP POST /api/Auth/login responded 200 in 2362.1595 ms
+2026-08-03 15:48:55.274 +05:30 [INF] [8447bc40-04f9-490c-9899-a43ea6b81918] HTTP OPTIONS /hubs/notifications/negotiate responded 401 in 13.7186 ms
+2026-08-03 15:49:18.274 +05:30 [INF] [28413024-4fde-4739-8c59-d46a1e7d1953] HTTP OPTIONS /hubs/notifications/negotiate responded 401 in 3.3616 ms
+2026-08-03 15:49:46.947 +05:30 [INF] [e1a109f1-8635-46b4-ba49-35d87755a99e] HTTP OPTIONS /hubs/notifications/negotiate responded 401 in 2.4439 ms
+2026-08-03 15:51:23.488 +05:30 [INF] [8a62240d-0751-4973-a04f-76987577b2d5] JWT token validated successfully.
+2026-08-03 15:51:23.503 +05:30 [WRN] [8a62240d-0751-4973-a04f-76987577b2d5] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-08-03 15:51:24.073 +05:30 [INF] [8a62240d-0751-4973-a04f-76987577b2d5] HTTP PATCH /api/WorkItems/386D98A8-7B7F-4352-D5BF-08DEE964430D/assign/978F6AB7-0A87-4E48-9E8F-10AD166282D9 responded 200 in 630.1334 ms
+2026-08-03 15:52:05.920 +05:30 [INF] [165fa723-99da-474f-862a-cdf469ee5013] HTTP OPTIONS /hubs/notifications/negotiate responded 401 in 0.1713 ms
+2026-08-03 15:53:15.848 +05:30 [INF] [78f57a4c-b02b-4a68-865b-967ffd97d4a7] HTTP GET /hubs/notifications/negotiate responded 401 in 0.1854 ms
+2026-08-03 15:55:48.804 +05:30 [INF] [596c608d-9b24-4b5e-9c04-298c477cc4d7] HTTP OPTIONS /hubs/notifications/negotiate responded 401 in 0.3549 ms
+2026-08-03 16:01:03.155 +05:30 [INF] [] Application is shutting down...
+2026-08-03 16:28:51.924 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 16:28:51.996 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 16:28:52.043 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 16:28:52.061 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 16:28:52.106 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 16:28:52.126 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 16:28:52.143 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 16:28:52.147 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 16:28:58.200 +05:30 [WRN] [0c15d23a-450e-430d-861e-14c9d7a6cd37] Failed to determine the https port for redirect.
+2026-08-03 16:28:58.227 +05:30 [INF] [0c15d23a-450e-430d-861e-14c9d7a6cd37] HTTP GET / responded 302 in 17.2409 ms
+2026-08-03 16:29:17.801 +05:30 [INF] [73f0bad7-eb25-499b-8fbf-035bd8d974ab] HTTP POST /api/Auth/login responded 200 in 1745.6398 ms
+2026-08-03 16:29:46.964 +05:30 [INF] [b71a1d1c-c7e0-401f-8323-95d167a41016] HTTP GET /signalr-test.html responded 200 in 28.8496 ms
+2026-08-03 16:29:55.177 +05:30 [INF] [966f5f3b-0935-46a4-b342-c58ded39eb62] JWT token validated successfully.
+2026-08-03 16:29:55.185 +05:30 [INF] [966f5f3b-0935-46a4-b342-c58ded39eb62] HTTP POST /hubs/notifications/negotiate responded 200 in 49.3301 ms
+2026-08-03 16:29:55.192 +05:30 [INF] [1080fad0-ca98-46c8-b4f8-2ed33c409bbe] JWT token validated successfully.
+2026-08-03 16:39:31.253 +05:30 [INF] [30096976-b184-4f11-a453-eeba7aab6421] JWT token validated successfully.
+2026-08-03 16:39:31.567 +05:30 [INF] [30096976-b184-4f11-a453-eeba7aab6421] HTTP POST /api/Auth/register responded 200 in 314.6246 ms
+2026-08-03 16:40:12.777 +05:30 [INF] [3e06deb1-df6f-4943-8070-ad568fdca545] JWT token validated successfully.
+2026-08-03 16:40:12.796 +05:30 [WRN] [3e06deb1-df6f-4943-8070-ad568fdca545] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-08-03 16:40:13.018 +05:30 [ERR] [3e06deb1-df6f-4943-8070-ad568fdca545] HTTP PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/assign/A86B15DD-7CD3-4ED1-AAA3-594237A6C313 responded 500 in 241.1567 ms
+FlowForge.Application.Common.Exceptions.BadRequestException: The selected user does not belong to this organization.
+   at FlowForge.Application.Features.WorkItems.Assign.AssignWorkItemCommandHandler.Handle(AssignWorkItemCommand request, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Features\WorkItems\Assign\AssignWorkItemCommandHandler.cs:line 64
+   at FlowForge.Application.Behaviors.ValidationBehavior`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Behaviors\ValidationBehavior.cs:line 34
+   at FlowForge.API.Controllers.WorkItemsController.Assign(Guid workItemId, Guid userId, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\WorkItemsController.cs:line 191
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-08-03 16:40:13.083 +05:30 [ERR] [3e06deb1-df6f-4943-8070-ad568fdca545] Unhandled exception while processing PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/assign/A86B15DD-7CD3-4ED1-AAA3-594237A6C313
+FlowForge.Application.Common.Exceptions.BadRequestException: The selected user does not belong to this organization.
+   at FlowForge.Application.Features.WorkItems.Assign.AssignWorkItemCommandHandler.Handle(AssignWorkItemCommand request, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Features\WorkItems\Assign\AssignWorkItemCommandHandler.cs:line 64
+   at FlowForge.Application.Behaviors.ValidationBehavior`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Behaviors\ValidationBehavior.cs:line 34
+   at FlowForge.API.Controllers.WorkItemsController.Assign(Guid workItemId, Guid userId, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\WorkItemsController.cs:line 191
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.RateLimiting.RateLimitingMiddleware.InvokeInternal(HttpContext context, EnableRateLimitingAttribute enableRateLimitingAttribute)
+   at Microsoft.AspNetCore.ResponseCompression.ResponseCompressionMiddleware.InvokeCore(HttpContext context)
+   at FlowForge.API.Middlewares.SecurityHeadersMiddleware.InvokeAsync(HttpContext context) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Middlewares\SecurityHeadersMiddleware.cs:line 36
+   at FlowForge.API.Middlewares.ExceptionMiddleware.InvokeAsync(HttpContext context) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Middlewares\ExceptionMiddleware.cs:line 22
+2026-08-03 16:41:36.262 +05:30 [INF] [3b0486d6-0b31-46c0-86a6-751b7ed83d6d] JWT token validated successfully.
+2026-08-03 16:41:36.458 +05:30 [INF] [3b0486d6-0b31-46c0-86a6-751b7ed83d6d] HTTP PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/assign/A86B15DD-7CD3-4ED1-AAA3-594237A6C313 responded 200 in 195.9813 ms
+2026-08-03 16:41:55.188 +05:30 [INF] [826909f1-3152-4e84-8a94-95eb0870348e] HTTP GET /signalr-test.html responded 304 in 1.5337 ms
+2026-08-03 16:41:55.204 +05:30 [INF] [1080fad0-ca98-46c8-b4f8-2ed33c409bbe] HTTP GET /hubs/notifications responded 101 in 720013.1581 ms
+2026-08-03 16:42:02.152 +05:30 [INF] [a4a33c82-4e2a-4e88-bbaa-bf00b1495486] JWT token validated successfully.
+2026-08-03 16:42:02.155 +05:30 [INF] [a4a33c82-4e2a-4e88-bbaa-bf00b1495486] HTTP POST /hubs/notifications/negotiate responded 200 in 3.5620 ms
+2026-08-03 16:42:02.161 +05:30 [INF] [112fc092-f6bc-443f-8471-0f1daf8135d9] JWT token validated successfully.
+2026-08-03 16:42:09.691 +05:30 [INF] [dac2d6f5-fcbc-49d2-9f29-ee5dc8837aec] JWT token validated successfully.
+2026-08-03 16:42:09.718 +05:30 [ERR] [dac2d6f5-fcbc-49d2-9f29-ee5dc8837aec] HTTP PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/assign/A86B15DD-7CD3-4ED1-AAA3-594237A6C313 responded 500 in 27.3322 ms
+FlowForge.Application.Common.Exceptions.BadRequestException: Work Item is already assigned to this user.
+   at FlowForge.Application.Features.WorkItems.Assign.AssignWorkItemCommandHandler.Handle(AssignWorkItemCommand request, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Features\WorkItems\Assign\AssignWorkItemCommandHandler.cs:line 68
+   at FlowForge.Application.Behaviors.ValidationBehavior`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Behaviors\ValidationBehavior.cs:line 34
+   at FlowForge.API.Controllers.WorkItemsController.Assign(Guid workItemId, Guid userId, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\WorkItemsController.cs:line 191
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-08-03 16:42:09.724 +05:30 [ERR] [dac2d6f5-fcbc-49d2-9f29-ee5dc8837aec] Unhandled exception while processing PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/assign/A86B15DD-7CD3-4ED1-AAA3-594237A6C313
+FlowForge.Application.Common.Exceptions.BadRequestException: Work Item is already assigned to this user.
+   at FlowForge.Application.Features.WorkItems.Assign.AssignWorkItemCommandHandler.Handle(AssignWorkItemCommand request, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Features\WorkItems\Assign\AssignWorkItemCommandHandler.cs:line 68
+   at FlowForge.Application.Behaviors.ValidationBehavior`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Application\Behaviors\ValidationBehavior.cs:line 34
+   at FlowForge.API.Controllers.WorkItemsController.Assign(Guid workItemId, Guid userId, CancellationToken cancellationToken) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\WorkItemsController.cs:line 191
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.RateLimiting.RateLimitingMiddleware.InvokeInternal(HttpContext context, EnableRateLimitingAttribute enableRateLimitingAttribute)
+   at Microsoft.AspNetCore.ResponseCompression.ResponseCompressionMiddleware.InvokeCore(HttpContext context)
+   at FlowForge.API.Middlewares.SecurityHeadersMiddleware.InvokeAsync(HttpContext context) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Middlewares\SecurityHeadersMiddleware.cs:line 36
+   at FlowForge.API.Middlewares.ExceptionMiddleware.InvokeAsync(HttpContext context) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Middlewares\ExceptionMiddleware.cs:line 22
+2026-08-03 16:42:27.026 +05:30 [INF] [35ded949-f221-4ee4-b28d-0ed296399750] JWT token validated successfully.
+2026-08-03 16:42:27.057 +05:30 [INF] [35ded949-f221-4ee4-b28d-0ed296399750] HTTP PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/unassign responded 200 in 30.7843 ms
+2026-08-03 16:42:35.999 +05:30 [INF] [a8e20f0f-6dd8-4bfa-8498-3dd1f6f38af9] JWT token validated successfully.
+2026-08-03 16:42:36.058 +05:30 [INF] [a8e20f0f-6dd8-4bfa-8498-3dd1f6f38af9] HTTP PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/assign/A86B15DD-7CD3-4ED1-AAA3-594237A6C313 responded 200 in 59.3798 ms
+2026-08-03 16:48:56.474 +05:30 [INF] [] Application is shutting down...
+2026-08-03 16:48:56.485 +05:30 [INF] [112fc092-f6bc-443f-8471-0f1daf8135d9] HTTP GET /hubs/notifications responded 101 in 414323.3479 ms
+2026-08-03 16:49:04.480 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 16:49:04.546 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 16:49:04.552 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 16:49:04.554 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 16:49:04.591 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 16:49:04.601 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 16:49:04.608 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 16:49:04.617 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 16:49:14.337 +05:30 [WRN] [cd507d72-4369-458a-afa2-354f73dc32e2] Failed to determine the https port for redirect.
+2026-08-03 16:49:14.450 +05:30 [INF] [cd507d72-4369-458a-afa2-354f73dc32e2] JWT token validated successfully.
+2026-08-03 16:49:14.475 +05:30 [INF] [cd507d72-4369-458a-afa2-354f73dc32e2] HTTP POST /hubs/notifications/negotiate responded 200 in 124.9963 ms
+2026-08-03 16:49:14.492 +05:30 [INF] [c2f37da9-0404-44c1-965c-2c6b9cf156af] JWT token validated successfully.
+2026-08-03 16:49:39.579 +05:30 [INF] [9666b53c-4b10-40bf-b958-833424ecd009] HTTP POST /api/Auth/login responded 200 in 1540.3129 ms
+2026-08-03 16:49:50.118 +05:30 [INF] [28b71a3c-24e2-401d-9ec8-ffd639b2f549] HTTP GET /signalr-test.html responded 304 in 6.2585 ms
+2026-08-03 16:49:50.134 +05:30 [INF] [c2f37da9-0404-44c1-965c-2c6b9cf156af] HTTP GET /hubs/notifications responded 101 in 35644.3082 ms
+2026-08-03 16:49:52.423 +05:30 [INF] [c4d1279a-55f3-4fcd-981a-e4afa27b3c2d] JWT token validated successfully.
+2026-08-03 16:49:52.429 +05:30 [INF] [c4d1279a-55f3-4fcd-981a-e4afa27b3c2d] HTTP POST /hubs/notifications/negotiate responded 200 in 6.3187 ms
+2026-08-03 16:49:52.434 +05:30 [INF] [64b5de0c-41fa-4bf5-850e-638fe675bfb7] JWT token validated successfully.
+2026-08-03 16:50:05.952 +05:30 [INF] [50173c07-506a-47fd-91e5-a2b13126af8c] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 0.6356 ms
+2026-08-03 16:53:12.225 +05:30 [INF] [] Application is shutting down...
+2026-08-03 16:53:12.228 +05:30 [INF] [64b5de0c-41fa-4bf5-850e-638fe675bfb7] HTTP GET /hubs/notifications responded 101 in 199793.3802 ms
+2026-08-03 16:55:55.460 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 16:55:55.519 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 16:55:55.523 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 16:55:55.525 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 16:55:55.560 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 16:55:55.563 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 16:55:55.564 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 16:55:55.566 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 16:56:03.361 +05:30 [WRN] [6752c49d-4eef-41fd-9ab0-dc6cae203ef3] Failed to determine the https port for redirect.
+2026-08-03 16:56:03.406 +05:30 [INF] [6752c49d-4eef-41fd-9ab0-dc6cae203ef3] HTTP GET /signalr-test.html responded 304 in 29.2410 ms
+2026-08-03 16:56:03.442 +05:30 [INF] [8594375f-138f-4437-8103-75d425ed5088] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 2.1128 ms
+2026-08-03 16:56:22.825 +05:30 [ERR] [32fd0825-02b4-4558-98dc-b942ffebe45d] HTTP POST /api/Auth/login responded 500 in 1624.2866 ms
+FlowForge.Application.Common.Exceptions.UnauthorizedException: Invalid email or password.
+   at FlowForge.Infrastructure.Services.Authentication.AuthService.LoginAsync(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Infrastructure\Services\Authentication\AuthService.cs:line 78
+   at FlowForge.API.Controllers.AuthController.Login(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\AuthController.cs:line 36
+   at lambda_method9(Closure, Object)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.AwaitableObjectResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-08-03 16:56:22.857 +05:30 [ERR] [32fd0825-02b4-4558-98dc-b942ffebe45d] Unhandled exception while processing POST /api/Auth/login
+FlowForge.Application.Common.Exceptions.UnauthorizedException: Invalid email or password.
+   at FlowForge.Infrastructure.Services.Authentication.AuthService.LoginAsync(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Infrastructure\Services\Authentication\AuthService.cs:line 78
+   at FlowForge.API.Controllers.AuthController.Login(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\AuthController.cs:line 36
+   at lambda_method9(Closure, Object)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.AwaitableObjectResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.RateLimiting.RateLimitingMiddleware.InvokeInternal(HttpContext context, EnableRateLimitingAttribute enableRateLimitingAttribute)
+   at Microsoft.AspNetCore.ResponseCompression.ResponseCompressionMiddleware.InvokeCore(HttpContext context)
+   at FlowForge.API.Middlewares.SecurityHeadersMiddleware.InvokeAsync(HttpContext context) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Middlewares\SecurityHeadersMiddleware.cs:line 36
+   at FlowForge.API.Middlewares.ExceptionMiddleware.InvokeAsync(HttpContext context) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Middlewares\ExceptionMiddleware.cs:line 22
+2026-08-03 16:56:29.658 +05:30 [INF] [41b55bdb-57a7-4871-b3ce-edc2a27ca292] HTTP POST /api/Auth/login responded 200 in 164.2923 ms
+2026-08-03 16:56:36.809 +05:30 [INF] [b96d30e8-2746-41b5-9fa9-831437a7f335] HTTP GET /.well-known/appspecific/com.chrome.devtools.json responded 404 in 0.2168 ms
+2026-08-03 16:56:39.795 +05:30 [INF] [84a793c7-c5ca-4941-9d32-49b7c5406df7] JWT token validated successfully.
+2026-08-03 16:56:39.801 +05:30 [INF] [84a793c7-c5ca-4941-9d32-49b7c5406df7] HTTP POST /hubs/notifications/negotiate responded 200 in 48.5335 ms
+2026-08-03 16:56:39.807 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] JWT token validated successfully.
+2026-08-03 16:56:39.831 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] ===== SIGNALR CONNECTED =====
+2026-08-03 16:56:39.834 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier = 978f6ab7-0a87-4e48-9e8f-10ad166282d9
+2026-08-03 16:56:39.835 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name = John Doe
+2026-08-03 16:56:39.837 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress = john@example.com
+2026-08-03 16:56:39.839 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] organizationId = 7f841262-ca4a-4a45-85ba-c758bcbecdae
+2026-08-03 16:56:39.840 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] jti = 7fb54644-0d24-4680-b558-ad7f4708d6f9
+2026-08-03 16:56:39.841 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] exp = 1785759989
+2026-08-03 16:56:39.842 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] iss = FlowForgeAPI
+2026-08-03 16:56:39.843 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] aud = FlowForgeClient
+2026-08-03 16:56:39.844 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] ConnectionId: sciJxSTCuK0DfOfyTUaglA
+2026-08-03 16:56:39.845 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] UserId: 978f6ab7-0a87-4e48-9e8f-10ad166282d9
+2026-08-03 16:56:39.847 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] OrganizationId: 7f841262-ca4a-4a45-85ba-c758bcbecdae
+2026-08-03 16:56:39.848 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] Joined group: user:978f6ab7-0a87-4e48-9e8f-10ad166282d9
+2026-08-03 16:56:39.849 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] Joined group: organization:7f841262-ca4a-4a45-85ba-c758bcbecdae
+2026-08-03 16:58:32.049 +05:30 [INF] [058b01dd-45a8-4413-a436-920e9b44dba8] JWT token validated successfully.
+2026-08-03 16:58:32.065 +05:30 [WRN] [058b01dd-45a8-4413-a436-920e9b44dba8] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-08-03 16:58:32.467 +05:30 [INF] [058b01dd-45a8-4413-a436-920e9b44dba8] HTTP PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/unassign responded 200 in 417.9618 ms
+2026-08-03 16:58:47.547 +05:30 [INF] [9acae2a3-c66b-48e1-9832-6be7393bd0fb] JWT token validated successfully.
+2026-08-03 16:58:47.698 +05:30 [INF] [9acae2a3-c66b-48e1-9832-6be7393bd0fb] Sending event NotificationReceived to group user:"a86b15dd-7cd3-4ed1-aaa3-594237a6c313"
+2026-08-03 16:58:47.732 +05:30 [INF] [9acae2a3-c66b-48e1-9832-6be7393bd0fb] HTTP PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/assign/A86B15DD-7CD3-4ED1-AAA3-594237A6C313 responded 200 in 185.1441 ms
+2026-08-03 17:00:08.052 +05:30 [INF] [098cc105-203e-4bcc-bea5-bb0e347c4baf] JWT token validated successfully.
+2026-08-03 17:00:08.078 +05:30 [INF] [098cc105-203e-4bcc-bea5-bb0e347c4baf] HTTP PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/unassign responded 200 in 26.5777 ms
+2026-08-03 17:00:26.618 +05:30 [INF] [b0a494e3-c209-4db6-a188-b026f3a04dba] JWT token validated successfully.
+2026-08-03 17:00:26.645 +05:30 [INF] [b0a494e3-c209-4db6-a188-b026f3a04dba] Sending event NotificationReceived to group user:"978f6ab7-0a87-4e48-9e8f-10ad166282d9"
+2026-08-03 17:00:26.663 +05:30 [INF] [b0a494e3-c209-4db6-a188-b026f3a04dba] HTTP PATCH /api/WorkItems/668EEFE4-B480-4410-87D6-08DEEFBFBE97/assign/978F6AB7-0A87-4E48-9E8F-10AD166282D9 responded 200 in 45.1675 ms
+2026-08-03 17:02:22.786 +05:30 [INF] [] Application is shutting down...
+2026-08-03 17:02:22.796 +05:30 [INF] [6391689a-1444-4b85-809d-b86c2c8ace27] JWT token validated successfully.
+2026-08-03 17:02:22.797 +05:30 [INF] [6391689a-1444-4b85-809d-b86c2c8ace27] HTTP POST /hubs/notifications/negotiate responded 200 in 1.3001 ms
+2026-08-03 17:02:22.799 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] HTTP GET /hubs/notifications responded 101 in 342992.5057 ms
