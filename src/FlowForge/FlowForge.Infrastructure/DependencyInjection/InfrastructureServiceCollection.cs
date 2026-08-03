@@ -30,6 +30,7 @@ using FlowForge.Application.Features.WorkItemWatchers;
 using FlowForge.Application.Features.WorkItemHistories;
 using FlowForge.Application.Services.WorkItemHistories;
 using FlowForge.Infrastructure.Services.WorkItemHistories;
+using FlowForge.Application.Features.Search;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -69,6 +70,8 @@ public static class InfrastructureServiceCollection
         services.AddScoped<LabelRules>();
 
         services.AddScoped<NotificationRules>();
+
+        services.AddScoped<SearchRules>();
 
         services.AddScoped<IWorkItemOrderingService, WorkItemOrderingService>();
 
