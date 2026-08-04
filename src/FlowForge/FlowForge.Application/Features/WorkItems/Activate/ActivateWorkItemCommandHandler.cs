@@ -5,6 +5,8 @@ using FlowForge.Application.Services.Notifications;
 using FlowForge.Application.Services.Realtime;
 using FlowForge.Domain.Entities;
 using FlowForge.Domain.Enums;
+using FlowForge.Application.Common.Constants;
+using Microsoft.EntityFrameworkCore;
 using MediatR;
 
 namespace FlowForge.Application.Features.WorkItems.Activate;
@@ -85,6 +87,22 @@ public sealed class ActivateWorkItemCommandHandler
                 },
                 cancellationToken);
         }
+
+        var boardId = await _context.WorkItems
+            .Where(w => w.Id == workItem.Id)
+            .Select(w => w.Column.BoardId)
+            .SingleAsync(cancellationToken);
+
+        await _realtimeNotifier.NotifyBoardAsync(
+            boardId,
+            RealtimeEvents.WorkItemUpdated,
+            new
+            {
+                BoardId = boardId,
+                WorkItemId = workItem.Id,
+                Status = workItem.Status
+            },
+            cancellationToken);
 
         return ApiResponse<ActivateWorkItemResponse>.SuccessResponse(
             new ActivateWorkItemResponse

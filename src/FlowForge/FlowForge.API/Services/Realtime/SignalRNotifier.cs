@@ -28,4 +28,33 @@ public sealed class SignalRNotifier : IRealtimeNotifier
             .Group($"organization:{organizationId}")
             .SendAsync(eventName, payload, cancellationToken);
     }
+
+    public async Task NotifyUserOnlineAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await _hubContext.Clients.All.SendAsync(
+            "UserOnline",
+            new
+            {
+                UserId = userId
+            },
+            cancellationToken);
+    }
+
+    public async Task NotifyUserOfflineAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await _hubContext.Clients.All.SendAsync(
+            "UserOffline",
+            new
+            {
+                UserId = userId
+            },
+            cancellationToken);
+    }
+
+    public async Task NotifyBoardAsync(Guid boardId, string eventName, object payload, CancellationToken cancellationToken = default)
+    {
+        await _hubContext.Clients
+            .Group($"board:{boardId}")
+            .SendAsync(eventName, payload, cancellationToken);
+    }
 }

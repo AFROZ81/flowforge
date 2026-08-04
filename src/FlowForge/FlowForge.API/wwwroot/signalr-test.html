@@ -1,54 +1,384 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>FlowForge SignalR Test</title>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 20px;
+        }
+
+        input {
+            width: 700px;
+            padding: 6px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 7px 14px;
+            margin-right: 8px;
+            margin-top: 5px;
+            cursor: pointer;
+        }
+
+        #status {
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        #log {
+            border: 1px solid #ccc;
+            background: #fafafa;
+            padding: 10px;
+            height: 450px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
 </head>
+
 <body>
 
-<h2>FlowForge SignalR Test</h2>
+    <h2>FlowForge SignalR Test</h2>
 
-<input id="token" style="width:700px" placeholder="Paste JWT Token">
+    <label>JWT Token</label><br>
 
-<button onclick="connect()">Connect</button>
+    <input
+        id="token"
+        placeholder="Paste JWT Token">
 
-<pre id="log"></pre>
+    <br>
 
-<script>
+    <label>Board Id</label><br>
 
-let connection;
+    <input
+        id="boardId"
+        placeholder="Paste Board Id">
 
-function log(msg){
-    document.getElementById("log").textContent += msg + "\n";
-}
+    <br>
 
-async function connect(){
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+    <button onclick="joinBoard()">Join Board</button>
+    <button onclick="leaveBoard()">Leave Board</button>
+    <button onclick="clearLog()">Clear Log</button>
 
-    const token=document.getElementById("token").value;
+    <div id="status">
+        Status : Disconnected
+    </div>
 
-    connection=new signalR.HubConnectionBuilder()
-        .withUrl("http://localhost:5045/hubs/notifications",{
-            accessTokenFactory:()=>token
-        })
-        .withAutomaticReconnect()
-        .build();
+    <pre id="log"></pre>
 
-    connection.on("NotificationReceived",data=>{
-        log("Notification Received:");
-        log(JSON.stringify(data,null,2));
-    });
+    <script>
 
-    try{
-        await connection.start();
-        log("Connected");
-    }
-    catch(e){
-        log(e);
-    }
+        let connection = null;
 
-}
+        function log(message) {
 
-</script>
+            const logElement = document.getElementById("log");
+
+            const now = new Date().toLocaleTimeString();
+
+            logElement.textContent += `[${now}] ${message}\n`;
+
+            logElement.scrollTop = logElement.scrollHeight;
+
+        }
+
+        function clearLog() {
+
+            document.getElementById("log").textContent = "";
+
+        }
+
+        function setStatus(status) {
+
+            document.getElementById("status").textContent =
+                "Status : " + status;
+
+        }
+
+        async function connect() {
+
+            if (connection) {
+                log("Already connected.");
+                return;
+            }
+
+            const token =
+                document.getElementById("token").value;
+
+            connection = new signalR.HubConnectionBuilder()
+
+                .withUrl(
+                    "http://localhost:5045/hubs/notifications",
+                    {
+                        accessTokenFactory: () => token
+                    })
+
+                .withAutomaticReconnect()
+
+                .build();
+
+            // ===================================================
+            // Connection Events
+            // ===================================================
+
+            connection.onreconnecting(() => {
+
+                setStatus("Reconnecting");
+
+                log("⚠️ Reconnecting...");
+
+            });
+
+            connection.onreconnected(() => {
+
+                setStatus("Connected");
+
+                log("✅ Reconnected");
+
+            });
+
+            connection.onclose(() => {
+
+                setStatus("Disconnected");
+
+                log("❌ Connection Closed");
+
+                connection = null;
+
+            });
+
+            // ===================================================
+            // Notifications
+            // ===================================================
+
+            connection.on("NotificationReceived", data => {
+
+                log("🔔 Notification Received");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            // ===================================================
+            // Presence
+            // ===================================================
+
+            connection.on("UserOnline", data => {
+
+                log("🟢 User Online");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            connection.on("UserOffline", data => {
+
+                log("⚫ User Offline");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            // ===================================================
+            // Work Item Events
+            // ===================================================
+
+            connection.on("WorkItemCreated", data => {
+
+                log("📋 Work Item Created");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            connection.on("WorkItemUpdated", data => {
+
+                log("✏️ Work Item Updated");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            connection.on("WorkItemMoved", data => {
+
+                log("📦 Work Item Moved");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            connection.on("WorkItemDeleted", data => {
+
+                log("🗑️ Work Item Deleted");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            // ===================================================
+            // Comments
+            // ===================================================
+
+            connection.on("CommentAdded", data => {
+
+                log("💬 Comment Added");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            // ===================================================
+            // Future Events
+            // ===================================================
+
+            connection.on("TypingStarted", data => {
+
+                log("⌨️ Typing Started");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            connection.on("TypingStopped", data => {
+
+                log("⌨️ Typing Stopped");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            connection.on("BoardPresenceChanged", data => {
+
+                log("👀 Board Presence Changed");
+
+                log(JSON.stringify(data, null, 2));
+
+            });
+
+            try {
+
+                await connection.start();
+
+                setStatus("Connected");
+
+                log("✅ Connected");
+
+            }
+            catch (err) {
+
+                log(err);
+
+                setStatus("Connection Failed");
+
+            }
+
+        }
+
+        async function disconnect() {
+
+            if (!connection)
+                return;
+
+            await connection.stop();
+
+            connection = null;
+
+            setStatus("Disconnected");
+
+            log("Disconnected");
+
+        }
+
+        async function joinBoard() {
+
+            if (!connection) {
+
+                log("Connect first.");
+
+                return;
+
+            }
+
+            const boardId =
+                document.getElementById("boardId").value;
+
+            if (!boardId) {
+
+                log("Enter Board Id.");
+
+                return;
+
+            }
+
+            try {
+
+                await connection.invoke(
+                    "JoinBoard",
+                    boardId);
+
+                log("📋 Joined Board");
+
+                log(boardId);
+
+            }
+            catch (err) {
+
+                log(err);
+
+            }
+
+        }
+
+        async function leaveBoard() {
+
+            if (!connection) {
+
+                log("Connect first.");
+
+                return;
+
+            }
+
+            const boardId =
+                document.getElementById("boardId").value;
+
+            if (!boardId) {
+
+                log("Enter Board Id.");
+
+                return;
+
+            }
+
+            try {
+
+                await connection.invoke(
+                    "LeaveBoard",
+                    boardId);
+
+                log("📤 Left Board");
+
+                log(boardId);
+
+            }
+            catch (err) {
+
+                log(err);
+
+            }
+
+        }
+
+    </script>
 
 </body>
+
 </html>

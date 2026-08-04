@@ -434,3 +434,114 @@ FlowForge.Application.Common.Exceptions.UnauthorizedException: Invalid email or 
 2026-08-03 17:02:22.796 +05:30 [INF] [6391689a-1444-4b85-809d-b86c2c8ace27] JWT token validated successfully.
 2026-08-03 17:02:22.797 +05:30 [INF] [6391689a-1444-4b85-809d-b86c2c8ace27] HTTP POST /hubs/notifications/negotiate responded 200 in 1.3001 ms
 2026-08-03 17:02:22.799 +05:30 [INF] [61642cb4-9e58-4950-9166-07f42946e151] HTTP GET /hubs/notifications responded 101 in 342992.5057 ms
+2026-08-03 17:19:52.580 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 17:19:52.641 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 17:19:52.643 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 17:19:52.643 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 17:19:52.680 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 17:19:52.682 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 17:19:52.683 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 17:19:52.683 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 17:19:54.680 +05:30 [WRN] [32f40b6e-1185-4b64-9b4b-4ea6a45c5c02] Failed to determine the https port for redirect.
+2026-08-03 17:19:54.707 +05:30 [INF] [32f40b6e-1185-4b64-9b4b-4ea6a45c5c02] HTTP GET / responded 302 in 16.1997 ms
+2026-08-03 17:20:15.678 +05:30 [INF] [390faecf-148a-4d5e-9a3e-8f8257b02379] HTTP POST /api/Auth/login responded 200 in 1686.6741 ms
+2026-08-03 17:20:37.351 +05:30 [INF] [1f20cdf9-5df4-48bd-95bd-d446ee18163a] HTTP GET /api/Presence/online-users responded 200 in 12.1856 ms
+2026-08-03 17:20:49.461 +05:30 [INF] [93d3de1d-ef44-4096-ac01-673c3f8bd833] JWT token validated successfully.
+2026-08-03 17:20:49.464 +05:30 [INF] [93d3de1d-ef44-4096-ac01-673c3f8bd833] HTTP GET /api/Presence/online-users responded 200 in 34.8810 ms
+2026-08-03 17:22:59.150 +05:30 [INF] [81700bf4-b88a-4818-a9ef-6e5f7412a89c] HTTP GET /signalr-test.html responded 304 in 8.5095 ms
+2026-08-03 17:23:16.432 +05:30 [INF] [33a7f662-f938-4f37-bd50-12c39315f4d5] JWT token validated successfully.
+2026-08-03 17:23:16.438 +05:30 [INF] [33a7f662-f938-4f37-bd50-12c39315f4d5] HTTP POST /hubs/notifications/negotiate responded 200 in 9.5547 ms
+2026-08-03 17:23:16.443 +05:30 [INF] [2b326ed4-90a7-4b66-aeea-ef6d23dcfcd8] JWT token validated successfully.
+2026-08-03 17:23:20.050 +05:30 [INF] [e197b260-3147-4d64-bae0-81e05d7e6555] JWT token validated successfully.
+2026-08-03 17:23:20.052 +05:30 [INF] [e197b260-3147-4d64-bae0-81e05d7e6555] HTTP GET /api/Presence/online-users responded 200 in 2.0870 ms
+2026-08-03 17:23:35.959 +05:30 [INF] [f620de9f-9c8e-4fd0-80b6-4c6f0f523f04] JWT token validated successfully.
+2026-08-03 17:23:35.964 +05:30 [INF] [f620de9f-9c8e-4fd0-80b6-4c6f0f523f04] HTTP GET /api/Presence/is-online/978F6AB7-0A87-4E48-9E8F-10AD166282D9 responded 200 in 5.2118 ms
+2026-08-03 17:28:29.285 +05:30 [INF] [] Application is shutting down...
+2026-08-03 17:28:29.294 +05:30 [INF] [873cfa41-3064-438e-b88b-d728988eafb3] JWT token validated successfully.
+2026-08-03 17:28:29.295 +05:30 [INF] [873cfa41-3064-438e-b88b-d728988eafb3] HTTP POST /hubs/notifications/negotiate responded 200 in 2.1399 ms
+2026-08-03 17:28:29.297 +05:30 [INF] [2b326ed4-90a7-4b66-aeea-ef6d23dcfcd8] HTTP GET /hubs/notifications responded 101 in 312854.6339 ms
+2026-08-03 17:28:40.458 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 17:28:40.513 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 17:28:40.515 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 17:28:40.515 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 17:28:40.548 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 17:28:40.551 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 17:28:40.552 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 17:28:40.552 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 17:28:49.339 +05:30 [WRN] [04bbf74b-7721-4c71-84d3-13d883fa179b] Failed to determine the https port for redirect.
+2026-08-03 17:28:49.432 +05:30 [INF] [04bbf74b-7721-4c71-84d3-13d883fa179b] JWT token validated successfully.
+2026-08-03 17:28:49.453 +05:30 [INF] [04bbf74b-7721-4c71-84d3-13d883fa179b] HTTP POST /hubs/notifications/negotiate responded 200 in 99.4049 ms
+2026-08-03 17:28:49.462 +05:30 [INF] [08dacdbe-208c-42e8-af82-b79b51c4e85d] JWT token validated successfully.
+2026-08-03 17:28:54.904 +05:30 [ERR] [6b261fe0-7a55-4f10-97d0-80d669806fd1] HTTP POST /api/Auth/login responded 500 in 1578.1411 ms
+FlowForge.Application.Common.Exceptions.UnauthorizedException: Invalid email or password.
+   at FlowForge.Infrastructure.Services.Authentication.AuthService.LoginAsync(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Infrastructure\Services\Authentication\AuthService.cs:line 78
+   at FlowForge.API.Controllers.AuthController.Login(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\AuthController.cs:line 36
+   at lambda_method10(Closure, Object)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.AwaitableObjectResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-08-03 17:28:54.938 +05:30 [ERR] [6b261fe0-7a55-4f10-97d0-80d669806fd1] Unhandled exception while processing POST /api/Auth/login
+FlowForge.Application.Common.Exceptions.UnauthorizedException: Invalid email or password.
+   at FlowForge.Infrastructure.Services.Authentication.AuthService.LoginAsync(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.Infrastructure\Services\Authentication\AuthService.cs:line 78
+   at FlowForge.API.Controllers.AuthController.Login(LoginRequest request) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Controllers\AuthController.cs:line 36
+   at lambda_method10(Closure, Object)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.AwaitableObjectResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.RateLimiting.RateLimitingMiddleware.InvokeInternal(HttpContext context, EnableRateLimitingAttribute enableRateLimitingAttribute)
+   at Microsoft.AspNetCore.ResponseCompression.ResponseCompressionMiddleware.InvokeCore(HttpContext context)
+   at FlowForge.API.Middlewares.SecurityHeadersMiddleware.InvokeAsync(HttpContext context) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Middlewares\SecurityHeadersMiddleware.cs:line 36
+   at FlowForge.API.Middlewares.ExceptionMiddleware.InvokeAsync(HttpContext context) in D:\My Project\FlowForge\src\FlowForge\FlowForge.API\Middlewares\ExceptionMiddleware.cs:line 22
+2026-08-03 17:29:01.838 +05:30 [INF] [3661f941-2bcb-49b3-a270-c32ede5e1a90] HTTP POST /api/Auth/login responded 200 in 159.4278 ms
+2026-08-03 17:29:16.078 +05:30 [INF] [0e3f24f5-4320-4682-94a5-a50bd589231b] JWT token validated successfully.
+2026-08-03 17:29:16.083 +05:30 [INF] [0e3f24f5-4320-4682-94a5-a50bd589231b] HTTP POST /hubs/notifications/negotiate responded 200 in 6.2323 ms
+2026-08-03 17:29:16.089 +05:30 [INF] [c97fb175-691f-46ba-a9a2-de31cd7cecc2] JWT token validated successfully.
+2026-08-03 17:29:18.163 +05:30 [INF] [8a7d7024-ee1a-4137-b2aa-afba29d80167] HTTP GET /signalr-test.html responded 200 in 9.5471 ms
+2026-08-03 17:29:18.184 +05:30 [INF] [c97fb175-691f-46ba-a9a2-de31cd7cecc2] HTTP GET /hubs/notifications responded 101 in 2094.3695 ms
+2026-08-03 17:29:18.184 +05:30 [INF] [08dacdbe-208c-42e8-af82-b79b51c4e85d] HTTP GET /hubs/notifications responded 101 in 28722.7746 ms
+2026-08-03 17:29:20.648 +05:30 [INF] [6149f78c-4abf-4ccb-8538-1f0dc9bc556f] JWT token validated successfully.
+2026-08-03 17:29:20.651 +05:30 [INF] [6149f78c-4abf-4ccb-8538-1f0dc9bc556f] HTTP POST /hubs/notifications/negotiate responded 200 in 2.9320 ms
+2026-08-03 17:29:20.658 +05:30 [INF] [53402f7e-94f9-4a69-8ff5-f03602295d93] JWT token validated successfully.
+2026-08-03 17:29:37.926 +05:30 [INF] [30f6fbf6-2449-43f4-9b5b-a65894bd31cb] HTTP GET /api/Presence/online-users responded 200 in 7.1521 ms
+2026-08-03 17:31:49.626 +05:30 [INF] [] Application is shutting down...
+2026-08-03 17:31:49.633 +05:30 [INF] [53402f7e-94f9-4a69-8ff5-f03602295d93] HTTP GET /hubs/notifications responded 101 in 148975.5246 ms
+2026-08-03 17:42:13.620 +05:30 [INF] [] Starting FlowForge API
+2026-08-03 17:42:13.681 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-03 17:42:13.683 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-03 17:42:13.683 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-03 17:42:13.719 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-03 17:42:13.721 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-03 17:42:13.722 +05:30 [INF] [] Hosting environment: Development
+2026-08-03 17:42:13.723 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-03 17:42:18.649 +05:30 [WRN] [0540c226-d585-42f5-9cfc-44a378f405f0] Failed to determine the https port for redirect.
+2026-08-03 17:42:18.692 +05:30 [INF] [0540c226-d585-42f5-9cfc-44a378f405f0] HTTP GET / responded 302 in 27.7367 ms
+2026-08-03 17:42:36.800 +05:30 [INF] [48bbc85d-6c26-41a6-8d66-2d791a43eaf4] HTTP POST /api/Auth/login responded 200 in 1661.0461 ms
+2026-08-03 17:42:44.900 +05:30 [INF] [80040153-a590-407f-a1f4-6005867c65d9] HTTP GET /signalr-test.html responded 200 in 11.1483 ms
+2026-08-03 17:42:47.513 +05:30 [INF] [6aab4b70-2ae4-4c8d-8b1d-c3ff01ad22d8] JWT token validated successfully.
+2026-08-03 17:42:47.519 +05:30 [INF] [6aab4b70-2ae4-4c8d-8b1d-c3ff01ad22d8] HTTP POST /hubs/notifications/negotiate responded 200 in 48.9113 ms
+2026-08-03 17:42:47.524 +05:30 [INF] [d60f5514-0887-44ac-a4a3-f20c26f43e4f] JWT token validated successfully.
+2026-08-03 17:44:14.197 +05:30 [INF] [925ff1bd-b063-45b5-aa8b-d2888e435167] HTTP POST /api/WorkItems responded 401 in 7.4927 ms
+2026-08-03 17:44:22.652 +05:30 [INF] [219e4f48-f322-4522-8ade-547cf3c32e76] JWT token validated successfully.
+2026-08-03 17:44:22.668 +05:30 [WRN] [219e4f48-f322-4522-8ade-547cf3c32e76] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-08-03 17:44:23.316 +05:30 [INF] [219e4f48-f322-4522-8ade-547cf3c32e76] HTTP POST /api/WorkItems responded 200 in 663.6490 ms
+2026-08-03 17:49:11.502 +05:30 [INF] [5e43af3c-5721-4575-a615-9202b2db3bee] HTTP GET /signalr-test.html responded 200 in 5.4516 ms
+2026-08-03 17:49:11.512 +05:30 [INF] [d60f5514-0887-44ac-a4a3-f20c26f43e4f] HTTP GET /hubs/notifications responded 101 in 383988.6074 ms
+2026-08-03 17:51:17.230 +05:30 [INF] [a8529a34-010c-4660-b21a-a23fc0ad3c1a] HTTP GET /signalr-test.html responded 200 in 1.0484 ms

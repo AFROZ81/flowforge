@@ -4,6 +4,9 @@ using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Services.WorkItems;
 using FlowForge.Application.Services.WorkItemHistories;
 using FlowForge.Domain.Enums;
+using FlowForge.Application.Common.Constants;
+using FlowForge.Application.Services.Realtime;
+
 using MediatR;
 
 namespace FlowForge.Application.Features.WorkItems.Move;
@@ -16,14 +19,16 @@ public sealed class MoveWorkItemCommandHandler
     private readonly WorkItemRules _rules;
     private readonly IWorkItemOrderingService _orderingService;
     private readonly IWorkItemHistoryService _historyService;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
-    public MoveWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, WorkItemRules rules, IWorkItemOrderingService orderingService, IWorkItemHistoryService historyService)
+    public MoveWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, WorkItemRules rules, IWorkItemOrderingService orderingService, IWorkItemHistoryService historyService, IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _currentUser = currentUser;
         _rules = rules;
         _orderingService = orderingService;
         _historyService = historyService;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     public async Task<ApiResponse<MoveWorkItemResponse>> Handle(MoveWorkItemCommand request, CancellationToken cancellationToken)
@@ -50,6 +55,8 @@ public sealed class MoveWorkItemCommandHandler
                 "Work Item position unchanged.");
         }
 
+        var sourceColumnId = workItem.ColumnId;
+
         workItem.MoveToColumn(destinationColumn.Id, displayOrder);
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -59,6 +66,19 @@ public sealed class MoveWorkItemCommandHandler
             _currentUser.User.UserId,
             WorkItemHistoryAction.StatusChanged,
             $"{_currentUser.User.FullName} moved the Work Item to \"{destinationColumn.Name}\".",
+            cancellationToken);
+
+        await _realtimeNotifier.NotifyBoardAsync(
+            destinationColumn.BoardId,
+            RealtimeEvents.WorkItemMoved,
+            new
+            {
+                BoardId = destinationColumn.BoardId,
+                WorkItemId = workItem.Id,
+                FromColumnId = sourceColumnId,
+                ToColumnId = destinationColumn.Id,
+                DisplayOrder = workItem.DisplayOrder
+            },
             cancellationToken);
 
         return ApiResponse<MoveWorkItemResponse>.SuccessResponse(

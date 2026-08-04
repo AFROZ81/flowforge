@@ -7,6 +7,7 @@ using FlowForge.Application.Services.Users;
 using FlowForge.Domain.Enums;
 using FlowForge.Application.Services.WorkItemHistories;
 using FlowForge.Application.Services.Realtime;
+using FlowForge.Application.Common.Constants;
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -93,6 +94,18 @@ public sealed class AssignWorkItemCommandHandler : IRequestHandler<AssignWorkIte
                 notification.CreatedAt,
                 notification.WorkItemId,
                 notification.IsRead
+            },
+            cancellationToken);
+
+        await _realtimeNotifier.NotifyBoardAsync(
+            workItem.Column.BoardId,
+            RealtimeEvents.WorkItemUpdated,
+            new
+            {
+                BoardId = workItem.Column.BoardId,
+                WorkItemId = workItem.Id,
+                AssigneeId = assignee.Id,
+                AssigneeName = assignee.FullName
             },
             cancellationToken);
 

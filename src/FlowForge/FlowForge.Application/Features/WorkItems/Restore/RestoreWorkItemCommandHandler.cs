@@ -1,6 +1,10 @@
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
+using FlowForge.Application.Common.Constants;
+using FlowForge.Application.Services.Realtime;
+using Microsoft.EntityFrameworkCore;
+
 using MediatR;
 
 namespace FlowForge.Application.Features.WorkItems.Restore;
@@ -10,12 +14,14 @@ public sealed class RestoreWorkItemCommandHandler : IRequestHandler<RestoreWorkI
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
     private readonly WorkItemRules _rules;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
-    public RestoreWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, WorkItemRules rules)
+    public RestoreWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, WorkItemRules rules, IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _currentUser = currentUser;
         _rules = rules;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     public async Task<ApiResponse<RestoreWorkItemResponse>> Handle(RestoreWorkItemCommand request, CancellationToken cancellationToken)
@@ -27,6 +33,21 @@ public sealed class RestoreWorkItemCommandHandler : IRequestHandler<RestoreWorkI
         workItem.Restore();
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        var boardId = await _context.Columns
+            .Where(c => c.Id == workItem.ColumnId)
+            .Select(c => c.BoardId)
+            .SingleAsync(cancellationToken);
+
+        await _realtimeNotifier.NotifyBoardAsync(
+            boardId,
+            RealtimeEvents.WorkItemCreated,
+            new
+            {
+                BoardId = boardId,
+                WorkItemId = workItem.Id
+            },
+            cancellationToken);
 
         return ApiResponse<RestoreWorkItemResponse>.SuccessResponse(
         new RestoreWorkItemResponse

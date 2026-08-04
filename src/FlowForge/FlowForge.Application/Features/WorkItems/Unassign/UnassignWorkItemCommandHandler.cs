@@ -2,6 +2,9 @@ using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
+using FlowForge.Application.Common.Constants;
+using FlowForge.Application.Services.Realtime;
+
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,11 +14,13 @@ public sealed class UnassignWorkItemCommandHandler : IRequestHandler<UnassignWor
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
-    public UnassignWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser)
+    public UnassignWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _currentUser = currentUser;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     public async Task<ApiResponse<UnassignWorkItemResponse>> Handle(UnassignWorkItemCommand request, CancellationToken cancellationToken)
@@ -48,6 +53,17 @@ public sealed class UnassignWorkItemCommandHandler : IRequestHandler<UnassignWor
         workItem.Unassign();
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _realtimeNotifier.NotifyBoardAsync(
+            workItem.Column.BoardId,
+            RealtimeEvents.WorkItemUpdated,
+            new
+            {
+                BoardId = workItem.Column.BoardId,
+                WorkItemId = workItem.Id,
+                AssigneeId = (Guid?)null
+            },
+            cancellationToken);
 
         return ApiResponse<UnassignWorkItemResponse>
             .SuccessResponse(

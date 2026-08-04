@@ -33,6 +33,8 @@ using FlowForge.Infrastructure.Services.WorkItemHistories;
 using FlowForge.Application.Features.Search;
 using FlowForge.Application.Features.Reminders;
 using FlowForge.Application.Services.Realtime;
+using FlowForge.Application.Services.Presence;
+using FlowForge.Infrastructure.Services.Presence;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -92,6 +94,8 @@ public static class InfrastructureServiceCollection
         services.AddScoped<WorkItemHistoryRules>();
 
         services.AddScoped<IWorkItemHistoryService, WorkItemHistoryService>();
+
+        services.AddSingleton<IOnlineUserTracker, OnlineUserTracker>();
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {

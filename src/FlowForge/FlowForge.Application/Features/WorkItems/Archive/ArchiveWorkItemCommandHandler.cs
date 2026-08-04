@@ -1,6 +1,10 @@
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
+using FlowForge.Application.Common.Constants;
+using FlowForge.Application.Services.Realtime;
+using Microsoft.EntityFrameworkCore;
+
 using MediatR;
 
 namespace FlowForge.Application.Features.WorkItems.Archive;
@@ -10,11 +14,14 @@ public sealed class ArchiveWorkItemCommandHandler : IRequestHandler<ArchiveWorkI
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUser;
     private readonly WorkItemRules _rules;
+    private readonly IRealtimeNotifier _realtimeNotifier;
 
-    public ArchiveWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, WorkItemRules rules)
+    public ArchiveWorkItemCommandHandler(IApplicationDbContext context, ICurrentUserService currentUser, WorkItemRules rules, IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _currentUser = currentUser;
+        _rules = rules;
+        _realtimeNotifier = realtimeNotifier;
         _rules = rules;
     }
 
@@ -27,6 +34,21 @@ public sealed class ArchiveWorkItemCommandHandler : IRequestHandler<ArchiveWorkI
         workItem.Archive();
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        var boardId = await _context.Columns
+            .Where(c => c.Id == workItem.ColumnId)
+            .Select(c => c.BoardId)
+            .SingleAsync(cancellationToken);
+
+        await _realtimeNotifier.NotifyBoardAsync(
+            boardId,
+            RealtimeEvents.WorkItemDeleted,
+            new
+            {
+                BoardId = boardId,
+                WorkItemId = workItem.Id
+            },
+            cancellationToken);
 
         return ApiResponse<ArchiveWorkItemResponse>.SuccessResponse(
             new ArchiveWorkItemResponse
