@@ -1,3 +1,5 @@
+using FlowForge.Application.Services.Presence;
+
 namespace FlowForge.Application.Services.Realtime;
 
 public interface IRealtimeNotifier
@@ -11,4 +13,6 @@ public interface IRealtimeNotifier
     Task NotifyUserOfflineAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task NotifyBoardAsync(Guid boardId, string eventName, object payload, CancellationToken cancellationToken = default);
+
+    Task NotifyBoardPresenceChangedAsync(Guid boardId, IReadOnlyCollection<BoardViewer> users, CancellationToken cancellationToken = default);
 }

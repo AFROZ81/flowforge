@@ -139,3 +139,52 @@ FlowForge.Application.Common.Exceptions.BadRequestException: A work item with th
 2026-08-04 13:23:52.638 +05:30 [INF] [46c48744-4f4c-4476-8249-2a9f20b9345c] JWT token validated successfully.
 2026-08-04 13:23:52.639 +05:30 [INF] [a58b20ee-0da7-427a-9047-6477341d6e93] HTTP GET /hubs/notifications responded 101 in 855688.3679 ms
 2026-08-04 13:23:52.639 +05:30 [INF] [46c48744-4f4c-4476-8249-2a9f20b9345c] HTTP POST /hubs/notifications/negotiate responded 200 in 2.1884 ms
+2026-08-04 14:44:49.243 +05:30 [INF] [] Starting FlowForge API
+2026-08-04 14:44:49.351 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-04 14:44:49.353 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-04 14:44:49.354 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-04 14:44:49.389 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-04 14:44:49.391 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-04 14:44:49.392 +05:30 [INF] [] Hosting environment: Development
+2026-08-04 14:44:49.393 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-04 14:45:07.329 +05:30 [WRN] [5efc2f62-242f-4d0b-94ef-fdc616b6c987] Failed to determine the https port for redirect.
+2026-08-04 14:45:08.431 +05:30 [INF] [5efc2f62-242f-4d0b-94ef-fdc616b6c987] HTTP GET / responded 302 in 1092.7416 ms
+2026-08-04 14:45:34.085 +05:30 [INF] [62352ce1-90d1-427f-a934-2a83ee148269] HTTP POST /api/Auth/login responded 200 in 2571.1068 ms
+2026-08-04 14:45:54.167 +05:30 [INF] [67f5cdd6-4eb5-4a4b-872d-3ff4f03b6f67] HTTP GET /signalr-test.html responded 200 in 13.2585 ms
+2026-08-04 14:45:56.628 +05:30 [INF] [d1654a65-9785-4979-a278-7c36246a03a7] JWT token validated successfully.
+2026-08-04 14:45:56.635 +05:30 [INF] [d1654a65-9785-4979-a278-7c36246a03a7] HTTP POST /hubs/notifications/negotiate responded 200 in 50.0852 ms
+2026-08-04 14:45:56.644 +05:30 [INF] [fad4fdfe-4091-41ae-8578-04b37a76a8c4] JWT token validated successfully.
+2026-08-04 14:49:26.440 +05:30 [INF] [23c88eda-878d-4157-8f45-4d958b237020] JWT token validated successfully.
+2026-08-04 14:49:26.460 +05:30 [WRN] [23c88eda-878d-4157-8f45-4d958b237020] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-08-04 14:49:27.064 +05:30 [INF] [23c88eda-878d-4157-8f45-4d958b237020] HTTP POST /api/Comments responded 200 in 623.9298 ms
+2026-08-04 14:49:57.924 +05:30 [INF] [2402a7d7-03ba-4393-b464-3b45bdce7591] JWT token validated successfully.
+2026-08-04 14:49:58.016 +05:30 [INF] [2402a7d7-03ba-4393-b464-3b45bdce7591] HTTP PATCH /api/Comments/A87A2F49-57F5-4497-5EA0-08DEF2097B28/update responded 200 in 92.6542 ms
+2026-08-04 14:50:15.013 +05:30 [INF] [30e12ac3-82bf-484f-994f-7cb44e7498fb] JWT token validated successfully.
+2026-08-04 14:50:15.051 +05:30 [INF] [30e12ac3-82bf-484f-994f-7cb44e7498fb] HTTP DELETE /api/Comments/A87A2F49-57F5-4497-5EA0-08DEF2097B28 responded 200 in 37.9645 ms
+2026-08-04 14:51:13.520 +05:30 [INF] [] Application is shutting down...
+2026-08-04 14:51:13.533 +05:30 [INF] [fad4fdfe-4091-41ae-8578-04b37a76a8c4] HTTP GET /hubs/notifications responded 101 in 316891.1184 ms
+2026-08-04 15:23:21.394 +05:30 [INF] [] Starting FlowForge API
+2026-08-04 15:23:21.445 +05:30 [INF] [] DefaultAuthenticateScheme: Bearer
+2026-08-04 15:23:21.447 +05:30 [INF] [] DefaultChallengeScheme: Bearer
+2026-08-04 15:23:21.447 +05:30 [INF] [] DefaultScheme: Bearer
+2026-08-04 15:23:21.482 +05:30 [INF] [] Now listening on: http://localhost:5045
+2026-08-04 15:23:21.484 +05:30 [INF] [] Application started. Press Ctrl+C to shut down.
+2026-08-04 15:23:21.485 +05:30 [INF] [] Hosting environment: Development
+2026-08-04 15:23:21.485 +05:30 [INF] [] Content root path: D:\My Project\FlowForge\src\FlowForge\FlowForge.API
+2026-08-04 15:23:23.176 +05:30 [WRN] [61f9c7f7-0781-4be7-a6e6-71ec8764644b] Failed to determine the https port for redirect.
+2026-08-04 15:23:23.201 +05:30 [INF] [61f9c7f7-0781-4be7-a6e6-71ec8764644b] HTTP GET / responded 302 in 15.8741 ms
+2026-08-04 15:23:42.968 +05:30 [INF] [cf5f2ba8-dfce-4c41-9371-c4131c271978] HTTP POST /api/Auth/login responded 200 in 1601.2913 ms
+2026-08-04 15:23:50.865 +05:30 [INF] [49f79cd8-cf1c-44f0-b0f1-6bfdfbe8e456] HTTP GET /signalr-test.html responded 200 in 14.0821 ms
+2026-08-04 15:23:58.446 +05:30 [INF] [a4d94800-289b-4e95-8568-0c455fce0727] JWT token validated successfully.
+2026-08-04 15:23:58.453 +05:30 [INF] [a4d94800-289b-4e95-8568-0c455fce0727] HTTP POST /hubs/notifications/negotiate responded 200 in 44.1533 ms
+2026-08-04 15:23:58.459 +05:30 [INF] [e52aafcc-a561-44d3-a5d1-965ac18bf01c] JWT token validated successfully.
+2026-08-04 15:24:25.180 +05:30 [INF] [13a1dca4-ce35-4705-81ae-1d1dbff1d1ea] HTTP GET /signalr-test.html responded 304 in 0.8897 ms
+2026-08-04 15:24:56.690 +05:30 [INF] [72bf7d94-de46-412e-8eb9-a06f44d8604b] HTTP POST /api/Auth/login responded 200 in 112.2721 ms
+2026-08-04 15:25:05.089 +05:30 [INF] [0521c769-8630-4837-91c3-eacba089b803] JWT token validated successfully.
+2026-08-04 15:25:05.094 +05:30 [INF] [0521c769-8630-4837-91c3-eacba089b803] HTTP POST /hubs/notifications/negotiate responded 200 in 5.8766 ms
+2026-08-04 15:25:05.100 +05:30 [INF] [5b91420b-2373-470a-9537-3b30aaef51b1] JWT token validated successfully.
+2026-08-04 15:26:00.541 +05:30 [INF] [] Application is shutting down...
+2026-08-04 15:26:00.553 +05:30 [INF] [6721a236-9948-4583-b800-0b9e087547f3] JWT token validated successfully.
+2026-08-04 15:26:00.553 +05:30 [INF] [5b91420b-2373-470a-9537-3b30aaef51b1] HTTP GET /hubs/notifications responded 101 in 55453.1982 ms
+2026-08-04 15:26:00.553 +05:30 [INF] [e52aafcc-a561-44d3-a5d1-965ac18bf01c] HTTP GET /hubs/notifications responded 101 in 122094.9070 ms
+2026-08-04 15:26:00.557 +05:30 [INF] [6721a236-9948-4583-b800-0b9e087547f3] HTTP POST /hubs/notifications/negotiate responded 200 in 4.5733 ms

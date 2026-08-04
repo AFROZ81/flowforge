@@ -4,6 +4,7 @@ using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Services.Notifications;
 using FlowForge.Application.Services.WorkItemHistories;
 using FlowForge.Application.Services.Realtime;
+using FlowForge.Application.Common.Constants;
 using FlowForge.Domain.Enums;
 
 using FlowForge.Domain.Entities;
@@ -75,6 +76,21 @@ public sealed class CreateCommentCommandHandler : IRequestHandler<CreateCommentC
             currentUser.UserId,
             WorkItemHistoryAction.CommentAdded,
             $"{currentUser.FullName} added a comment.",
+            cancellationToken);
+
+        await _realtimeNotifier.NotifyBoardAsync(
+            workItem.Column.BoardId,
+            RealtimeEvents.CommentAdded,
+            new
+            {
+                BoardId = workItem.Column.BoardId,
+                WorkItemId = workItem.Id,
+                CommentId = comment.Id,
+                AuthorId = comment.AuthorId,
+                Content = comment.Content,
+                CreatedAt = comment.CreatedAt,
+                IsEdited = comment.IsEdited
+            },
             cancellationToken);
             
         return ApiResponse<CreateCommentResponse>.SuccessResponse(

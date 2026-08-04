@@ -29,6 +29,16 @@
             font-weight: bold;
             margin-top: 15px;
             margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        #viewers {
+            border: 1px solid #ccc;
+            background: #f5f5f5;
+            padding: 10px;
+            width: 500px;
+            min-height: 70px;
+            margin-bottom: 20px;
         }
 
         #log {
@@ -40,344 +50,415 @@
             white-space: pre-wrap;
         }
     </style>
+
 </head>
 
 <body>
 
-    <h2>FlowForge SignalR Test</h2>
+<h2>FlowForge SignalR Test</h2>
 
-    <label>JWT Token</label><br>
+<label>JWT Token</label><br>
 
-    <input
-        id="token"
-        placeholder="Paste JWT Token">
+<input id="token"
+       placeholder="Paste JWT Token">
 
-    <br>
+<br>
 
-    <label>Board Id</label><br>
+<label>Board Id</label><br>
 
-    <input
-        id="boardId"
-        placeholder="Paste Board Id">
+<input id="boardId"
+       placeholder="Paste Board Id">
 
-    <br>
+<br>
 
-    <button onclick="connect()">Connect</button>
-    <button onclick="disconnect()">Disconnect</button>
-    <button onclick="joinBoard()">Join Board</button>
-    <button onclick="leaveBoard()">Leave Board</button>
-    <button onclick="clearLog()">Clear Log</button>
+<button onclick="connect()">Connect</button>
 
-    <div id="status">
-        Status : Disconnected
-    </div>
+<button onclick="disconnect()">Disconnect</button>
 
-    <pre id="log"></pre>
+<button onclick="joinBoard()">Join Board</button>
 
-    <script>
+<button onclick="leaveBoard()">Leave Board</button>
 
-        let connection = null;
+<button onclick="startTyping()">Start Typing</button>
 
-        function log(message) {
+<button onclick="stopTyping()">Stop Typing</button>
 
-            const logElement = document.getElementById("log");
+<button onclick="clearLog()">Clear Log</button>
 
-            const now = new Date().toLocaleTimeString();
+<div id="status">
+Status : Disconnected
+</div>
 
-            logElement.textContent += `[${now}] ${message}\n`;
+<h3>Board Viewers</h3>
 
-            logElement.scrollTop = logElement.scrollHeight;
+<div id="viewers">
+No users.
+</div>
 
-        }
+<pre id="log"></pre>
 
-        function clearLog() {
+<script>
 
-            document.getElementById("log").textContent = "";
+let connection = null;
 
-        }
+function log(message){
 
-        function setStatus(status) {
+    const logElement=document.getElementById("log");
 
-            document.getElementById("status").textContent =
-                "Status : " + status;
+    const now=new Date().toLocaleTimeString();
 
-        }
+    logElement.textContent += `[${now}] ${message}\n`;
 
-        async function connect() {
+    logElement.scrollTop=logElement.scrollHeight;
 
-            if (connection) {
-                log("Already connected.");
-                return;
-            }
+}
 
-            const token =
-                document.getElementById("token").value;
+function clearLog(){
 
-            connection = new signalR.HubConnectionBuilder()
+    document.getElementById("log").textContent="";
 
-                .withUrl(
-                    "http://localhost:5045/hubs/notifications",
-                    {
-                        accessTokenFactory: () => token
-                    })
+}
 
-                .withAutomaticReconnect()
+function setStatus(status){
 
-                .build();
+    document.getElementById("status").textContent=
+        "Status : "+status;
 
-            // ===================================================
-            // Connection Events
-            // ===================================================
+}
 
-            connection.onreconnecting(() => {
+async function connect(){
 
-                setStatus("Reconnecting");
+    if(connection){
 
-                log("⚠️ Reconnecting...");
+        log("Already connected.");
 
-            });
+        return;
 
-            connection.onreconnected(() => {
+    }
 
-                setStatus("Connected");
+    const token=document.getElementById("token").value;
 
-                log("✅ Reconnected");
+    connection=new signalR.HubConnectionBuilder()
 
-            });
+        .withUrl(
+            "http://localhost:5045/hubs/notifications",
+            {
+                accessTokenFactory:()=>token
+            })
 
-            connection.onclose(() => {
+        .withAutomaticReconnect()
 
-                setStatus("Disconnected");
+        .build();
 
-                log("❌ Connection Closed");
+    //---------------------------------------------------
+    // Connection
+    //---------------------------------------------------
 
-                connection = null;
+    connection.onreconnecting(()=>{
 
-            });
+        setStatus("Reconnecting");
 
-            // ===================================================
-            // Notifications
-            // ===================================================
+        log("⚠️ Reconnecting...");
 
-            connection.on("NotificationReceived", data => {
+    });
 
-                log("🔔 Notification Received");
+    connection.onreconnected(()=>{
 
-                log(JSON.stringify(data, null, 2));
+        setStatus("Connected");
 
-            });
+        log("✅ Reconnected");
 
-            // ===================================================
-            // Presence
-            // ===================================================
+    });
 
-            connection.on("UserOnline", data => {
+    connection.onclose(()=>{
 
-                log("🟢 User Online");
+        setStatus("Disconnected");
 
-                log(JSON.stringify(data, null, 2));
+        log("❌ Connection Closed");
 
-            });
+        document.getElementById("viewers").innerHTML="No users.";
 
-            connection.on("UserOffline", data => {
+        connection=null;
 
-                log("⚫ User Offline");
+    });
 
-                log(JSON.stringify(data, null, 2));
+    //---------------------------------------------------
+    // Notifications
+    //---------------------------------------------------
 
-            });
+    connection.on("NotificationReceived",data=>{
 
-            // ===================================================
-            // Work Item Events
-            // ===================================================
+        log("🔔 Notification Received");
 
-            connection.on("WorkItemCreated", data => {
+        log(JSON.stringify(data,null,2));
 
-                log("📋 Work Item Created");
+    });
 
-                log(JSON.stringify(data, null, 2));
+    //---------------------------------------------------
+    // Presence
+    //---------------------------------------------------
 
-            });
+    connection.on("UserOnline",data=>{
 
-            connection.on("WorkItemUpdated", data => {
+        log("🟢 User Online");
 
-                log("✏️ Work Item Updated");
+        log(JSON.stringify(data,null,2));
 
-                log(JSON.stringify(data, null, 2));
+    });
 
-            });
+    connection.on("UserOffline",data=>{
 
-            connection.on("WorkItemMoved", data => {
+        log("⚫ User Offline");
 
-                log("📦 Work Item Moved");
+        log(JSON.stringify(data,null,2));
 
-                log(JSON.stringify(data, null, 2));
+    });
 
-            });
+    //---------------------------------------------------
+    // Board Presence
+    //---------------------------------------------------
 
-            connection.on("WorkItemDeleted", data => {
+    connection.on("BoardPresenceChanged",data=>{
 
-                log("🗑️ Work Item Deleted");
+        log("========================================");
+        log("👀 BOARD PRESENCE CHANGED");
+        log("========================================");
 
-                log(JSON.stringify(data, null, 2));
+        log("Board : "+data.boardId);
 
-            });
+        log("Users Viewing : "+data.users.length);
 
-            // ===================================================
-            // Comments
-            // ===================================================
+        const viewers=document.getElementById("viewers");
 
-            connection.on("CommentAdded", data => {
+        viewers.innerHTML="";
 
-                log("💬 Comment Added");
+        data.users.forEach((user,index)=>{
 
-                log(JSON.stringify(data, null, 2));
+            viewers.innerHTML+=`🟢 ${user.userName}<br/>`;
 
-            });
+            log(`${index+1}. ${user.userName}`);
 
-            // ===================================================
-            // Future Events
-            // ===================================================
+        });
 
-            connection.on("TypingStarted", data => {
+        log("");
 
-                log("⌨️ Typing Started");
+    });
 
-                log(JSON.stringify(data, null, 2));
+    //---------------------------------------------------
+    // Work Items
+    //---------------------------------------------------
 
-            });
+    connection.on("WorkItemCreated",data=>{
 
-            connection.on("TypingStopped", data => {
+        log("📋 Work Item Created");
 
-                log("⌨️ Typing Stopped");
+        log(JSON.stringify(data,null,2));
 
-                log(JSON.stringify(data, null, 2));
+    });
 
-            });
+    connection.on("WorkItemUpdated",data=>{
 
-            connection.on("BoardPresenceChanged", data => {
+        log("✏️ Work Item Updated");
 
-                log("👀 Board Presence Changed");
+        log(JSON.stringify(data,null,2));
 
-                log(JSON.stringify(data, null, 2));
+    });
 
-            });
+    connection.on("WorkItemMoved",data=>{
 
-            try {
+        log("📦 Work Item Moved");
 
-                await connection.start();
+        log(JSON.stringify(data,null,2));
 
-                setStatus("Connected");
+    });
 
-                log("✅ Connected");
+    connection.on("WorkItemDeleted",data=>{
 
-            }
-            catch (err) {
+        log("🗑️ Work Item Deleted");
 
-                log(err);
+        log(JSON.stringify(data,null,2));
 
-                setStatus("Connection Failed");
+    });
 
-            }
+    //---------------------------------------------------
+    // Comments
+    //---------------------------------------------------
 
-        }
+    connection.on("CommentAdded",data=>{
 
-        async function disconnect() {
+        log("💬 Comment Added");
 
-            if (!connection)
-                return;
+        log(JSON.stringify(data,null,2));
 
-            await connection.stop();
+    });
 
-            connection = null;
+    connection.on("CommentUpdated",data=>{
 
-            setStatus("Disconnected");
+        log("✏️ Comment Updated");
 
-            log("Disconnected");
+        log(JSON.stringify(data,null,2));
 
-        }
+    });
 
-        async function joinBoard() {
+    connection.on("CommentDeleted",data=>{
 
-            if (!connection) {
+        log("🗑️ Comment Deleted");
 
-                log("Connect first.");
+        log(JSON.stringify(data,null,2));
 
-                return;
+    });
 
-            }
+    //---------------------------------------------------
+    // Typing
+    //---------------------------------------------------
 
-            const boardId =
-                document.getElementById("boardId").value;
+    connection.on("TypingStarted",data=>{
 
-            if (!boardId) {
+        log("⌨️ Typing Started");
 
-                log("Enter Board Id.");
+        log(JSON.stringify(data,null,2));
 
-                return;
+    });
 
-            }
+    connection.on("TypingStopped",data=>{
 
-            try {
+        log("⌨️ Typing Stopped");
 
-                await connection.invoke(
-                    "JoinBoard",
-                    boardId);
+        log(JSON.stringify(data,null,2));
 
-                log("📋 Joined Board");
+    });
 
-                log(boardId);
+    try{
 
-            }
-            catch (err) {
+        await connection.start();
 
-                log(err);
+        setStatus("Connected");
 
-            }
+        log("✅ Connected");
 
-        }
+    }
+    catch(err){
 
-        async function leaveBoard() {
+        setStatus("Connection Failed");
 
-            if (!connection) {
+        log(err);
 
-                log("Connect first.");
+    }
 
-                return;
+}
 
-            }
+async function disconnect(){
 
-            const boardId =
-                document.getElementById("boardId").value;
+    if(!connection)
+        return;
 
-            if (!boardId) {
+    await connection.stop();
 
-                log("Enter Board Id.");
+    connection=null;
 
-                return;
+}
 
-            }
+async function joinBoard(){
 
-            try {
+    if(!connection){
 
-                await connection.invoke(
-                    "LeaveBoard",
-                    boardId);
+        log("Connect first.");
 
-                log("📤 Left Board");
+        return;
 
-                log(boardId);
+    }
 
-            }
-            catch (err) {
+    const boardId=document.getElementById("boardId").value;
 
-                log(err);
+    if(!boardId){
 
-            }
+        log("Enter Board Id.");
 
-        }
+        return;
 
-    </script>
+    }
+
+    await connection.invoke("JoinBoard",boardId);
+
+    log("📋 Joined Board");
+
+}
+
+async function leaveBoard(){
+
+    if(!connection){
+
+        log("Connect first.");
+
+        return;
+
+    }
+
+    const boardId=document.getElementById("boardId").value;
+
+    if(!boardId){
+
+        log("Enter Board Id.");
+
+        return;
+
+    }
+
+    await connection.invoke("LeaveBoard",boardId);
+
+    log("📤 Left Board");
+
+}
+
+async function startTyping(){
+
+    if(!connection){
+
+        log("Connect first.");
+
+        return;
+
+    }
+
+    const boardId=document.getElementById("boardId").value;
+
+    const workItemId=prompt("Enter Work Item Id");
+
+    if(!workItemId)
+        return;
+
+    await connection.invoke(
+        "StartTyping",
+        boardId,
+        workItemId);
+
+}
+
+async function stopTyping(){
+
+    if(!connection){
+
+        log("Connect first.");
+
+        return;
+
+    }
+
+    const boardId=document.getElementById("boardId").value;
+
+    const workItemId=prompt("Enter Work Item Id");
+
+    if(!workItemId)
+        return;
+
+    await connection.invoke(
+        "StopTyping",
+        boardId,
+        workItemId);
+
+}
+
+</script>
 
 </body>
 

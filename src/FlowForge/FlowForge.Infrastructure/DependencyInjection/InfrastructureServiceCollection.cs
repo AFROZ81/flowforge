@@ -97,6 +97,8 @@ public static class InfrastructureServiceCollection
 
         services.AddSingleton<IOnlineUserTracker, OnlineUserTracker>();
 
+        services.AddSingleton<IBoardPresenceTracker, BoardPresenceTracker>();
+
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {
             options.Password.RequiredLength = 8;

@@ -1,5 +1,8 @@
 using FlowForge.API.Hubs;
 using FlowForge.Application.Services.Realtime;
+using FlowForge.Application.Services.Presence;
+using FlowForge.Application.Common.Constants;
+
 using Microsoft.AspNetCore.SignalR;
 
 using Serilog;
@@ -56,5 +59,19 @@ public sealed class SignalRNotifier : IRealtimeNotifier
         await _hubContext.Clients
             .Group($"board:{boardId}")
             .SendAsync(eventName, payload, cancellationToken);
+    }
+
+    public async Task NotifyBoardPresenceChangedAsync(Guid boardId, IReadOnlyCollection<BoardViewer> users, CancellationToken cancellationToken = default)
+    {
+        await _hubContext.Clients
+            .Group($"board:{boardId}")
+            .SendAsync(
+                RealtimeEvents.BoardPresenceChanged,
+                new
+                {
+                    BoardId = boardId,
+                    Users = users
+                },
+                cancellationToken);
     }
 }
