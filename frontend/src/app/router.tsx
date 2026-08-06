@@ -8,6 +8,7 @@ import PublicRoute from "@/routes/PublicRoute";
 
 import LoginPage from "@/features/auth/pages/LoginPage";
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
+import ProjectsPage from "@/features/projects/pages/ProjectsPage";
 
 import { useAuthStore } from "@/stores/auth.store";
 
@@ -44,6 +45,15 @@ export const router = createBrowserRouter([
             {
                 path: "/dashboard",
                 element: <DashboardPage />,
+            },
+        ],
+    },
+    {
+        element: <ProtectedRoute />,
+        children: [
+            {
+                path: "/projects",
+                element: <ProjectsPage />,
             },
         ],
     },

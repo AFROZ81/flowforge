@@ -6,30 +6,28 @@ import {
     UserCircle2,
 } from "lucide-react";
 
+import { NavLink } from "react-router";
+
 const menu = [
     {
         title: "Dashboard",
         icon: LayoutDashboard,
         href: "/dashboard",
-        active: true,
     },
     {
         title: "Projects",
         icon: FolderKanban,
         href: "/projects",
-        active: false,
     },
     {
         title: "Boards",
         icon: KanbanSquare,
         href: "/boards",
-        active: false,
     },
     {
         title: "Settings",
         icon: Settings,
         href: "/settings",
-        active: false,
     },
 ];
 
@@ -79,25 +77,32 @@ export default function Sidebar() {
                         const Icon = item.icon;
 
                         return (
-                            <button
+                            <NavLink
                                 key={item.title}
-                                className={`group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                                    item.active
-                                        ? "bg-blue-50 text-blue-700 shadow-sm"
-                                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                                }`}
+                                to={item.href}
+                                className={({ isActive }) =>
+                                    `group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                                        isActive
+                                            ? "bg-blue-50 text-blue-700 shadow-sm"
+                                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                    }`
+                                }
                             >
-                                <Icon
-                                    size={20}
-                                    className={`transition-colors ${
-                                        item.active
-                                            ? "text-blue-600"
-                                            : "text-slate-400 group-hover:text-slate-700"
-                                    }`}
-                                />
+                                {({ isActive }) => (
+                                <>
+                                    <Icon
+                                        size={20}
+                                        className={`transition-colors ${
+                                            isActive
+                                                ? "text-blue-600"
+                                                : "text-slate-400 group-hover:text-slate-700"
+                                        }`}
+                                    />
 
-                                <span>{item.title}</span>
-                            </button>
+                                    <span>{item.title}</span>
+                                </>
+                            )}
+                            </NavLink>
                         );
                     })}
 
