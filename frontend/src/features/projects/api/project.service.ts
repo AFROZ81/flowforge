@@ -1,10 +1,21 @@
 import api from "@/lib/api";
 
-import type { ProjectResponse } from "../types/project";
+export type CreateProjectRequest = {
+    name: string;
+    key: string;
+    description?: string;
+    color: string;
+    icon?: string;
+};
 
-export async function getProjects() {
-    const response =
-        await api.get<ProjectResponse>("/Projects");
+export const getProjects = async () => {
+    const res = await api.get("/Projects");
+    return res.data.data.items;
+};
 
-    return response.data;
-}
+export const createProject = async (
+    data: CreateProjectRequest
+) => {
+    const res = await api.post("/Projects", data);
+    return res.data.data;
+};

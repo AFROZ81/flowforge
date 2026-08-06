@@ -19,6 +19,7 @@ import type { Project } from "../types/project";
 
 type Props = {
     data: Project[];
+    isLoading: boolean;
 };
 
 export default function ProjectTable({

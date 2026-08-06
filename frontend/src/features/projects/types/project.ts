@@ -5,6 +5,7 @@ export type Project = {
     description: string;
     color: string;
     icon: string;
+    archived?: boolean;
 };
 
 export type ProjectResponse = {

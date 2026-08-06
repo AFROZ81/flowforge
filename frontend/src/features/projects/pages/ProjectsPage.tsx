@@ -1,53 +1,73 @@
+import { useMemo, useState } from "react";
+
 import AppLayout from "@/layouts/AppLayout";
 
-import ProjectTable from "../components/ProjectTable";
 import { useProjects } from "../hooks/useProjects";
 
-export default function ProjectsPage() {
+import ProjectTable from "../components/ProjectTable";
+import ProjectToolbar from "../components/ProjectToolbar";
+import CreateProjectDialog from "../components/CreateProjectDialog";
 
+export default function ProjectsPage() {
     const {
-        data,
+        data: projects = [],
         isLoading,
-        error,
     } = useProjects();
+
+    const [search, setSearch] = useState("");
+
+    const [open, setOpen] = useState(false);
+
+    const filtered = useMemo(() => {
+
+        if (!search.trim())
+            return projects;
+
+        const q = search.toLowerCase();
+
+        return projects.filter(
+            (p: any) =>
+                p.name.toLowerCase().includes(q) ||
+                p.key.toLowerCase().includes(q) ||
+                p.description.toLowerCase().includes(q)
+        );
+
+    }, [projects, search]);
+
+    if (isLoading) {
+        return (
+            <div className="rounded-xl border p-8 text-center text-slate-500">
+                Loading projects...
+            </div>
+        );
+    }
 
     return (
         <AppLayout>
 
-            <div className="space-y-6">
+            <h1 className="text-4xl font-bold">
+                Projects
+            </h1>
 
-                <div className="flex items-center justify-between">
+            <p className="mb-6 text-slate-500">
+                Manage all projects.
+            </p>
 
-                    <div>
+            <ProjectToolbar
+                search={search}
+                onSearch={setSearch}
+                onCreate={() => setOpen(true)}
+            />
 
-                        <h1 className="text-4xl font-bold">
-                            Projects
-                        </h1>
+            <ProjectTable
+                data={filtered}
+                isLoading={isLoading}
+            />
 
-                        <p className="text-slate-500">
-                            Manage all projects.
-                        </p>
-
-                    </div>
-
-                </div>
-
-                {isLoading && (
-                    <p>Loading...</p>
-                )}
-
-                {error && (
-                    <p>Failed to load.</p>
-                )}
-
-                {data && (
-                    <ProjectTable
-                        data={data.data.items}
-                    />
-                )}
-
-            </div>
-
+            <CreateProjectDialog
+                open={open}
+                onOpenChange={setOpen}
+            />
         </AppLayout>
     );
 }
