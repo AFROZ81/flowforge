@@ -134,7 +134,10 @@ builder.Services.AddAuthentication(options =>
 
             OnAuthenticationFailed = context =>
             {
-                Log.Warning(context.Exception, "JWT authentication failed.");
+                Console.WriteLine("========== JWT AUTH FAILED ==========");
+                Console.WriteLine(context.Exception.ToString());
+                Console.WriteLine("=====================================");
+
                 return Task.CompletedTask;
             },
 

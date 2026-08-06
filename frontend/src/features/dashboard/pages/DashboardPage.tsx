@@ -1,15 +1,25 @@
-function DashboardPage() {
+import AppLayout from "@/layouts/AppLayout";
+
+import DashboardHero from "../components/DashboardHero";
+import OverviewCards from "../components/OverviewCards";
+import WorkItemStatus from "../components/WorkItemStatus";
+import CompletionCard from "../components/CompletionCard";
+
+export default function DashboardPage() {
     return (
-        <div className="p-8">
+        <AppLayout>
+            <div className="space-y-8">
 
-            <h1 className="text-3xl font-bold">
+                <DashboardHero />
 
-                Dashboard
+                <OverviewCards />
 
-            </h1>
+                <div className="grid gap-8 xl:grid-cols-2">
+                    <WorkItemStatus />
+                    <CompletionCard />
+                </div>
 
-        </div>
+            </div>
+        </AppLayout>
     );
 }
-
-export default DashboardPage;
