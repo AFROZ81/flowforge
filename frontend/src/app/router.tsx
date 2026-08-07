@@ -10,6 +10,7 @@ import LoginPage from "@/features/auth/pages/LoginPage";
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
 import ProjectsPage from "@/features/projects/pages/ProjectsPage";
 import ProjectDetailsPage from "@/features/projects/pages/ProjectDetailsPage";
+import BoardDetailsPage from "@/features/boards/pages/BoardDetailsPage";
 
 import { useAuthStore } from "@/stores/auth.store";
 
@@ -59,6 +60,10 @@ export const router = createBrowserRouter([
             {
                 path: "/projects/:id",
                 element: <ProjectDetailsPage />,
+            },
+            {
+                path: "/projects/:projectId/boards/:boardId",
+                element: <BoardDetailsPage />,
             },
         ],
     },

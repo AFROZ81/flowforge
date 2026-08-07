@@ -4,6 +4,7 @@ using FlowForge.Application.Features.Boards.GetBoardById;
 using FlowForge.Application.Features.Boards.Update;
 using FlowForge.Application.Features.Boards.Archive;
 using FlowForge.Application.Features.Boards.Restore;
+using FlowForge.Application.Features.Boards.GetBoardDetails;
 
 using MediatR;
 
@@ -90,5 +91,13 @@ public sealed class BoardsController : ControllerBase
             cancellationToken);
 
         return Ok(response);
+    }
+
+    [HttpGet("{id:guid}/details")]
+    public async Task<IActionResult> GetDetails(Guid id)
+    {
+        var result = await _mediator.Send(new GetBoardDetailsQuery(id));
+
+        return Ok(result);
     }
 }

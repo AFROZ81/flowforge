@@ -6,7 +6,7 @@ import { useProject } from "../hooks/useProject";
 
 import ProjectHeader from "../components/ProjectHeader";
 import ProjectStats from "../components/ProjectStats";
-import RecentBoards from "../components/RecentBoards";
+import BoardGrid from "@/features/boards/components/BoardGrid";
 import RecentActivity from "../components/RecentActivity";
 
 export default function ProjectDetailsPage() {
@@ -45,9 +45,11 @@ export default function ProjectDetailsPage() {
 
                 <ProjectStats />
 
-                <div className="grid gap-6 xl:grid-cols-2">
+                <div className="space-y-6">
 
-                    <RecentBoards />
+                    <BoardGrid
+                        projectId={project.id}
+                    />
 
                     <RecentActivity />
 
