@@ -3,17 +3,11 @@ import api from "@/lib/api";
 import type { WorkItem } from "../types/workItem";
 
 export type CreateWorkItemRequest = {
-    boardId: string;
-
+    columnId: string;
     title: string;
-
     description?: string;
-
-    status: string;
-
-    priority: string;
-
-    estimate?: number;
+    priority: number;
+    dueDate?: string;
 };
 
 export const getWorkItems = async (
@@ -41,7 +35,6 @@ export const getWorkItem = async (
 export const createWorkItem = async (
     data: CreateWorkItemRequest
 ) => {
-
     const res = await api.post(
         "/WorkItems",
         data

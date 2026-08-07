@@ -1,31 +1,14 @@
-import {
-    useMutation,
-    useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
 import {
     createWorkItem,
+    type CreateWorkItemRequest,
 } from "../api/workItem.service";
 
 export function useCreateWorkItem() {
-
-    const queryClient =
-        useQueryClient();
-
     return useMutation({
-
-        mutationFn:
-            createWorkItem,
-
-        onSuccess: (_, variables) => {
-
-            queryClient.invalidateQueries({
-                queryKey: [
-                    "work-items",
-                    variables.boardId,
-                ],
-            });
-
-        },
+        mutationFn: (
+            data: CreateWorkItemRequest
+        ) => createWorkItem(data),
     });
 }

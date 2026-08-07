@@ -1,6 +1,11 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+import { useState } from "react";
+import { useParams } from "react-router";
+
+import CreateWorkItemDialog from "@/features/work-items/components/CreateWorkItemDialog";
+
 type WorkItem = {
     id: string;
     title: string;
@@ -27,6 +32,11 @@ type Props = {
 export default function ColumnCard({
     column,
 }: Props) {
+
+    const [open, setOpen] = useState(false);
+
+    const { boardId } = useParams();
+
     return (
         <Card className="flex min-h-[550px] flex-col rounded-2xl">
 
@@ -90,11 +100,19 @@ export default function ColumnCard({
                 <Button
                     variant="outline"
                     className="w-full"
+                    onClick={() => setOpen(true)}
                 >
                     + Add Task
                 </Button>
 
             </div>
+
+            <CreateWorkItemDialog
+                open={open}
+                onOpenChange={setOpen}
+                columnId={column.id}
+                boardId={boardId!}
+            />
 
         </Card>
     );
