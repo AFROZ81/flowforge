@@ -21,4 +21,6 @@ public sealed class GetWorkItemByIdResponse
     public DateTime? DueDate { get; init; }
 
     public bool IsArchived { get; init; }
+
+    public Guid? AssigneeId { get; init; }
 }

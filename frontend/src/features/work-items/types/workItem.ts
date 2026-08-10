@@ -1,17 +1,25 @@
 export type WorkItem = {
     id: string;
+    boardId?: string;
+    columnId?: string;
 
     title: string;
+    description?: string | null;
 
-    description?: string;
+    status: string | number;
+    priority: string | number;
 
-    priority: number;
+    assigneeId?: string | null;
 
-    status: number;
+    estimate?: number;
+    order?: number;
+    displayOrder?: number;
 
-    displayOrder: number;
+    dueDate?: string | null;
 
-    dueDate?: string;
+    archived?: boolean;
+    isArchived?: boolean;
 
-    isArchived: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 };

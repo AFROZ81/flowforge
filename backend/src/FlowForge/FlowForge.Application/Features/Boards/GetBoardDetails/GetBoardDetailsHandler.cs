@@ -80,7 +80,10 @@ public sealed class GetBoardDetailsHandler
                             Status = w.Status,
                             DisplayOrder = w.DisplayOrder,
                             DueDate = w.DueDate,
-                            IsArchived = w.IsArchived
+                            IsArchived = w.IsArchived,
+
+                            // ADD THIS
+                            AssigneeId = w.AssigneeId
                         })
                         .ToList()
                 })

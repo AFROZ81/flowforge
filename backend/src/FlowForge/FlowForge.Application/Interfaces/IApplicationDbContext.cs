@@ -1,4 +1,5 @@
 using FlowForge.Domain.Entities;
+using FlowForge.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace FlowForge.Application.Interfaces;
@@ -30,6 +31,8 @@ public interface IApplicationDbContext
     DbSet<WorkItemWatcher> WorkItemWatchers { get; }
 
     DbSet<WorkItemHistory> WorkItemHistories { get; }
+
+    Task<List<OrganizationUserLookup>> GetOrganizationUsersAsync(Guid organizationId, CancellationToken cancellationToken = default);
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

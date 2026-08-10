@@ -47,4 +47,7 @@ public sealed class BoardWorkItemDto
     public DateTime? DueDate { get; init; }
 
     public bool IsArchived { get; init; }
+
+    // ADD THIS
+    public Guid? AssigneeId { get; init; }
 }

@@ -84,7 +84,8 @@ public sealed class GetWorkItemsQueryHandler : IRequestHandler<GetWorkItemsQuery
                 Status = x.Status,
                 DisplayOrder = x.DisplayOrder,
                 DueDate = x.DueDate,
-                IsArchived = x.IsArchived
+                IsArchived = x.IsArchived,
+                AssigneeId = x.AssigneeId
             })
             .ToListAsync(cancellationToken);
 

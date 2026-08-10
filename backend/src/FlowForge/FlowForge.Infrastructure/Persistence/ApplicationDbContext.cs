@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Common.Base;
+using FlowForge.Application.Common.Models;
 
 namespace FlowForge.Infrastructure.Persistence;
 
@@ -95,5 +96,25 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
         }
 
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<List<OrganizationUserLookup>>
+        GetOrganizationUsersAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        return await Users
+            .AsNoTracking()
+            .Where(x =>
+                x.OrganizationId ==
+                organizationId)
+            .OrderBy(x => x.FullName)
+            .Select(x =>
+                new OrganizationUserLookup
+                {
+                    Id = x.Id,
+                    FullName = x.FullName,
+                    Email = x.Email
+                })
+            .ToListAsync(
+                cancellationToken);
     }
 }
