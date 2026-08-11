@@ -47,7 +47,8 @@ type DragData = {
     workItemId: string;
 };
 
-const DRAG_TYPE = "application/flowforge-work-item";
+const DRAG_TYPE =
+    "application/flowforge-work-item";
 
 export default function ColumnCard({
     column,
@@ -77,16 +78,17 @@ export default function ColumnCard({
 
     /*
      * Load organization users.
-     *
-     * This is the missing piece that
-     * allows:
-     *
-     * assigneeId -> user -> fullName
      */
     const {
         data: users = [],
     } = useOrganizationUsers();
 
+    /*
+     * Active work items only.
+     *
+     * Always sort by displayOrder so the
+     * drag/drop indexes match the UI.
+     */
     const activeWorkItems = [
         ...column.workItems,
     ]
@@ -99,6 +101,55 @@ export default function ColumnCard({
                 b.displayOrder
         );
 
+    /*
+     * ==========================================
+     * DRAG START
+     * ==========================================
+     *
+     * This was the missing piece.
+     *
+     * The WorkItemCard has draggable=true,
+     * but the workItemId was never placed into
+     * dataTransfer.
+     */
+    const handleDragStart = (
+        event: React.DragEvent,
+        workItemId: string
+    ) => {
+        const dragData: DragData = {
+            workItemId,
+        };
+
+        event.dataTransfer.setData(
+            DRAG_TYPE,
+            JSON.stringify(dragData)
+        );
+
+        /*
+         * Also store a plain-text fallback.
+         * This is useful for browser compatibility.
+         */
+        event.dataTransfer.setData(
+            "text/plain",
+            workItemId
+        );
+
+        event.dataTransfer.effectAllowed =
+            "move";
+    };
+
+    /*
+     * Clear drag state when dragging ends.
+     */
+    const handleDragEnd = () => {
+        setDragOverIndex(null);
+    };
+
+    /*
+     * ==========================================
+     * READ DRAG DATA
+     * ==========================================
+     */
     const readDragData = (
         event: React.DragEvent
     ): DragData | null => {
@@ -120,6 +171,11 @@ export default function ColumnCard({
         }
     };
 
+    /*
+     * ==========================================
+     * FIND SOURCE COLUMN
+     * ==========================================
+     */
     const findSourceColumn = (
         workItemId: string
     ) => {
@@ -133,6 +189,11 @@ export default function ColumnCard({
         );
     };
 
+    /*
+     * ==========================================
+     * MOVE WORK ITEM
+     * ==========================================
+     */
     const moveItem = async (
         workItemId: string,
         destinationIndex: number
@@ -143,6 +204,11 @@ export default function ColumnCard({
             );
 
         if (!sourceColumn) {
+            console.error(
+                "Source column not found for:",
+                workItemId
+            );
+
             return;
         }
 
@@ -166,9 +232,17 @@ export default function ColumnCard({
                     workItemId
             );
 
+        /*
+         * Backend destination index.
+         */
         let backendIndex =
             destinationIndex;
 
+        /*
+         * When moving downward inside the
+         * same column, removing the source item
+         * shifts the destination index by one.
+         */
         if (
             sourceColumn.id ===
                 column.id &&
@@ -179,6 +253,9 @@ export default function ColumnCard({
             backendIndex--;
         }
 
+        /*
+         * Nothing actually changed.
+         */
         if (
             sourceColumn.id ===
                 column.id &&
@@ -188,6 +265,9 @@ export default function ColumnCard({
             return;
         }
 
+        /*
+         * Update UI immediately.
+         */
         onOptimisticMove(
             workItemId,
             column.id,
@@ -225,6 +305,11 @@ export default function ColumnCard({
         }
     };
 
+    /*
+     * ==========================================
+     * DRAG OVER WORK ITEM
+     * ==========================================
+     */
     const handleCardDragOver = (
         event: React.DragEvent,
         index: number
@@ -252,6 +337,11 @@ export default function ColumnCard({
         );
     };
 
+    /*
+     * ==========================================
+     * DROP ON WORK ITEM
+     * ==========================================
+     */
     const handleCardDrop = async (
         event: React.DragEvent,
         index: number
@@ -268,6 +358,9 @@ export default function ColumnCard({
             return;
         }
 
+        /*
+         * Don't move an item onto itself.
+         */
         if (
             dragData.workItemId ===
             activeWorkItems[index]?.id
@@ -293,6 +386,11 @@ export default function ColumnCard({
         );
     };
 
+    /*
+     * ==========================================
+     * DRAG OVER EMPTY/END OF COLUMN
+     * ==========================================
+     */
     const handleColumnDragOver = (
         event: React.DragEvent
     ) => {
@@ -306,6 +404,11 @@ export default function ColumnCard({
         );
     };
 
+    /*
+     * ==========================================
+     * DROP AT END OF COLUMN
+     * ==========================================
+     */
     const handleColumnDrop = async (
         event: React.DragEvent
     ) => {
@@ -327,9 +430,9 @@ export default function ColumnCard({
     };
 
     /*
-     * Open Work Item details.
-     *
-     * Pass the ID, not the click event.
+     * ==========================================
+     * OPEN WORK ITEM DETAILS
+     * ==========================================
      */
     const handleWorkItemClick = (
         workItemId: string
@@ -342,18 +445,31 @@ export default function ColumnCard({
     };
 
     return (
-        <Card className="flex min-h-[550px] flex-col rounded-2xl">
+        <Card className="flex h-[700px] min-h-0 flex-col rounded-2xl">
 
-            {/* Header */}
+            {/* =================================
+                HEADER
+            ================================== */}
+
             <div className="border-b p-4">
 
-                <div className="flex items-center justify-between">
+                <div className="
+                    flex
+                    items-center
+                    justify-between
+                ">
 
                     <h3 className="font-semibold">
                         {column.name}
                     </h3>
 
-                    <span className="rounded-full bg-muted px-2 py-1 text-xs">
+                    <span className="
+                        rounded-full
+                        bg-muted
+                        px-2
+                        py-1
+                        text-xs
+                    ">
                         {
                             activeWorkItems.length
                         }
@@ -362,7 +478,11 @@ export default function ColumnCard({
                 </div>
 
                 {column.description && (
-                    <p className="mt-2 text-xs text-muted-foreground">
+                    <p className="
+                        mt-2
+                        text-xs
+                        text-muted-foreground
+                    ">
                         {
                             column.description
                         }
@@ -371,9 +491,17 @@ export default function ColumnCard({
 
             </div>
 
-            {/* Active Work Items */}
+            {/* =================================
+                ACTIVE WORK ITEMS
+            ================================== */}
+
             <div
-                className="flex-1 overflow-y-auto p-4"
+                className="
+                    min-h-0
+                    flex-1
+                    overflow-y-auto
+                    p-4
+                "
                 onDragOver={
                     handleColumnDragOver
                 }
@@ -384,19 +512,17 @@ export default function ColumnCard({
 
                 {activeWorkItems.length ===
                 0 ? (
-                    <div
-                        className="
-                            flex
-                            min-h-[220px]
-                            items-center
-                            justify-center
-                            rounded-xl
-                            border
-                            border-dashed
-                            text-sm
-                            text-muted-foreground
-                        "
-                    >
+                    <div className="
+                        flex
+                        min-h-[220px]
+                        items-center
+                        justify-center
+                        rounded-xl
+                        border
+                        border-dashed
+                        text-sm
+                        text-muted-foreground
+                    ">
                         No tasks yet.
                     </div>
                 ) : (
@@ -413,6 +539,8 @@ export default function ColumnCard({
                                     }
                                 >
 
+                                    {/* Drop indicator */}
+
                                     <div
                                         className={`
                                             h-1
@@ -428,6 +556,17 @@ export default function ColumnCard({
                                     />
 
                                     <div
+                                        onDragStart={(
+                                            event
+                                        ) =>
+                                            handleDragStart(
+                                                event,
+                                                item.id
+                                            )
+                                        }
+                                        onDragEnd={
+                                            handleDragEnd
+                                        }
                                         onDragOver={(
                                             event
                                         ) =>
@@ -450,15 +589,9 @@ export default function ColumnCard({
                                             item={
                                                 item
                                             }
-
-                                            /*
-                                             * THIS IS THE
-                                             * IMPORTANT FIX.
-                                             */
                                             users={
                                                 users
                                             }
-
                                             onClick={() =>
                                                 handleWorkItemClick(
                                                     item.id
@@ -471,6 +604,10 @@ export default function ColumnCard({
                                 </div>
                             )
                         )}
+
+                        {/* =================================
+                            DROP AREA AT END
+                        ================================== */}
 
                         <div
                             className={`
@@ -488,6 +625,7 @@ export default function ColumnCard({
                                 event
                             ) => {
                                 event.preventDefault();
+                                event.stopPropagation();
 
                                 event.dataTransfer.dropEffect =
                                     "move";
@@ -506,14 +644,20 @@ export default function ColumnCard({
 
             </div>
 
-            {/* Archived */}
+            {/* =================================
+                ARCHIVED
+            ================================== */}
+
             <ArchivedWorkItems
                 columnId={
                     column.id
                 }
             />
 
-            {/* Add Task */}
+            {/* =================================
+                ADD TASK
+            ================================== */}
+
             <div className="border-t p-4">
 
                 <Button
@@ -530,7 +674,10 @@ export default function ColumnCard({
 
             </div>
 
-            {/* Create Dialog */}
+            {/* =================================
+                CREATE DIALOG
+            ================================== */}
+
             <CreateWorkItemDialog
                 open={
                     createOpen
@@ -546,7 +693,10 @@ export default function ColumnCard({
                 }
             />
 
-            {/* Details Dialog */}
+            {/* =================================
+                DETAILS DIALOG
+            ================================== */}
+
             <WorkItemDetailsDialog
                 open={
                     detailsOpen

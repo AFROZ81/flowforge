@@ -1,4 +1,18 @@
+import { useState } from "react";
+
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+
+import CommentsSection from "@/features/comments/components/CommentsSection";
+import { useComments } from "@/features/comments/hooks/useComments";
 
 type WorkItem = {
     id: string;
@@ -65,7 +79,7 @@ function getStatusLabel(
     }
 }
 
-function getStatusClassName(
+function getStatusClasses(
     status: number
 ) {
     switch (status) {
@@ -92,9 +106,9 @@ function getStatusClassName(
 
         default:
             return `
-                border-muted
-                bg-muted
-                text-muted-foreground
+                border-gray-200
+                bg-gray-50
+                text-gray-700
             `;
     }
 }
@@ -104,6 +118,45 @@ export default function WorkItemCard({
     users = [],
     onClick,
 }: Props) {
+    const [
+        commentsOpen,
+        setCommentsOpen,
+    ] = useState(false);
+
+    /*
+     * Fetch comments for this work item.
+     *
+     * We are only using this query for the count here.
+     * CommentsSection continues to handle the actual
+     * create/edit/delete/display functionality.
+     */
+    const commentsQuery =
+        useComments(item.id);
+
+    /*
+     * Depending on how the existing hook is implemented,
+     * data may either be:
+     *
+     * [
+     *   { ... },
+     *   { ... }
+     * ]
+     *
+     * or:
+     *
+     * {
+     *   success: true,
+     *   data: [...]
+     * }
+     *
+     * Handle both formats safely.
+     */
+    const commentsData = commentsQuery?.data;
+
+    const commentCount = Array.isArray(commentsData)
+        ? commentsData.length
+        : 0;
+
     const dueDate =
         formatDueDate(
             item.dueDate
@@ -123,161 +176,288 @@ export default function WorkItemCard({
             item.status
         );
 
-    const statusClassName =
-        getStatusClassName(
+    const statusClasses =
+        getStatusClasses(
             item.status
         );
 
+    /*
+     * Open comments without opening
+     * the Edit Work Item dialog.
+     */
+    const handleCommentsClick = (
+        event: React.MouseEvent
+    ) => {
+        event.preventDefault();
+
+        event.stopPropagation();
+
+        setCommentsOpen(true);
+    };
+
     return (
-        <Card
-            draggable
-            onClick={onClick}
-            className="
-                cursor-pointer
-                p-3
-                transition
-                hover:shadow-md
-            "
-        >
+        <>
+            <Card
+                draggable
+                onClick={onClick}
+                className="
+                    cursor-pointer
+                    rounded-xl
+                    p-3
+                    transition
+                    hover:-translate-y-0.5
+                    hover:shadow-md
+                "
+            >
 
-            {/* =========================
-                HEADER
-            ========================== */}
+                {/* =================================
+                    HEADER
+                ================================== */}
 
-            <div className="flex items-start justify-between gap-3">
+                <div className="
+                    flex
+                    items-start
+                    justify-between
+                    gap-3
+                ">
 
-                <h4 className="min-w-0 font-medium">
-                    {item.title}
-                </h4>
-
-                <div className="flex shrink-0 items-center gap-1.5">
-
-                    {/* Status */}
-
-                    <span
-                        className={`
-                            rounded-full
-                            border
-                            px-2
-                            py-1
-                            text-[11px]
-                            font-medium
-                            ${statusClassName}
-                        `}
-                    >
-                        {statusLabel}
-                    </span>
-
-                    {/* Priority */}
-
-                    <span className="
-                        rounded-full
-                        bg-muted
-                        px-2
-                        py-1
-                        text-[11px]
+                    <h4 className="
+                        min-w-0
                         font-medium
                     ">
-                        P{item.priority}
-                    </span>
+                        {item.title}
+                    </h4>
+
+                    <div className="
+                        flex
+                        shrink-0
+                        items-center
+                        gap-1.5
+                    ">
+
+                        {/* Status */}
+
+                        <span
+                            className={`
+                                rounded-full
+                                border
+                                px-2
+                                py-0.5
+                                text-[10px]
+                                font-medium
+                                ${statusClasses}
+                            `}
+                        >
+                            {statusLabel}
+                        </span>
+
+                        {/* Priority */}
+
+                        <span className="
+                            rounded-full
+                            bg-muted
+                            px-2
+                            py-0.5
+                            text-[10px]
+                            font-medium
+                        ">
+                            P{item.priority}
+                        </span>
+
+                    </div>
 
                 </div>
 
-            </div>
+                {/* =================================
+                    DESCRIPTION
+                ================================== */}
 
+                {item.description && (
+                    <p className="
+                        mt-2
+                        line-clamp-2
+                        text-sm
+                        text-muted-foreground
+                    ">
+                        {item.description}
+                    </p>
+                )}
 
-            {/* =========================
-                DESCRIPTION
-            ========================== */}
+                {/* =================================
+                    DUE DATE
+                ================================== */}
 
-            {item.description && (
-                <p className="
-                    mt-2
-                    text-sm
-                    text-muted-foreground
-                ">
-                    {item.description}
-                </p>
-            )}
+                {dueDate && (
+                    <p className="
+                        mt-3
+                        text-xs
+                        text-muted-foreground
+                    ">
+                        Due: {dueDate}
+                    </p>
+                )}
 
+                {/* =================================
+                    ASSIGNEE
+                ================================== */}
 
-            {/* =========================
-                DUE DATE
-            ========================== */}
+                {assignee && (
+                    <div className="
+                        mt-3
+                        flex
+                        items-center
+                        gap-2
+                        border-t
+                        pt-3
+                    ">
 
-            {dueDate && (
-                <p className="
-                    mt-3
-                    text-xs
-                    text-muted-foreground
-                ">
-                    Due: {dueDate}
-                </p>
-            )}
+                        <div className="
+                            flex
+                            h-7
+                            w-7
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-full
+                            bg-muted
+                            text-xs
+                            font-medium
+                        ">
+                            {assignee.fullName
+                                .trim()
+                                .charAt(0)
+                                .toUpperCase()}
+                        </div>
 
+                        <div className="
+                            min-w-0
+                        ">
 
-            {/* =========================
-                ASSIGNEE
-            ========================== */}
+                            <p className="
+                                truncate
+                                text-xs
+                                font-medium
+                            ">
+                                {assignee.fullName}
+                            </p>
 
-            {assignee && (
+                            {assignee.email && (
+                                <p className="
+                                    truncate
+                                    text-[11px]
+                                    text-muted-foreground
+                                ">
+                                    {assignee.email}
+                                </p>
+                            )}
+
+                        </div>
+
+                    </div>
+                )}
+
+                {/* =================================
+                    COMMENTS ACTION
+                ================================== */}
+
                 <div className="
                     mt-3
-                    flex
-                    items-center
-                    gap-2
                     border-t
                     pt-3
                 ">
 
-                    {/* Avatar */}
-
-                    <div className="
-                        flex
-                        h-7
-                        w-7
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-muted
-                        text-xs
-                        font-medium
-                    ">
-                        {assignee.fullName
-                            .trim()
-                            .charAt(0)
-                            .toUpperCase()}
-                    </div>
-
-
-                    {/* User Details */}
-
-                    <div className="min-w-0">
-
-                        <p className="
-                            truncate
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="
+                            h-7
+                            w-full
+                            justify-start
+                            px-2
                             text-xs
-                            font-medium
+                            text-muted-foreground
+                            hover:text-foreground
+                        "
+                        onClick={
+                            handleCommentsClick
+                        }
+                    >
+
+                        <span className="
+                            mr-1.5
+                            text-sm
                         ">
-                            {assignee.fullName}
-                        </p>
+                            💬
+                        </span>
 
-                        {assignee.email && (
-                            <p className="
-                                truncate
-                                text-[11px]
-                                text-muted-foreground
-                            ">
-                                {assignee.email}
-                            </p>
-                        )}
+                        Comments
 
-                    </div>
+                        <span className="
+                            ml-1
+                            rounded-full
+                            bg-muted
+                            px-1.5
+                            py-0.5
+                            text-[10px]
+                            font-medium
+                            text-foreground
+                        ">
+                            {commentCount}
+                        </span>
+
+                    </Button>
 
                 </div>
-            )}
 
-        </Card>
+            </Card>
+
+            {/* =====================================
+                COMMENTS DIALOG
+            ====================================== */}
+
+            <Dialog
+                open={commentsOpen}
+                onOpenChange={
+                    setCommentsOpen
+                }
+            >
+
+                <DialogContent
+                    className="
+                        max-h-[85vh]
+                        overflow-y-auto
+                        sm:max-w-lg
+                    "
+                >
+
+                    <DialogHeader>
+
+                        <DialogTitle>
+                            Comments
+                        </DialogTitle>
+
+                        <DialogDescription>
+                            Discuss "{item.title}"
+                        </DialogDescription>
+
+                    </DialogHeader>
+
+                    <CommentsSection
+                        workItemId={
+                            item.id
+                        }
+                        users={
+                            users
+                        }
+                        disabled={
+                            item.isArchived
+                        }
+                    />
+
+                </DialogContent>
+
+            </Dialog>
+        </>
     );
 }

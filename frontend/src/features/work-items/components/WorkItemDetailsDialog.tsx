@@ -26,13 +26,8 @@ import { useCompleteWorkItem } from "../hooks/useCompleteWorkItem";
 import { useBlockWorkItem } from "../hooks/useBlockWorkItem";
 import { useActivateWorkItem } from "../hooks/useActivateWorkItem";
 
-import {
-    editWorkItemSchema,
-} from "../schemas/editWorkItem.schema";
-
-import {
-    renameWorkItemSchema,
-} from "../schemas/renameWorkItem.schema";
+import { editWorkItemSchema } from "../schemas/editWorkItem.schema";
+import { renameWorkItemSchema } from "../schemas/renameWorkItem.schema";
 
 type Props = {
     open: boolean;
@@ -64,13 +59,15 @@ function formatDateForInput(
     const year =
         date.getFullYear();
 
-    const month = String(
-        date.getMonth() + 1
-    ).padStart(2, "0");
+    const month =
+        String(
+            date.getMonth() + 1
+        ).padStart(2, "0");
 
-    const day = String(
-        date.getDate()
-    ).padStart(2, "0");
+    const day =
+        String(
+            date.getDate()
+        ).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
 }
@@ -87,6 +84,12 @@ export default function WorkItemDetailsDialog({
     } = useWorkItem(
         workItemId ?? ""
     );
+
+    /*
+     * ========================================
+     * WORK ITEM MUTATIONS
+     * ========================================
+     */
 
     const editMutation =
         useEditWorkItem();
@@ -109,17 +112,35 @@ export default function WorkItemDetailsDialog({
     const activateMutation =
         useActivateWorkItem();
 
+    /*
+     * ========================================
+     * ORGANIZATION USERS
+     * ========================================
+     */
+
     const {
         data: users = [],
         isLoading: usersLoading,
         isError: usersError,
     } = useOrganizationUsers();
 
+    /*
+     * ========================================
+     * ASSIGNMENT
+     * ========================================
+     */
+
     const assignMutation =
         useAssignWorkItem();
 
     const unassignMutation =
         useUnassignWorkItem();
+
+    /*
+     * ========================================
+     * FORM
+     * ========================================
+     */
 
     const {
         register,
@@ -154,10 +175,13 @@ export default function WorkItemDetailsDialog({
                 workItem.title,
 
             description:
-                workItem.description ?? "",
+                workItem.description ??
+                "",
 
             priority:
-                Number(workItem.priority),
+                Number(
+                    workItem.priority
+                ),
 
             dueDate:
                 formatDateForInput(
@@ -165,7 +189,8 @@ export default function WorkItemDetailsDialog({
                 ),
 
             assigneeId:
-                workItem.assigneeId ?? "",
+                workItem.assigneeId ??
+                "",
         });
     }, [
         workItem,
@@ -198,7 +223,10 @@ export default function WorkItemDetailsDialog({
     const onSubmit = async (
         values: WorkItemForm
     ) => {
-        if (!workItemId || !workItem) {
+        if (
+            !workItemId ||
+            !workItem
+        ) {
             return;
         }
 
@@ -275,10 +303,14 @@ export default function WorkItemDetailsDialog({
                 title,
             });
 
-        if (!titleValidation.success) {
+        if (
+            !titleValidation.success
+        ) {
             toast.error(
-                titleValidation.error
-                    .issues[0]?.message ??
+                titleValidation
+                    .error
+                    .issues[0]
+                    ?.message ??
                     "Invalid title."
             );
 
@@ -313,7 +345,9 @@ export default function WorkItemDetailsDialog({
                 priorityChanged ||
                 dueDateChanged;
 
-            if (otherFieldsChanged) {
+            if (
+                otherFieldsChanged
+            ) {
                 const editValidation =
                     editWorkItemSchema.safeParse({
                         description,
@@ -356,7 +390,7 @@ export default function WorkItemDetailsDialog({
                     if (
                         priorityChanged &&
                         priorityErrors.length >
-                            0
+                        0
                     ) {
                         toast.error(
                             priorityErrors[0]
@@ -436,32 +470,33 @@ export default function WorkItemDetailsDialog({
      * ========================================
      */
 
-    const handleArchive = async () => {
-        if (!workItemId) {
-            return;
-        }
+    const handleArchive =
+        async () => {
+            if (!workItemId) {
+                return;
+            }
 
-        try {
-            await archiveMutation.mutateAsync(
-                workItemId
-            );
+            try {
+                await archiveMutation.mutateAsync(
+                    workItemId
+                );
 
-            toast.success(
-                "Work Item archived."
-            );
+                toast.success(
+                    "Work Item archived."
+                );
 
-            onOpenChange(false);
-        } catch (error) {
-            console.error(
-                "Failed to archive Work Item:",
-                error
-            );
+                onOpenChange(false);
+            } catch (error) {
+                console.error(
+                    "Failed to archive Work Item:",
+                    error
+                );
 
-            toast.error(
-                "Failed to archive Work Item."
-            );
-        }
-    };
+                toast.error(
+                    "Failed to archive Work Item."
+                );
+            }
+        };
 
     /*
      * ========================================
@@ -469,32 +504,33 @@ export default function WorkItemDetailsDialog({
      * ========================================
      */
 
-    const handleRestore = async () => {
-        if (!workItemId) {
-            return;
-        }
+    const handleRestore =
+        async () => {
+            if (!workItemId) {
+                return;
+            }
 
-        try {
-            await restoreMutation.mutateAsync(
-                workItemId
-            );
+            try {
+                await restoreMutation.mutateAsync(
+                    workItemId
+                );
 
-            toast.success(
-                "Work Item restored."
-            );
+                toast.success(
+                    "Work Item restored."
+                );
 
-            onOpenChange(false);
-        } catch (error) {
-            console.error(
-                "Failed to restore Work Item:",
-                error
-            );
+                onOpenChange(false);
+            } catch (error) {
+                console.error(
+                    "Failed to restore Work Item:",
+                    error
+                );
 
-            toast.error(
-                "Failed to restore Work Item."
-            );
-        }
-    };
+                toast.error(
+                    "Failed to restore Work Item."
+                );
+            }
+        };
 
     /*
      * ========================================
@@ -502,32 +538,33 @@ export default function WorkItemDetailsDialog({
      * ========================================
      */
 
-    const handleComplete = async () => {
-        if (!workItemId) {
-            return;
-        }
+    const handleComplete =
+        async () => {
+            if (!workItemId) {
+                return;
+            }
 
-        try {
-            await completeMutation.mutateAsync(
-                workItemId
-            );
+            try {
+                await completeMutation.mutateAsync(
+                    workItemId
+                );
 
-            toast.success(
-                "Work Item completed."
-            );
+                toast.success(
+                    "Work Item completed."
+                );
 
-            onOpenChange(false);
-        } catch (error) {
-            console.error(
-                "Failed to complete Work Item:",
-                error
-            );
+                onOpenChange(false);
+            } catch (error) {
+                console.error(
+                    "Failed to complete Work Item:",
+                    error
+                );
 
-            toast.error(
-                "Failed to complete Work Item."
-            );
-        }
-    };
+                toast.error(
+                    "Failed to complete Work Item."
+                );
+            }
+        };
 
     /*
      * ========================================
@@ -535,32 +572,33 @@ export default function WorkItemDetailsDialog({
      * ========================================
      */
 
-    const handleBlock = async () => {
-        if (!workItemId) {
-            return;
-        }
+    const handleBlock =
+        async () => {
+            if (!workItemId) {
+                return;
+            }
 
-        try {
-            await blockMutation.mutateAsync(
-                workItemId
-            );
+            try {
+                await blockMutation.mutateAsync(
+                    workItemId
+                );
 
-            toast.success(
-                "Work Item blocked."
-            );
+                toast.success(
+                    "Work Item blocked."
+                );
 
-            onOpenChange(false);
-        } catch (error) {
-            console.error(
-                "Failed to block Work Item:",
-                error
-            );
+                onOpenChange(false);
+            } catch (error) {
+                console.error(
+                    "Failed to block Work Item:",
+                    error
+                );
 
-            toast.error(
-                "Failed to block Work Item."
-            );
-        }
-    };
+                toast.error(
+                    "Failed to block Work Item."
+                );
+            }
+        };
 
     /*
      * ========================================
@@ -568,32 +606,39 @@ export default function WorkItemDetailsDialog({
      * ========================================
      */
 
-    const handleActivate = async () => {
-        if (!workItemId) {
-            return;
-        }
+    const handleActivate =
+        async () => {
+            if (!workItemId) {
+                return;
+            }
 
-        try {
-            await activateMutation.mutateAsync(
-                workItemId
-            );
+            try {
+                await activateMutation.mutateAsync(
+                    workItemId
+                );
 
-            toast.success(
-                "Work Item activated."
-            );
+                toast.success(
+                    "Work Item activated."
+                );
 
-            onOpenChange(false);
-        } catch (error) {
-            console.error(
-                "Failed to activate Work Item:",
-                error
-            );
+                onOpenChange(false);
+            } catch (error) {
+                console.error(
+                    "Failed to activate Work Item:",
+                    error
+                );
 
-            toast.error(
-                "Failed to activate Work Item."
-            );
-        }
-    };
+                toast.error(
+                    "Failed to activate Work Item."
+                );
+            }
+        };
+
+    /*
+     * ========================================
+     * RENDER
+     * ========================================
+     */
 
     return (
         <Dialog
@@ -602,7 +647,13 @@ export default function WorkItemDetailsDialog({
                 onOpenChange
             }
         >
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent
+                className="
+                    max-h-[90vh]
+                    overflow-y-auto
+                    sm:max-w-lg
+                "
+            >
 
                 <DialogHeader>
                     <DialogTitle>
@@ -615,13 +666,23 @@ export default function WorkItemDetailsDialog({
                 </DialogHeader>
 
                 {isLoading && (
-                    <div className="py-8 text-center text-sm text-muted-foreground">
+                    <div className="
+                        py-8
+                        text-center
+                        text-sm
+                        text-muted-foreground
+                    ">
                         Loading...
                     </div>
                 )}
 
                 {isError && (
-                    <div className="py-8 text-center text-sm text-red-500">
+                    <div className="
+                        py-8
+                        text-center
+                        text-sm
+                        text-red-500
+                    ">
                         Failed to load work item.
                     </div>
                 )}
@@ -630,9 +691,11 @@ export default function WorkItemDetailsDialog({
                     !isLoading &&
                     !isError && (
                         <form
-                            onSubmit={handleSubmit(
-                                onSubmit
-                            )}
+                            onSubmit={
+                                handleSubmit(
+                                    onSubmit
+                                )
+                            }
                             className="space-y-5"
                         >
 
@@ -641,7 +704,12 @@ export default function WorkItemDetailsDialog({
                             ========================== */}
 
                             <div>
-                                <label className="mb-2 block text-sm font-medium">
+                                <label className="
+                                    mb-2
+                                    block
+                                    text-sm
+                                    font-medium
+                                ">
                                     Title
                                 </label>
 
@@ -652,7 +720,11 @@ export default function WorkItemDetailsDialog({
                                 />
 
                                 {errors.title && (
-                                    <p className="mt-1 text-sm text-red-500">
+                                    <p className="
+                                        mt-1
+                                        text-sm
+                                        text-red-500
+                                    ">
                                         {
                                             errors
                                                 .title
@@ -667,7 +739,12 @@ export default function WorkItemDetailsDialog({
                             ========================== */}
 
                             <div>
-                                <label className="mb-2 block text-sm font-medium">
+                                <label className="
+                                    mb-2
+                                    block
+                                    text-sm
+                                    font-medium
+                                ">
                                     Description
                                 </label>
 
@@ -679,7 +756,11 @@ export default function WorkItemDetailsDialog({
                                 />
 
                                 {errors.description && (
-                                    <p className="mt-1 text-sm text-red-500">
+                                    <p className="
+                                        mt-1
+                                        text-sm
+                                        text-red-500
+                                    ">
                                         {
                                             errors
                                                 .description
@@ -694,12 +775,25 @@ export default function WorkItemDetailsDialog({
                             ========================== */}
 
                             <div>
-                                <label className="mb-2 block text-sm font-medium">
+                                <label className="
+                                    mb-2
+                                    block
+                                    text-sm
+                                    font-medium
+                                ">
                                     Priority
                                 </label>
 
                                 <select
-                                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                    className="
+                                        w-full
+                                        rounded-md
+                                        border
+                                        bg-background
+                                        px-3
+                                        py-2
+                                        text-sm
+                                    "
                                     {...register(
                                         "priority",
                                         {
@@ -750,7 +844,11 @@ export default function WorkItemDetailsDialog({
                                 </select>
 
                                 {errors.priority && (
-                                    <p className="mt-1 text-sm text-red-500">
+                                    <p className="
+                                        mt-1
+                                        text-sm
+                                        text-red-500
+                                    ">
                                         {
                                             errors
                                                 .priority
@@ -765,16 +863,36 @@ export default function WorkItemDetailsDialog({
                             ========================== */}
 
                             <div>
-                                <label className="mb-2 block text-sm font-medium">
+                                <label className="
+                                    mb-2
+                                    block
+                                    text-sm
+                                    font-medium
+                                ">
                                     Assignee
                                 </label>
 
                                 {usersLoading ? (
-                                    <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+                                    <div className="
+                                        rounded-md
+                                        border
+                                        px-3
+                                        py-2
+                                        text-sm
+                                        text-muted-foreground
+                                    ">
                                         Loading members...
                                     </div>
                                 ) : usersError ? (
-                                    <div className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-500">
+                                    <div className="
+                                        rounded-md
+                                        border
+                                        border-red-200
+                                        px-3
+                                        py-2
+                                        text-sm
+                                        text-red-500
+                                    ">
                                         Failed to load members.
                                     </div>
                                 ) : (
@@ -817,6 +935,7 @@ export default function WorkItemDetailsDialog({
                                                     {
                                                         user.fullName
                                                     }
+
                                                     {user.email
                                                         ? ` (${user.email})`
                                                         : ""}
@@ -827,7 +946,11 @@ export default function WorkItemDetailsDialog({
                                 )}
 
                                 {errors.assigneeId && (
-                                    <p className="mt-1 text-sm text-red-500">
+                                    <p className="
+                                        mt-1
+                                        text-sm
+                                        text-red-500
+                                    ">
                                         {
                                             errors
                                                 .assigneeId
@@ -842,7 +965,12 @@ export default function WorkItemDetailsDialog({
                             ========================== */}
 
                             <div>
-                                <label className="mb-2 block text-sm font-medium">
+                                <label className="
+                                    mb-2
+                                    block
+                                    text-sm
+                                    font-medium
+                                ">
                                     Due Date
                                 </label>
 
@@ -854,7 +982,11 @@ export default function WorkItemDetailsDialog({
                                 />
 
                                 {errors.dueDate && (
-                                    <p className="mt-1 text-sm text-red-500">
+                                    <p className="
+                                        mt-1
+                                        text-sm
+                                        text-red-500
+                                    ">
                                         {
                                             errors
                                                 .dueDate
@@ -869,18 +1001,33 @@ export default function WorkItemDetailsDialog({
                             ========================== */}
 
                             <div>
-                                <label className="mb-2 block text-sm font-medium">
+                                <label className="
+                                    mb-2
+                                    block
+                                    text-sm
+                                    font-medium
+                                ">
                                     Status
                                 </label>
 
-                                <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
-                                    {workItem.status === 1 &&
+                                <div className="
+                                    rounded-md
+                                    border
+                                    bg-muted/30
+                                    px-3
+                                    py-2
+                                    text-sm
+                                ">
+                                    {workItem.status ===
+                                        1 &&
                                         "Active"}
 
-                                    {workItem.status === 2 &&
+                                    {workItem.status ===
+                                        2 &&
                                         "Completed"}
 
-                                    {workItem.status === 3 &&
+                                    {workItem.status ===
+                                        3 &&
                                         "Blocked"}
                                 </div>
                             </div>
@@ -889,20 +1036,40 @@ export default function WorkItemDetailsDialog({
                                 ACTIONS
                             ========================== */}
 
-                            <div className="flex items-center justify-between gap-4 border-t pt-4">
+                            <div className="
+                                flex
+                                flex-col
+                                gap-4
+                                border-t
+                                pt-4
+                                sm:flex-row
+                                sm:items-center
+                                sm:justify-between
+                            ">
 
                                 {/* =========================
                                     WORK ITEM ACTIONS
                                 ========================== */}
 
-                                <div className="flex items-center gap-2">
+                                <div className="
+                                    flex
+                                    flex-wrap
+                                    items-center
+                                    gap-2
+                                ">
 
                                     {!workItem.isArchived &&
-                                        workItem.status !== 2 && (
+                                        workItem.status !==
+                                            2 && (
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                className="border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                                                className="
+                                                    border-green-200
+                                                    text-green-700
+                                                    hover:bg-green-50
+                                                    hover:text-green-800
+                                                "
                                                 onClick={
                                                     handleComplete
                                                 }
@@ -917,11 +1084,17 @@ export default function WorkItemDetailsDialog({
                                         )}
 
                                     {!workItem.isArchived &&
-                                        workItem.status !== 3 && (
+                                        workItem.status !==
+                                            3 && (
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                className="border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                                                className="
+                                                    border-amber-200
+                                                    text-amber-700
+                                                    hover:bg-amber-50
+                                                    hover:text-amber-800
+                                                "
                                                 onClick={
                                                     handleBlock
                                                 }
@@ -936,11 +1109,17 @@ export default function WorkItemDetailsDialog({
                                         )}
 
                                     {!workItem.isArchived &&
-                                        workItem.status !== 1 && (
+                                        workItem.status !==
+                                            1 && (
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                                                className="
+                                                    border-blue-200
+                                                    text-blue-700
+                                                    hover:bg-blue-50
+                                                    hover:text-blue-800
+                                                "
                                                 onClick={
                                                     handleActivate
                                                 }
@@ -958,7 +1137,12 @@ export default function WorkItemDetailsDialog({
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                                            className="
+                                                border-blue-200
+                                                text-blue-700
+                                                hover:bg-blue-50
+                                                hover:text-blue-800
+                                            "
                                             onClick={
                                                 handleRestore
                                             }
@@ -993,7 +1177,11 @@ export default function WorkItemDetailsDialog({
                                     FORM ACTIONS
                                 ========================== */}
 
-                                <div className="flex items-center gap-2">
+                                <div className="
+                                    flex
+                                    items-center
+                                    gap-2
+                                ">
 
                                     <Button
                                         type="button"
