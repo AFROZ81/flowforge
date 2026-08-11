@@ -14,6 +14,8 @@ import {
 import CommentsSection from "@/features/comments/components/CommentsSection";
 import { useComments } from "@/features/comments/hooks/useComments";
 
+import { useChecklistProgress } from "@/features/checklists/hooks/useChecklistProgress";
+
 type WorkItem = {
     id: string;
     title: string;
@@ -124,38 +126,60 @@ export default function WorkItemCard({
     ] = useState(false);
 
     /*
-     * Fetch comments for this work item.
-     *
-     * We are only using this query for the count here.
-     * CommentsSection continues to handle the actual
-     * create/edit/delete/display functionality.
+     * ========================================
+     * COMMENTS
+     * ========================================
      */
+
     const commentsQuery =
         useComments(item.id);
 
-    /*
-     * Depending on how the existing hook is implemented,
-     * data may either be:
-     *
-     * [
-     *   { ... },
-     *   { ... }
-     * ]
-     *
-     * or:
-     *
-     * {
-     *   success: true,
-     *   data: [...]
-     * }
-     *
-     * Handle both formats safely.
-     */
-    const commentsData = commentsQuery?.data;
+    const commentsData =
+        commentsQuery?.data;
 
-    const commentCount = Array.isArray(commentsData)
-        ? commentsData.length
-        : 0;
+    const commentCount =
+        Array.isArray(commentsData)
+            ? commentsData.length
+            : 0;
+
+    /*
+     * ========================================
+     * CHECKLIST PROGRESS
+     * ========================================
+     */
+
+    const {
+        data: checklistProgress,
+    } = useChecklistProgress(
+        item.id
+    );
+
+    const checklistTotal =
+        checklistProgress?.totalItems ??
+        0;
+
+    const checklistCompleted =
+        checklistProgress?.completedItems ??
+        0;
+
+    const checklistPercentage =
+        checklistProgress?.progressPercentage ??
+        (
+            checklistTotal > 0
+                ? Math.round(
+                      (
+                          checklistCompleted /
+                          checklistTotal
+                      ) * 100
+                  )
+                : 0
+        );
+
+    /*
+     * ========================================
+     * OTHER DATA
+     * ========================================
+     */
 
     const dueDate =
         formatDueDate(
@@ -182,9 +206,11 @@ export default function WorkItemCard({
         );
 
     /*
-     * Open comments without opening
-     * the Edit Work Item dialog.
+     * ========================================
+     * COMMENTS CLICK
+     * ========================================
      */
+
     const handleCommentsClick = (
         event: React.MouseEvent
     ) => {
@@ -235,7 +261,7 @@ export default function WorkItemCard({
                         gap-1.5
                     ">
 
-                        {/* Status */}
+                        {/* STATUS */}
 
                         <span
                             className={`
@@ -251,7 +277,7 @@ export default function WorkItemCard({
                             {statusLabel}
                         </span>
 
-                        {/* Priority */}
+                        {/* PRIORITY */}
 
                         <span className="
                             rounded-full
@@ -355,6 +381,97 @@ export default function WorkItemCard({
 
                     </div>
                 )}
+
+                {/* =================================
+                    CHECKLIST
+                ================================== */}
+
+                <div className="
+                    mt-3
+                    border-t
+                    pt-3
+                ">
+
+                    <div className="
+                        flex
+                        items-center
+                        justify-between
+                        text-xs
+                    ">
+
+                        <div className="
+                            flex
+                            items-center
+                            gap-1.5
+                            text-muted-foreground
+                        ">
+
+                            <span className="
+                                text-sm
+                            ">
+                                ☑
+                            </span>
+
+                            <span>
+                                Checklist
+                            </span>
+
+                            <span className="
+                                rounded-full
+                                bg-muted
+                                px-1.5
+                                py-0.5
+                                text-[10px]
+                                font-medium
+                                text-foreground
+                            ">
+                                {checklistCompleted}/
+                                {checklistTotal}
+                            </span>
+
+                        </div>
+
+                        <span className="
+                            text-[10px]
+                            text-muted-foreground
+                        ">
+                            {checklistPercentage}%
+                        </span>
+
+                    </div>
+
+                    {/* CHECKLIST PROGRESS BAR */}
+
+                    <div className="
+                        mt-2
+                        h-1.5
+                        w-full
+                        overflow-hidden
+                        rounded-full
+                        bg-muted
+                    ">
+
+                        <div
+                            className="
+                                h-full
+                                rounded-full
+                                bg-foreground
+                                transition-all
+                            "
+                            style={{
+                                width: `${Math.min(
+                                    100,
+                                    Math.max(
+                                        0,
+                                        checklistPercentage
+                                    )
+                                )}%`,
+                            }}
+                        />
+
+                    </div>
+
+                </div>
 
                 {/* =================================
                     COMMENTS ACTION

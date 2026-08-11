@@ -26,6 +26,8 @@ import { useCompleteWorkItem } from "../hooks/useCompleteWorkItem";
 import { useBlockWorkItem } from "../hooks/useBlockWorkItem";
 import { useActivateWorkItem } from "../hooks/useActivateWorkItem";
 
+import ChecklistSection from "@/features/checklists/components/ChecklistSection";
+
 import { editWorkItemSchema } from "../schemas/editWorkItem.schema";
 import { renameWorkItemSchema } from "../schemas/renameWorkItem.schema";
 
@@ -995,6 +997,17 @@ export default function WorkItemDetailsDialog({
                                     </p>
                                 )}
                             </div>
+
+                            {/* =========================
+                                CHECKLIST
+                            ========================== */}
+
+                            <ChecklistSection
+                                workItemId={workItem.id}
+                                disabled={
+                                    workItem.isArchived
+                                }
+                            />
 
                             {/* =========================
                                 STATUS
