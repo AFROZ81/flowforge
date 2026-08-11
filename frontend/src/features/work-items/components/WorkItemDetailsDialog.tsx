@@ -1,6 +1,10 @@
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import {
+    useState,
+} from "react";
+
+import {
+    toast,
+} from "sonner";
 
 import {
     Dialog,
@@ -10,68 +14,132 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import {
+    Button,
+} from "@/components/ui/button";
 
-import { useWorkItem } from "../hooks/useWorkItem";
-import { useEditWorkItem } from "../hooks/useEditWorkItem";
-import { useRenameWorkItem } from "../hooks/useRenameWorkItem";
-import { useArchiveWorkItem } from "../hooks/useArchiveWorkItem";
-import { useRestoreWorkItem } from "../hooks/useRestoreWorkItem";
-import { useOrganizationUsers } from "../hooks/useOrganizationUsers";
-import { useAssignWorkItem } from "../hooks/useAssignWorkItem";
-import { useUnassignWorkItem } from "../hooks/useUnassignWorkItem";
-import { useCompleteWorkItem } from "../hooks/useCompleteWorkItem";
-import { useBlockWorkItem } from "../hooks/useBlockWorkItem";
-import { useActivateWorkItem } from "../hooks/useActivateWorkItem";
+import {
+    useWorkItem,
+} from "../hooks/useWorkItem";
+
+import {
+    useOrganizationUsers,
+} from "../hooks/useOrganizationUsers";
+
+import {
+    useArchiveWorkItem,
+} from "../hooks/useArchiveWorkItem";
+
+import {
+    useRestoreWorkItem,
+} from "../hooks/useRestoreWorkItem";
+
+import {
+    useCompleteWorkItem,
+} from "../hooks/useCompleteWorkItem";
+
+import {
+    useBlockWorkItem,
+} from "../hooks/useBlockWorkItem";
+
+import {
+    useActivateWorkItem,
+} from "../hooks/useActivateWorkItem";
 
 import ChecklistSection from "@/features/checklists/components/ChecklistSection";
 
-import { editWorkItemSchema } from "../schemas/editWorkItem.schema";
-import { renameWorkItemSchema } from "../schemas/renameWorkItem.schema";
+import WorkItemHistory from "@/features/work-item-histories/components/WorkItemHistory";
+
+import EditWorkItemDialog from "./EditWorkItemDialog";
 
 type Props = {
     open: boolean;
-    onOpenChange: (open: boolean) => void;
+
+    onOpenChange: (
+        open: boolean
+    ) => void;
+
     workItemId: string | null;
 };
 
-type WorkItemForm = {
-    title: string;
-    description?: string;
-    priority: number;
-    dueDate?: string;
-    assigneeId: string;
-};
-
-function formatDateForInput(
-    dueDate?: string | null
+function getStatusLabel(
+    status: number
 ) {
-    if (!dueDate) {
-        return "";
+    switch (status) {
+        case 1:
+            return "Active";
+
+        case 2:
+            return "Completed";
+
+        case 3:
+            return "Blocked";
+
+        default:
+            return "Unknown";
+    }
+}
+
+function getStatusClasses(
+    status: number
+) {
+    switch (status) {
+        case 1:
+            return `
+                border-blue-200
+                bg-blue-50
+                text-blue-700
+            `;
+
+        case 2:
+            return `
+                border-green-200
+                bg-green-50
+                text-green-700
+            `;
+
+        case 3:
+            return `
+                border-red-200
+                bg-red-50
+                text-red-700
+            `;
+
+        default:
+            return `
+                border-gray-200
+                bg-gray-50
+                text-gray-700
+            `;
+    }
+}
+
+function formatDueDate(
+    value?: string | null
+) {
+    if (!value) {
+        return null;
     }
 
-    const date = new Date(dueDate);
+    const date =
+        new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
-        return "";
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return null;
     }
 
-    const year =
-        date.getFullYear();
-
-    const month =
-        String(
-            date.getMonth() + 1
-        ).padStart(2, "0");
-
-    const day =
-        String(
-            date.getDate()
-        ).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+    return date.toLocaleDateString(
+        "en-GB",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        }
+    );
 }
 
 export default function WorkItemDetailsDialog({
@@ -79,25 +147,24 @@ export default function WorkItemDetailsDialog({
     onOpenChange,
     workItemId,
 }: Props) {
+    const [
+        editOpen,
+        setEditOpen,
+    ] = useState(false);
+
     const {
         data: workItem,
         isLoading,
         isError,
-    } = useWorkItem(
-        workItemId ?? ""
-    );
+    } =
+        useWorkItem(
+            workItemId ?? ""
+        );
 
-    /*
-     * ========================================
-     * WORK ITEM MUTATIONS
-     * ========================================
-     */
-
-    const editMutation =
-        useEditWorkItem();
-
-    const renameMutation =
-        useRenameWorkItem();
+    const {
+        data: users = [],
+    } =
+        useOrganizationUsers();
 
     const archiveMutation =
         useArchiveWorkItem();
@@ -114,425 +181,12 @@ export default function WorkItemDetailsDialog({
     const activateMutation =
         useActivateWorkItem();
 
-    /*
-     * ========================================
-     * ORGANIZATION USERS
-     * ========================================
-     */
-
-    const {
-        data: users = [],
-        isLoading: usersLoading,
-        isError: usersError,
-    } = useOrganizationUsers();
-
-    /*
-     * ========================================
-     * ASSIGNMENT
-     * ========================================
-     */
-
-    const assignMutation =
-        useAssignWorkItem();
-
-    const unassignMutation =
-        useUnassignWorkItem();
-
-    /*
-     * ========================================
-     * FORM
-     * ========================================
-     */
-
-    const {
-        register,
-        handleSubmit,
-        reset,
-        formState: {
-            errors,
-        },
-    } = useForm<WorkItemForm>({
-        defaultValues: {
-            title: "",
-            description: "",
-            priority: 2,
-            dueDate: "",
-            assigneeId: "",
-        },
-    });
-
-    /*
-     * ========================================
-     * POPULATE FORM
-     * ========================================
-     */
-
-    useEffect(() => {
-        if (!workItem) {
-            return;
-        }
-
-        reset({
-            title:
-                workItem.title,
-
-            description:
-                workItem.description ??
-                "",
-
-            priority:
-                Number(
-                    workItem.priority
-                ),
-
-            dueDate:
-                formatDateForInput(
-                    workItem.dueDate
-                ),
-
-            assigneeId:
-                workItem.assigneeId ??
-                "",
-        });
-    }, [
-        workItem,
-        reset,
-    ]);
-
-    /*
-     * ========================================
-     * SAVING STATE
-     * ========================================
-     */
-
     const isSaving =
-        editMutation.isPending ||
-        renameMutation.isPending ||
         archiveMutation.isPending ||
         restoreMutation.isPending ||
-        assignMutation.isPending ||
-        unassignMutation.isPending ||
         completeMutation.isPending ||
         blockMutation.isPending ||
         activateMutation.isPending;
-
-    /*
-     * ========================================
-     * FORM SUBMIT
-     * ========================================
-     */
-
-    const onSubmit = async (
-        values: WorkItemForm
-    ) => {
-        if (
-            !workItemId ||
-            !workItem
-        ) {
-            return;
-        }
-
-        const title =
-            values.title.trim();
-
-        const description =
-            values.description?.trim() ??
-            "";
-
-        /*
-         * ========================================
-         * DETERMINE CHANGES
-         * ========================================
-         */
-
-        const originalDueDate =
-            formatDateForInput(
-                workItem.dueDate
-            );
-
-        const newDueDate =
-            values.dueDate ?? "";
-
-        const originalPriority =
-            Number(
-                workItem.priority
-            );
-
-        const newPriority =
-            Number(
-                values.priority
-            );
-
-        const originalDescription =
-            workItem.description ??
-            "";
-
-        const currentAssigneeId =
-            workItem.assigneeId ??
-            "";
-
-        const newAssigneeId =
-            values.assigneeId ?? "";
-
-        const titleChanged =
-            title !==
-            workItem.title;
-
-        const descriptionChanged =
-            description !==
-            originalDescription;
-
-        const priorityChanged =
-            newPriority !==
-            originalPriority;
-
-        const dueDateChanged =
-            newDueDate !==
-            originalDueDate;
-
-        const assigneeChanged =
-            newAssigneeId !==
-            currentAssigneeId;
-
-        /*
-         * ========================================
-         * TITLE VALIDATION
-         * ========================================
-         */
-
-        const titleValidation =
-            renameWorkItemSchema.safeParse({
-                title,
-            });
-
-        if (
-            !titleValidation.success
-        ) {
-            toast.error(
-                titleValidation
-                    .error
-                    .issues[0]
-                    ?.message ??
-                    "Invalid title."
-            );
-
-            return;
-        }
-
-        try {
-            /*
-             * ========================================
-             * TITLE
-             * ========================================
-             */
-
-            if (titleChanged) {
-                await renameMutation.mutateAsync({
-                    id: workItemId,
-
-                    data: {
-                        title,
-                    },
-                });
-            }
-
-            /*
-             * ========================================
-             * DESCRIPTION / PRIORITY / DUE DATE
-             * ========================================
-             */
-
-            const otherFieldsChanged =
-                descriptionChanged ||
-                priorityChanged ||
-                dueDateChanged;
-
-            if (
-                otherFieldsChanged
-            ) {
-                const editValidation =
-                    editWorkItemSchema.safeParse({
-                        description,
-                        priority:
-                            newPriority,
-                        dueDate:
-                            newDueDate,
-                    });
-
-                if (
-                    !editValidation.success
-                ) {
-                    const nonPriorityErrors =
-                        editValidation.error.issues.filter(
-                            (issue) =>
-                                issue.path[0] !==
-                                "priority"
-                        );
-
-                    const priorityErrors =
-                        editValidation.error.issues.filter(
-                            (issue) =>
-                                issue.path[0] ===
-                                "priority"
-                        );
-
-                    if (
-                        nonPriorityErrors.length >
-                        0
-                    ) {
-                        toast.error(
-                            nonPriorityErrors[0]
-                                ?.message ??
-                                "Invalid work item details."
-                        );
-
-                        return;
-                    }
-
-                    if (
-                        priorityChanged &&
-                        priorityErrors.length >
-                        0
-                    ) {
-                        toast.error(
-                            priorityErrors[0]
-                                ?.message ??
-                                "Invalid priority."
-                        );
-
-                        return;
-                    }
-                }
-
-                await editMutation.mutateAsync({
-                    id: workItemId,
-
-                    data: {
-                        description:
-                            description ||
-                            undefined,
-
-                        priority:
-                            newPriority,
-
-                        dueDate:
-                            newDueDate ||
-                            null,
-                    },
-                });
-            }
-
-            /*
-             * ========================================
-             * ASSIGNEE
-             * ========================================
-             */
-
-            if (assigneeChanged) {
-                if (newAssigneeId) {
-                    await assignMutation.mutateAsync({
-                        workItemId,
-
-                        userId:
-                            newAssigneeId,
-                    });
-                } else {
-                    await unassignMutation.mutateAsync(
-                        workItemId
-                    );
-                }
-            }
-
-            /*
-             * ========================================
-             * SUCCESS
-             * ========================================
-             */
-
-            toast.success(
-                "Work Item updated successfully."
-            );
-
-            onOpenChange(false);
-        } catch (error) {
-            console.error(
-                "Failed to update Work Item:",
-                error
-            );
-
-            toast.error(
-                "Failed to update Work Item."
-            );
-        }
-    };
-
-    /*
-     * ========================================
-     * ARCHIVE
-     * ========================================
-     */
-
-    const handleArchive =
-        async () => {
-            if (!workItemId) {
-                return;
-            }
-
-            try {
-                await archiveMutation.mutateAsync(
-                    workItemId
-                );
-
-                toast.success(
-                    "Work Item archived."
-                );
-
-                onOpenChange(false);
-            } catch (error) {
-                console.error(
-                    "Failed to archive Work Item:",
-                    error
-                );
-
-                toast.error(
-                    "Failed to archive Work Item."
-                );
-            }
-        };
-
-    /*
-     * ========================================
-     * RESTORE
-     * ========================================
-     */
-
-    const handleRestore =
-        async () => {
-            if (!workItemId) {
-                return;
-            }
-
-            try {
-                await restoreMutation.mutateAsync(
-                    workItemId
-                );
-
-                toast.success(
-                    "Work Item restored."
-                );
-
-                onOpenChange(false);
-            } catch (error) {
-                console.error(
-                    "Failed to restore Work Item:",
-                    error
-                );
-
-                toast.error(
-                    "Failed to restore Work Item."
-                );
-            }
-        };
 
     /*
      * ========================================
@@ -558,7 +212,6 @@ export default function WorkItemDetailsDialog({
                 onOpenChange(false);
             } catch (error) {
                 console.error(
-                    "Failed to complete Work Item:",
                     error
                 );
 
@@ -592,7 +245,6 @@ export default function WorkItemDetailsDialog({
                 onOpenChange(false);
             } catch (error) {
                 console.error(
-                    "Failed to block Work Item:",
                     error
                 );
 
@@ -626,7 +278,6 @@ export default function WorkItemDetailsDialog({
                 onOpenChange(false);
             } catch (error) {
                 console.error(
-                    "Failed to activate Work Item:",
                     error
                 );
 
@@ -638,602 +289,581 @@ export default function WorkItemDetailsDialog({
 
     /*
      * ========================================
-     * RENDER
+     * ARCHIVE
      * ========================================
      */
 
-    return (
-        <Dialog
-            open={open}
-            onOpenChange={
-                onOpenChange
+    const handleArchive =
+        async () => {
+            if (!workItemId) {
+                return;
             }
-        >
-            <DialogContent
-                className="
-                    max-h-[90vh]
-                    overflow-y-auto
-                    sm:max-w-lg
-                "
+
+            try {
+                await archiveMutation.mutateAsync(
+                    workItemId
+                );
+
+                toast.success(
+                    "Work Item archived."
+                );
+
+                onOpenChange(false);
+            } catch (error) {
+                console.error(
+                    error
+                );
+
+                toast.error(
+                    "Failed to archive Work Item."
+                );
+            }
+        };
+
+    /*
+     * ========================================
+     * RESTORE
+     * ========================================
+     */
+
+    const handleRestore =
+        async () => {
+            if (!workItemId) {
+                return;
+            }
+
+            try {
+                await restoreMutation.mutateAsync(
+                    workItemId
+                );
+
+                toast.success(
+                    "Work Item restored."
+                );
+
+                onOpenChange(false);
+            } catch (error) {
+                console.error(
+                    error
+                );
+
+                toast.error(
+                    "Failed to restore Work Item."
+                );
+            }
+        };
+
+    const statusLabel =
+        workItem
+            ? getStatusLabel(
+                Number(workItem.status)
+              )
+            : "";
+
+    const statusClasses =
+        workItem
+            ? getStatusClasses(
+                Number(workItem.status)
+              )
+            : "";
+
+    const dueDate =
+        workItem
+            ? formatDueDate(
+                  workItem.dueDate
+              )
+            : null;
+
+    const assignee =
+        workItem?.assigneeId
+            ? users.find(
+                  (user) =>
+                      user.id ===
+                      workItem.assigneeId
+              )
+            : undefined;
+
+    return (
+        <>
+            <Dialog
+                open={
+                    open &&
+                    !editOpen
+                }
+                onOpenChange={
+                    onOpenChange
+                }
             >
+                <DialogContent
+                    className="
+                        max-h-[90vh]
+                        overflow-y-auto
+                        sm:max-w-2xl
+                    "
+                >
+                    <DialogHeader>
+                        <div className="
+                            flex
+                            flex-col
+                            gap-2
+                            pr-8
+                            sm:flex-row
+                            sm:items-start
+                            sm:justify-between
+                            sm:gap-4
+                            sm:pr-10
+                        ">
+                            <div className="min-w-0">
+                                <DialogTitle>
+                                    {workItem?.title ??
+                                        "Work Item"}
+                                </DialogTitle>
 
-                <DialogHeader>
-                    <DialogTitle>
-                        Edit Work Item
-                    </DialogTitle>
-
-                    <DialogDescription>
-                        Update the work item details.
-                    </DialogDescription>
-                </DialogHeader>
-
-                {isLoading && (
-                    <div className="
-                        py-8
-                        text-center
-                        text-sm
-                        text-muted-foreground
-                    ">
-                        Loading...
-                    </div>
-                )}
-
-                {isError && (
-                    <div className="
-                        py-8
-                        text-center
-                        text-sm
-                        text-red-500
-                    ">
-                        Failed to load work item.
-                    </div>
-                )}
-
-                {workItem &&
-                    !isLoading &&
-                    !isError && (
-                        <form
-                            onSubmit={
-                                handleSubmit(
-                                    onSubmit
-                                )
-                            }
-                            className="space-y-5"
-                        >
-
-                            {/* =========================
-                                TITLE
-                            ========================== */}
-
-                            <div>
-                                <label className="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-medium
-                                ">
-                                    Title
-                                </label>
-
-                                <Input
-                                    {...register(
-                                        "title"
-                                    )}
-                                />
-
-                                {errors.title && (
-                                    <p className="
-                                        mt-1
-                                        text-sm
-                                        text-red-500
-                                    ">
-                                        {
-                                            errors
-                                                .title
-                                                .message
-                                        }
-                                    </p>
-                                )}
+                                <DialogDescription>
+                                    Work item details and activity.
+                                </DialogDescription>
                             </div>
 
-                            {/* =========================
-                                DESCRIPTION
-                            ========================== */}
-
-                            <div>
-                                <label className="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-medium
-                                ">
-                                    Description
-                                </label>
-
-                                <Textarea
-                                    rows={4}
-                                    {...register(
-                                        "description"
-                                    )}
-                                />
-
-                                {errors.description && (
-                                    <p className="
-                                        mt-1
-                                        text-sm
-                                        text-red-500
-                                    ">
-                                        {
-                                            errors
-                                                .description
-                                                .message
-                                        }
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* =========================
-                                PRIORITY
-                            ========================== */}
-
-                            <div>
-                                <label className="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-medium
-                                ">
-                                    Priority
-                                </label>
-
-                                <select
-                                    className="
-                                        w-full
-                                        rounded-md
+                            {workItem && (
+                                <span
+                                    className={`
+                                        w-fit
+                                        shrink-0
+                                        rounded-full
                                         border
-                                        bg-background
-                                        px-3
-                                        py-2
-                                        text-sm
-                                    "
-                                    {...register(
-                                        "priority",
-                                        {
-                                            valueAsNumber:
-                                                true,
-                                        }
-                                    )}
+                                        px-2.5
+                                        py-1
+                                        text-xs
+                                        font-medium
+                                        ${statusClasses}
+                                    `}
                                 >
-                                    <option value={1}>
-                                        P1
-                                    </option>
+                                    {statusLabel}
+                                </span>
+                            )}
+                        </div>
+                    </DialogHeader>
 
-                                    <option value={2}>
-                                        P2
-                                    </option>
+                    {isLoading && (
+                        <div className="
+                            py-10
+                            text-center
+                            text-sm
+                            text-muted-foreground
+                        ">
+                            Loading work item...
+                        </div>
+                    )}
 
-                                    <option value={3}>
-                                        P3
-                                    </option>
+                    {isError && (
+                        <div className="
+                            py-10
+                            text-center
+                            text-sm
+                            text-red-500
+                        ">
+                            Failed to load work item.
+                        </div>
+                    )}
 
-                                    <option value={4}>
-                                        P4
-                                    </option>
-
-                                    <option value={5}>
-                                        P5
-                                    </option>
-
-                                    <option value={6}>
-                                        P6
-                                    </option>
-
-                                    <option value={7}>
-                                        P7
-                                    </option>
-
-                                    <option value={8}>
-                                        P8
-                                    </option>
-
-                                    <option value={9}>
-                                        P9
-                                    </option>
-
-                                    <option value={10}>
-                                        P10
-                                    </option>
-                                </select>
-
-                                {errors.priority && (
-                                    <p className="
-                                        mt-1
-                                        text-sm
-                                        text-red-500
-                                    ">
-                                        {
-                                            errors
-                                                .priority
-                                                .message
-                                        }
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* =========================
-                                ASSIGNEE
-                            ========================== */}
-
-                            <div>
-                                <label className="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-medium
-                                ">
-                                    Assignee
-                                </label>
-
-                                {usersLoading ? (
-                                    <div className="
-                                        rounded-md
-                                        border
-                                        px-3
-                                        py-2
-                                        text-sm
-                                        text-muted-foreground
-                                    ">
-                                        Loading members...
-                                    </div>
-                                ) : usersError ? (
-                                    <div className="
-                                        rounded-md
-                                        border
-                                        border-red-200
-                                        px-3
-                                        py-2
-                                        text-sm
-                                        text-red-500
-                                    ">
-                                        Failed to load members.
-                                    </div>
-                                ) : (
-                                    <select
-                                        className="
-                                            w-full
-                                            rounded-md
-                                            border
-                                            bg-background
-                                            px-3
-                                            py-2
-                                            text-sm
-                                            focus:outline-none
-                                            focus:ring-2
-                                            focus:ring-ring
-                                        "
-                                        {...register(
-                                            "assigneeId"
-                                        )}
-                                        disabled={
-                                            isSaving
-                                        }
-                                    >
-                                        <option value="">
-                                            Unassigned
-                                        </option>
-
-                                        {users.map(
-                                            (
-                                                user
-                                            ) => (
-                                                <option
-                                                    key={
-                                                        user.id
-                                                    }
-                                                    value={
-                                                        user.id
-                                                    }
-                                                >
-                                                    {
-                                                        user.fullName
-                                                    }
-
-                                                    {user.email
-                                                        ? ` (${user.email})`
-                                                        : ""}
-                                                </option>
-                                            )
-                                        )}
-                                    </select>
-                                )}
-
-                                {errors.assigneeId && (
-                                    <p className="
-                                        mt-1
-                                        text-sm
-                                        text-red-500
-                                    ">
-                                        {
-                                            errors
-                                                .assigneeId
-                                                .message
-                                        }
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* =========================
-                                DUE DATE
-                            ========================== */}
-
-                            <div>
-                                <label className="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-medium
-                                ">
-                                    Due Date
-                                </label>
-
-                                <Input
-                                    type="date"
-                                    {...register(
-                                        "dueDate"
-                                    )}
-                                />
-
-                                {errors.dueDate && (
-                                    <p className="
-                                        mt-1
-                                        text-sm
-                                        text-red-500
-                                    ">
-                                        {
-                                            errors
-                                                .dueDate
-                                                .message
-                                        }
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* =========================
-                                CHECKLIST
-                            ========================== */}
-
-                            <ChecklistSection
-                                workItemId={workItem.id}
-                                disabled={
-                                    workItem.isArchived
-                                }
-                            />
-
-                            {/* =========================
-                                STATUS
-                            ========================== */}
-
-                            <div>
-                                <label className="
-                                    mb-2
-                                    block
-                                    text-sm
-                                    font-medium
-                                ">
-                                    Status
-                                </label>
-
-                                <div className="
-                                    rounded-md
-                                    border
-                                    bg-muted/30
-                                    px-3
-                                    py-2
-                                    text-sm
-                                ">
-                                    {workItem.status ===
-                                        1 &&
-                                        "Active"}
-
-                                    {workItem.status ===
-                                        2 &&
-                                        "Completed"}
-
-                                    {workItem.status ===
-                                        3 &&
-                                        "Blocked"}
-                                </div>
-                            </div>
-
-                            {/* =========================
-                                ACTIONS
-                            ========================== */}
-
+                    {workItem &&
+                        !isLoading &&
+                        !isError && (
                             <div className="
-                                flex
-                                flex-col
-                                gap-4
-                                border-t
-                                pt-4
-                                sm:flex-row
-                                sm:items-center
-                                sm:justify-between
+                                space-y-5
                             ">
 
                                 {/* =========================
-                                    WORK ITEM ACTIONS
+                                    BASIC INFORMATION
                                 ========================== */}
 
                                 <div className="
-                                    flex
-                                    flex-wrap
-                                    items-center
-                                    gap-2
+                                    rounded-lg
+                                    border
+                                    p-4
                                 ">
+                                    <div className="
+                                        grid
+                                        gap-4
+                                        sm:grid-cols-2
+                                    ">
 
-                                    {!workItem.isArchived &&
-                                        workItem.status !==
-                                            2 && (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="
-                                                    border-green-200
-                                                    text-green-700
-                                                    hover:bg-green-50
-                                                    hover:text-green-800
-                                                "
-                                                onClick={
-                                                    handleComplete
-                                                }
-                                                disabled={
-                                                    isSaving
-                                                }
-                                            >
-                                                {completeMutation.isPending
-                                                    ? "Completing..."
-                                                    : "Complete"}
-                                            </Button>
-                                        )}
+                                        <div>
+                                            <p className="
+                                                text-xs
+                                                text-muted-foreground
+                                            ">
+                                                Priority
+                                            </p>
 
-                                    {!workItem.isArchived &&
-                                        workItem.status !==
-                                            3 && (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="
-                                                    border-amber-200
-                                                    text-amber-700
-                                                    hover:bg-amber-50
-                                                    hover:text-amber-800
-                                                "
-                                                onClick={
-                                                    handleBlock
+                                            <p className="
+                                                mt-1
+                                                text-sm
+                                                font-medium
+                                            ">
+                                                P
+                                                {
+                                                    workItem.priority
                                                 }
-                                                disabled={
-                                                    isSaving
-                                                }
-                                            >
-                                                {blockMutation.isPending
-                                                    ? "Blocking..."
-                                                    : "Block"}
-                                            </Button>
-                                        )}
+                                            </p>
+                                        </div>
 
-                                    {!workItem.isArchived &&
-                                        workItem.status !==
-                                            1 && (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="
-                                                    border-blue-200
-                                                    text-blue-700
-                                                    hover:bg-blue-50
-                                                    hover:text-blue-800
-                                                "
-                                                onClick={
-                                                    handleActivate
-                                                }
-                                                disabled={
-                                                    isSaving
-                                                }
-                                            >
-                                                {activateMutation.isPending
-                                                    ? "Activating..."
-                                                    : "Activate"}
-                                            </Button>
-                                        )}
+                                        <div>
+                                            <p className="
+                                                text-xs
+                                                text-muted-foreground
+                                            ">
+                                                Due Date
+                                            </p>
 
-                                    {workItem.isArchived ? (
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="
-                                                border-blue-200
-                                                text-blue-700
-                                                hover:bg-blue-50
-                                                hover:text-blue-800
-                                            "
-                                            onClick={
-                                                handleRestore
-                                            }
-                                            disabled={
-                                                isSaving
-                                            }
-                                        >
-                                            {restoreMutation.isPending
-                                                ? "Restoring..."
-                                                : "Restore"}
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            onClick={
-                                                handleArchive
-                                            }
-                                            disabled={
-                                                isSaving
-                                            }
-                                        >
-                                            {archiveMutation.isPending
-                                                ? "Archiving..."
-                                                : "Archive"}
-                                        </Button>
-                                    )}
+                                            <p className="
+                                                mt-1
+                                                text-sm
+                                                font-medium
+                                            ">
+                                                {
+                                                    dueDate ??
+                                                    "No due date"
+                                                }
+                                            </p>
+                                        </div>
 
+                                        <div className="
+                                            sm:col-span-2
+                                        ">
+                                            <p className="
+                                                text-xs
+                                                text-muted-foreground
+                                            ">
+                                                Description
+                                            </p>
+
+                                            <p className="
+                                                mt-1
+                                                whitespace-pre-wrap
+                                                text-sm
+                                            ">
+                                                {
+                                                    workItem.description ||
+                                                    "No description."
+                                                }
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="
+                                                text-xs
+                                                text-muted-foreground
+                                            ">
+                                                Assignee
+                                            </p>
+
+                                            <p className="
+                                                mt-1
+                                                text-sm
+                                                font-medium
+                                            ">
+                                                {
+                                                    assignee?.fullName ??
+                                                    "Unassigned"
+                                                }
+                                            </p>
+
+                                            {assignee?.email && (
+                                                <p className="
+                                                    text-xs
+                                                    text-muted-foreground
+                                                ">
+                                                    {
+                                                        assignee.email
+                                                    }
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <p className="
+                                                text-xs
+                                                text-muted-foreground
+                                            ">
+                                                Status
+                                            </p>
+
+                                            <p className="
+                                                mt-1
+                                                text-sm
+                                                font-medium
+                                            ">
+                                                {
+                                                    statusLabel
+                                                }
+                                            </p>
+                                        </div>
+
+                                    </div>
                                 </div>
 
                                 {/* =========================
-                                    FORM ACTIONS
+                                    CHECKLIST
+                                ========================== */}
+
+                                <div>
+                                    <div className="
+                                        mb-2
+                                        flex
+                                        items-center
+                                        justify-between
+                                    ">
+                                        <h3 className="
+                                            text-sm
+                                            font-semibold
+                                        ">
+                                            Checklist
+                                        </h3>
+                                    </div>
+
+                                    <ChecklistSection
+                                        workItemId={
+                                            workItem.id
+                                        }
+                                        disabled={
+                                            workItem.isArchived
+                                        }
+                                    />
+                                </div>
+
+                                {/* =========================
+                                    ACTIVITY
+                                ========================== */}
+
+                                <div>
+                                    <div className="
+                                        mb-2
+                                        flex
+                                        items-center
+                                        justify-between
+                                    ">
+                                        <h3 className="
+                                            text-sm
+                                            font-semibold
+                                        ">
+                                            Activity
+                                        </h3>
+                                    </div>
+
+                                    <WorkItemHistory
+                                        workItemId={
+                                            workItem.id
+                                        }
+                                        users={
+                                            users
+                                        }
+                                    />
+                                </div>
+
+                                {/* =========================
+                                    ACTIONS
                                 ========================== */}
 
                                 <div className="
                                     flex
-                                    items-center
-                                    gap-2
+                                    flex-col
+                                    gap-3
+                                    border-t
+                                    pt-4
+                                    sm:flex-row
+                                    sm:items-center
+                                    sm:justify-between
                                 ">
 
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() =>
-                                            onOpenChange(
-                                                false
-                                            )
-                                        }
-                                        disabled={
-                                            isSaving
-                                        }
-                                    >
-                                        Cancel
-                                    </Button>
+                                    {/* STATUS ACTIONS */}
 
-                                    {!workItem.isArchived && (
+                                    <div className="
+                                        flex
+                                        flex-wrap
+                                        gap-2
+                                    ">
+                                        {!workItem.isArchived &&
+                                            Number(workItem.status) !==
+                                                2 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="
+                                                        border-green-200
+                                                        text-green-700
+                                                        hover:bg-green-50
+                                                    "
+                                                    onClick={
+                                                        handleComplete
+                                                    }
+                                                    disabled={
+                                                        isSaving
+                                                    }
+                                                >
+                                                    {
+                                                        completeMutation.isPending
+                                                            ? "Completing..."
+                                                            : "Complete"
+                                                    }
+                                                </Button>
+                                            )}
+
+                                        {!workItem.isArchived &&
+                                            Number(workItem.status) !==
+                                                3 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="
+                                                        border-amber-200
+                                                        text-amber-700
+                                                        hover:bg-amber-50
+                                                    "
+                                                    onClick={
+                                                        handleBlock
+                                                    }
+                                                    disabled={
+                                                        isSaving
+                                                    }
+                                                >
+                                                    {
+                                                        blockMutation.isPending
+                                                            ? "Blocking..."
+                                                            : "Block"
+                                                    }
+                                                </Button>
+                                            )}
+
+                                        {!workItem.isArchived &&
+                                            Number(workItem.status) !==
+                                                1 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="
+                                                        border-blue-200
+                                                        text-blue-700
+                                                        hover:bg-blue-50
+                                                    "
+                                                    onClick={
+                                                        handleActivate
+                                                    }
+                                                    disabled={
+                                                        isSaving
+                                                    }
+                                                >
+                                                    {
+                                                        activateMutation.isPending
+                                                            ? "Activating..."
+                                                            : "Activate"
+                                                    }
+                                                </Button>
+                                            )}
+
+                                        {workItem.isArchived ? (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={
+                                                    handleRestore
+                                                }
+                                                disabled={
+                                                    isSaving
+                                                }
+                                            >
+                                                {
+                                                    restoreMutation.isPending
+                                                        ? "Restoring..."
+                                                        : "Restore"
+                                                }
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                onClick={
+                                                    handleArchive
+                                                }
+                                                disabled={
+                                                    isSaving
+                                                }
+                                            >
+                                                {
+                                                    archiveMutation.isPending
+                                                        ? "Archiving..."
+                                                        : "Archive"
+                                                }
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {/* EDIT / CLOSE */}
+
+                                    <div className="
+                                        flex
+                                        gap-2
+                                    ">
                                         <Button
-                                            type="submit"
-                                            disabled={
-                                                isSaving ||
-                                                usersLoading ||
-                                                usersError
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() =>
+                                                onOpenChange(
+                                                    false
+                                                )
                                             }
                                         >
-                                            {isSaving
-                                                ? "Saving..."
-                                                : "Save Changes"}
+                                            Close
                                         </Button>
-                                    )}
+
+                                        {!workItem.isArchived && (
+                                            <Button
+                                                type="button"
+                                                onClick={() =>
+                                                    setEditOpen(
+                                                        true
+                                                    )
+                                                }
+                                                disabled={
+                                                    isSaving
+                                                }
+                                            >
+                                                Edit Work Item
+                                            </Button>
+                                        )}
+                                    </div>
 
                                 </div>
-
                             </div>
+                        )}
+                </DialogContent>
+            </Dialog>
 
-                        </form>
-                    )}
+            {/* =========================================
+                EDIT DIALOG
+            ========================================== */}
 
-            </DialogContent>
-        </Dialog>
+            <EditWorkItemDialog
+                open={
+                    editOpen
+                }
+                onOpenChange={(
+                    value
+                ) => {
+                    setEditOpen(
+                        value
+                    );
+
+                    if (!value) {
+                        onOpenChange(
+                            true
+                        );
+                    }
+                }}
+                workItem={
+                    workItem ?? null
+                }
+            />
+        </>
     );
 }

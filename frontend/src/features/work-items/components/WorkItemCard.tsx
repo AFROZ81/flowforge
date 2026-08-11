@@ -16,6 +16,13 @@ import { useComments } from "@/features/comments/hooks/useComments";
 
 import { useChecklistProgress } from "@/features/checklists/hooks/useChecklistProgress";
 
+import WorkItemWatchers from "@/features/work-item-watchers/components/WorkItemWatchers";
+
+import {
+    CheckSquare,
+    MessageCircle,
+} from "lucide-react";
+
 type WorkItem = {
     id: string;
     title: string;
@@ -406,11 +413,10 @@ export default function WorkItemCard({
                             text-muted-foreground
                         ">
 
-                            <span className="
-                                text-sm
-                            ">
-                                ☑
-                            </span>
+                            <CheckSquare className="
+                                h-3.5
+                                w-3.5
+                            " />
 
                             <span>
                                 Checklist
@@ -474,14 +480,21 @@ export default function WorkItemCard({
                 </div>
 
                 {/* =================================
-                    COMMENTS ACTION
+                    COMMENTS + WATCHERS
                 ================================== */}
 
                 <div className="
                     mt-3
+                    flex
+                    items-center
+                    gap-4
                     border-t
                     pt-3
                 ">
+
+                    {/* =================================
+                        COMMENTS
+                    ================================== */}
 
                     <Button
                         type="button"
@@ -489,11 +502,12 @@ export default function WorkItemCard({
                         size="sm"
                         className="
                             h-7
-                            w-full
+                            w-auto
                             justify-start
-                            px-2
+                            px-1
                             text-xs
                             text-muted-foreground
+                            hover:bg-transparent
                             hover:text-foreground
                         "
                         onClick={
@@ -501,14 +515,15 @@ export default function WorkItemCard({
                         }
                     >
 
-                        <span className="
+                        <MessageCircle className="
                             mr-1.5
-                            text-sm
-                        ">
-                            💬
-                        </span>
+                            h-3.5
+                            w-3.5
+                        " />
 
-                        Comments
+                        <span>
+                            Comments
+                        </span>
 
                         <span className="
                             ml-1
@@ -524,6 +539,25 @@ export default function WorkItemCard({
                         </span>
 
                     </Button>
+
+                    {/* =================================
+                        WATCHERS
+                    ================================== */}
+
+                    <div
+                        onClick={(event) =>
+                            event.stopPropagation()
+                        }
+                    >
+                        <WorkItemWatchers
+                            workItemId={
+                                item.id
+                            }
+                            workItemTitle={
+                                item.title
+                            }
+                        />
+                    </div>
 
                 </div>
 
