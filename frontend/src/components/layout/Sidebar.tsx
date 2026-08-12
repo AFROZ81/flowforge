@@ -1,56 +1,59 @@
 import {
     FolderKanban,
-    KanbanSquare,
     LayoutDashboard,
     Settings,
     UserCircle2,
+    ChevronRight,
 } from "lucide-react";
 
 import { NavLink } from "react-router";
 
-const menu = [
+const primaryNavigation = [
     {
         title: "Dashboard",
         icon: LayoutDashboard,
         href: "/dashboard",
+        end: true,
     },
     {
         title: "Projects",
         icon: FolderKanban,
         href: "/projects",
+        end: false,
     },
-    {
-        title: "Boards",
-        icon: KanbanSquare,
-        href: "/boards",
-    },
+];
+
+const workspaceNavigation = [
     {
         title: "Settings",
         icon: Settings,
         href: "/settings",
+        end: false,
     },
 ];
 
 export default function Sidebar() {
     return (
-        <aside className="flex h-screen w-72 flex-col border-r border-slate-200 bg-white">
+        <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
 
-            {/* Logo */}
-            <div className="border-b border-slate-200 p-6">
+            {/* =====================================================
+                BRAND
+            ===================================================== */}
+            <div className="border-b border-slate-200 px-5 py-4">
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
 
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-xl font-bold text-white shadow-md">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm">
                         F
                     </div>
 
-                    <div>
+                    <div className="min-w-0">
 
-                        <h1 className="text-xl font-bold tracking-tight text-slate-900">
+                        <h1 className="truncate text-sm font-bold tracking-tight text-slate-900">
                             FlowForge
                         </h1>
 
-                        <p className="text-sm text-slate-500">
+                        <p className="truncate text-[11px] text-slate-500">
                             Enterprise Workspace
                         </p>
 
@@ -60,77 +63,154 @@ export default function Sidebar() {
 
             </div>
 
-            {/* Navigation */}
-            <div className="flex-1">
 
-                <div className="px-6 pt-6 pb-3">
+            {/* =====================================================
+                NAVIGATION
+            ===================================================== */}
+            <div className="flex-1 overflow-y-auto px-3 py-5">
 
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                {/* Workspace */}
+                <div className="mb-6">
+
+                    <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                         Workspace
                     </p>
 
+                    <nav className="space-y-1">
+
+                        {primaryNavigation.map((item) => {
+
+                            const Icon = item.icon;
+
+                            return (
+                                <NavLink
+                                    key={item.title}
+                                    to={item.href}
+                                    end={item.end}
+                                    className={({ isActive }) =>
+                                        [
+                                            "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5",
+                                            "text-sm font-medium transition-colors",
+                                            isActive
+                                                ? "bg-blue-50 text-blue-700"
+                                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                                        ].join(" ")
+                                    }
+                                >
+                                    {({ isActive }) => (
+                                        <>
+                                            <Icon
+                                                size={18}
+                                                strokeWidth={isActive ? 2.2 : 1.8}
+                                                className={
+                                                    isActive
+                                                        ? "text-blue-600"
+                                                        : "text-slate-400 group-hover:text-slate-600"
+                                                }
+                                            />
+
+                                            <span>
+                                                {item.title}
+                                            </span>
+                                        </>
+                                    )}
+                                </NavLink>
+                            );
+                        })}
+
+                    </nav>
+
                 </div>
 
-                <nav className="space-y-2 px-3">
 
-                    {menu.map((item) => {
-                        const Icon = item.icon;
+                {/* Workspace Management */}
+                <div>
 
-                        return (
-                            <NavLink
-                                key={item.title}
-                                to={item.href}
-                                className={({ isActive }) =>
-                                    `group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                                        isActive
-                                            ? "bg-blue-50 text-blue-700 shadow-sm"
-                                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                                    }`
-                                }
-                            >
-                                {({ isActive }) => (
-                                <>
-                                    <Icon
-                                        size={20}
-                                        className={`transition-colors ${
+                    <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                        Workspace
+                    </p>
+
+                    <nav className="space-y-1">
+
+                        {workspaceNavigation.map((item) => {
+
+                            const Icon = item.icon;
+
+                            return (
+                                <NavLink
+                                    key={item.title}
+                                    to={item.href}
+                                    end={item.end}
+                                    className={({ isActive }) =>
+                                        [
+                                            "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5",
+                                            "text-sm font-medium transition-colors",
                                             isActive
-                                                ? "text-blue-600"
-                                                : "text-slate-400 group-hover:text-slate-700"
-                                        }`}
-                                    />
+                                                ? "bg-blue-50 text-blue-700"
+                                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                                        ].join(" ")
+                                    }
+                                >
+                                    {({ isActive }) => (
+                                        <>
+                                            <Icon
+                                                size={18}
+                                                strokeWidth={isActive ? 2.2 : 1.8}
+                                                className={
+                                                    isActive
+                                                        ? "text-blue-600"
+                                                        : "text-slate-400 group-hover:text-slate-600"
+                                                }
+                                            />
 
-                                    <span>{item.title}</span>
-                                </>
-                            )}
-                            </NavLink>
-                        );
-                    })}
+                                            <span>
+                                                {item.title}
+                                            </span>
+                                        </>
+                                    )}
+                                </NavLink>
+                            );
+                        })}
 
-                </nav>
+                    </nav>
+
+                </div>
 
             </div>
 
-            {/* Bottom User Section */}
-            <div className="border-t border-slate-200 p-4">
 
-                <button className="flex w-full items-center gap-3 rounded-xl p-3 transition hover:bg-slate-100">
+            {/* =====================================================
+                USER
+            ===================================================== */}
+            <div className="border-t border-slate-200 p-3">
+
+                <button
+                    type="button"
+                    className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-slate-100"
+                >
 
                     <UserCircle2
-                        size={42}
-                        className="text-slate-500"
+                        size={34}
+                        strokeWidth={1.7}
+                        className="shrink-0 text-slate-500"
                     />
 
-                    <div className="text-left">
+                    <div className="min-w-0 flex-1">
 
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p className="truncate text-sm font-semibold text-slate-900">
                             Afroz
                         </p>
 
-                        <p className="text-xs text-slate-500">
+                        <p className="truncate text-[11px] text-slate-500">
                             Administrator
                         </p>
 
                     </div>
+
+                    <ChevronRight
+                        size={15}
+                        className="text-slate-400 transition-transform group-hover:translate-x-0.5"
+                    />
 
                 </button>
 

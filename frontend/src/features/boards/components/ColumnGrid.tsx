@@ -42,110 +42,86 @@ export default function ColumnGrid({
         destinationColumnId: string,
         destinationIndex: number
     ) => {
-        setLocalColumns(
-            (currentColumns) => {
-                const nextColumns =
-                    currentColumns.map(
-                        (column) => ({
-                            ...column,
+        setLocalColumns((currentColumns) => {
+            const nextColumns =
+                currentColumns.map((column) => ({
+                    ...column,
+                    workItems: [
+                        ...column.workItems,
+                    ],
+                }));
 
-                            workItems: [
-                                ...column.workItems,
-                            ],
-                        })
+            let movingItem:
+                | WorkItem
+                | undefined;
+
+            for (const column of nextColumns) {
+                const index =
+                    column.workItems.findIndex(
+                        (item) =>
+                            item.id ===
+                            workItemId
                     );
 
-                let movingItem:
-                    | WorkItem
-                    | undefined;
-
-                for (
-                    const column of
-                        nextColumns
-                ) {
-                    const index =
-                        column.workItems.findIndex(
-                            (item) =>
-                                item.id ===
-                                workItemId
+                if (index !== -1) {
+                    [movingItem] =
+                        column.workItems.splice(
+                            index,
+                            1
                         );
 
-                    if (index !== -1) {
-                        [
-                            movingItem,
-                        ] =
-                            column.workItems.splice(
-                                index,
-                                1
-                            );
-
-                        break;
-                    }
+                    break;
                 }
+            }
 
-                if (!movingItem) {
-                    return currentColumns;
-                }
+            if (!movingItem) {
+                return currentColumns;
+            }
 
-                const destinationColumn =
-                    nextColumns.find(
-                        (column) =>
-                            column.id ===
-                            destinationColumnId
-                    );
-
-                if (
-                    !destinationColumn
-                ) {
-                    return currentColumns;
-                }
-
-                const safeIndex =
-                    Math.max(
-                        0,
-                        Math.min(
-                            destinationIndex,
-                            destinationColumn
-                                .workItems
-                                .length
-                        )
-                    );
-
-                destinationColumn.workItems.splice(
-                    safeIndex,
-                    0,
-                    movingItem
+            const destinationColumn =
+                nextColumns.find(
+                    (column) =>
+                        column.id ===
+                        destinationColumnId
                 );
 
-                for (
-                    const column of
-                        nextColumns
-                ) {
-                    column.workItems =
-                        column.workItems.map(
-                            (
-                                item,
-                                index
-                            ) => ({
-                                ...item,
-
-                                displayOrder:
-                                    index *
-                                    1000,
-                            })
-                        );
-                }
-
-                return nextColumns;
+            if (!destinationColumn) {
+                return currentColumns;
             }
-        );
+
+            const safeIndex = Math.max(
+                0,
+                Math.min(
+                    destinationIndex,
+                    destinationColumn.workItems
+                        .length
+                )
+            );
+
+            destinationColumn.workItems.splice(
+                safeIndex,
+                0,
+                movingItem
+            );
+
+            for (const column of nextColumns) {
+                column.workItems =
+                    column.workItems.map(
+                        (item, index) => ({
+                            ...item,
+                            displayOrder:
+                                index * 1000,
+                        })
+                    );
+            }
+
+            return nextColumns;
+        });
     };
 
     return (
         <div className="grid gap-6 xl:grid-cols-5">
-            {[
-                ...localColumns,
-            ]
+            {[...localColumns]
                 .sort(
                     (a, b) =>
                         a.displayOrder -
@@ -155,9 +131,7 @@ export default function ColumnGrid({
                     <ColumnCard
                         key={column.id}
                         column={column}
-                        columns={
-                            localColumns
-                        }
+                        columns={localColumns}
                         onOptimisticMove={
                             handleOptimisticMove
                         }

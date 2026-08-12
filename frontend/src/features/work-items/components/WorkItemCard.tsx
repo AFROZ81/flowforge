@@ -1,4 +1,6 @@
-import { useState } from "react";
+import {
+    useState,
+} from "react";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,13 +16,21 @@ import {
 import CommentsSection from "@/features/comments/components/CommentsSection";
 import { useComments } from "@/features/comments/hooks/useComments";
 
-import { useChecklistProgress } from "@/features/checklists/hooks/useChecklistProgress";
+import {
+    useChecklistProgress,
+} from "@/features/checklists/hooks/useChecklistProgress";
 
 import WorkItemWatchers from "@/features/work-item-watchers/components/WorkItemWatchers";
+
+import LabelsDialog from "@/features/labels/components/LabelsDialog";
+import {
+    useWorkItemLabels,
+} from "@/features/labels/hooks/useWorkItemLabels";
 
 import {
     CheckSquare,
     MessageCircle,
+    Tag,
 } from "lucide-react";
 
 type WorkItem = {
@@ -54,9 +64,14 @@ function formatDueDate(
         return null;
     }
 
-    const date = new Date(dueDate);
+    const date =
+        new Date(dueDate);
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
         return null;
     }
 
@@ -132,6 +147,11 @@ export default function WorkItemCard({
         setCommentsOpen,
     ] = useState(false);
 
+    const [
+        labelsOpen,
+        setLabelsOpen,
+    ] = useState(false);
+
     /*
      * ========================================
      * COMMENTS
@@ -145,32 +165,38 @@ export default function WorkItemCard({
         commentsQuery?.data;
 
     const commentCount =
-        Array.isArray(commentsData)
+        Array.isArray(
+            commentsData
+        )
             ? commentsData.length
             : 0;
 
     /*
      * ========================================
-     * CHECKLIST PROGRESS
+     * CHECKLIST
      * ========================================
      */
 
     const {
         data: checklistProgress,
-    } = useChecklistProgress(
-        item.id
-    );
+    } =
+        useChecklistProgress(
+            item.id
+        );
 
     const checklistTotal =
-        checklistProgress?.totalItems ??
+        checklistProgress
+            ?.totalItems ??
         0;
 
     const checklistCompleted =
-        checklistProgress?.completedItems ??
+        checklistProgress
+            ?.completedItems ??
         0;
 
     const checklistPercentage =
-        checklistProgress?.progressPercentage ??
+        checklistProgress
+            ?.progressPercentage ??
         (
             checklistTotal > 0
                 ? Math.round(
@@ -181,6 +207,22 @@ export default function WorkItemCard({
                   )
                 : 0
         );
+
+    /*
+     * ========================================
+     * LABELS
+     * ========================================
+     */
+
+    const {
+        data: workItemLabels = [],
+    } =
+        useWorkItemLabels(
+            item.id
+        );
+
+    const labelCount =
+        workItemLabels.length;
 
     /*
      * ========================================
@@ -222,10 +264,24 @@ export default function WorkItemCard({
         event: React.MouseEvent
     ) => {
         event.preventDefault();
-
         event.stopPropagation();
 
         setCommentsOpen(true);
+    };
+
+    /*
+     * ========================================
+     * LABELS CLICK
+     * ========================================
+     */
+
+    const handleLabelsClick = (
+        event: React.MouseEvent
+    ) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        setLabelsOpen(true);
     };
 
     return (
@@ -268,8 +324,6 @@ export default function WorkItemCard({
                         gap-1.5
                     ">
 
-                        {/* STATUS */}
-
                         <span
                             className={`
                                 rounded-full
@@ -283,8 +337,6 @@ export default function WorkItemCard({
                         >
                             {statusLabel}
                         </span>
-
-                        {/* PRIORITY */}
 
                         <span className="
                             rounded-full
@@ -365,13 +417,14 @@ export default function WorkItemCard({
                         <div className="
                             min-w-0
                         ">
-
                             <p className="
                                 truncate
                                 text-xs
                                 font-medium
                             ">
-                                {assignee.fullName}
+                                {
+                                    assignee.fullName
+                                }
                             </p>
 
                             {assignee.email && (
@@ -380,10 +433,11 @@ export default function WorkItemCard({
                                     text-[11px]
                                     text-muted-foreground
                                 ">
-                                    {assignee.email}
+                                    {
+                                        assignee.email
+                                    }
                                 </p>
                             )}
-
                         </div>
 
                     </div>
@@ -431,8 +485,13 @@ export default function WorkItemCard({
                                 font-medium
                                 text-foreground
                             ">
-                                {checklistCompleted}/
-                                {checklistTotal}
+                                {
+                                    checklistCompleted
+                                }
+                                /
+                                {
+                                    checklistTotal
+                                }
                             </span>
 
                         </div>
@@ -441,12 +500,12 @@ export default function WorkItemCard({
                             text-[10px]
                             text-muted-foreground
                         ">
-                            {checklistPercentage}%
+                            {
+                                checklistPercentage
+                            }%
                         </span>
 
                     </div>
-
-                    {/* CHECKLIST PROGRESS BAR */}
 
                     <div className="
                         mt-2
@@ -480,21 +539,21 @@ export default function WorkItemCard({
                 </div>
 
                 {/* =================================
-                    COMMENTS + WATCHERS
+                    COMMENTS + WATCHERS + LABELS
                 ================================== */}
 
                 <div className="
                     mt-3
                     flex
+                    flex-wrap
                     items-center
-                    gap-4
+                    gap-x-4
+                    gap-y-1
                     border-t
                     pt-3
                 ">
 
-                    {/* =================================
-                        COMMENTS
-                    ================================== */}
+                    {/* COMMENTS */}
 
                     <Button
                         type="button"
@@ -514,7 +573,6 @@ export default function WorkItemCard({
                             handleCommentsClick
                         }
                     >
-
                         <MessageCircle className="
                             mr-1.5
                             h-3.5
@@ -537,15 +595,14 @@ export default function WorkItemCard({
                         ">
                             {commentCount}
                         </span>
-
                     </Button>
 
-                    {/* =================================
-                        WATCHERS
-                    ================================== */}
+                    {/* WATCHERS */}
 
                     <div
-                        onClick={(event) =>
+                        onClick={(
+                            event
+                        ) =>
                             event.stopPropagation()
                         }
                     >
@@ -558,6 +615,50 @@ export default function WorkItemCard({
                             }
                         />
                     </div>
+
+                    {/* LABELS */}
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="
+                            h-7
+                            w-auto
+                            justify-start
+                            px-1
+                            text-xs
+                            text-muted-foreground
+                            hover:bg-transparent
+                            hover:text-foreground
+                        "
+                        onClick={
+                            handleLabelsClick
+                        }
+                    >
+                        <Tag className="
+                            mr-1.5
+                            h-3.5
+                            w-3.5
+                        " />
+
+                        <span>
+                            Labels
+                        </span>
+
+                        <span className="
+                            ml-1
+                            rounded-full
+                            bg-muted
+                            px-1.5
+                            py-0.5
+                            text-[10px]
+                            font-medium
+                            text-foreground
+                        ">
+                            {labelCount}
+                        </span>
+                    </Button>
 
                 </div>
 
@@ -573,7 +674,6 @@ export default function WorkItemCard({
                     setCommentsOpen
                 }
             >
-
                 <DialogContent
                     className="
                         max-h-[85vh]
@@ -581,17 +681,15 @@ export default function WorkItemCard({
                         sm:max-w-lg
                     "
                 >
-
                     <DialogHeader>
-
                         <DialogTitle>
                             Comments
                         </DialogTitle>
 
                         <DialogDescription>
-                            Discuss "{item.title}"
+                            Discuss "
+                            {item.title}"
                         </DialogDescription>
-
                     </DialogHeader>
 
                     <CommentsSection
@@ -605,10 +703,25 @@ export default function WorkItemCard({
                             item.isArchived
                         }
                     />
-
                 </DialogContent>
-
             </Dialog>
+
+            {/* =====================================
+                LABELS DIALOG
+            ====================================== */}
+
+            <LabelsDialog
+                open={labelsOpen}
+                onOpenChange={
+                    setLabelsOpen
+                }
+                workItemId={
+                    item.id
+                }
+                workItemTitle={
+                    item.title
+                }
+            />
         </>
     );
 }
