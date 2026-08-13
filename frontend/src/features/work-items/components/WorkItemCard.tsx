@@ -22,6 +22,8 @@ import {
 
 import WorkItemWatchers from "@/features/work-item-watchers/components/WorkItemWatchers";
 
+import OnlineIndicator from "@/features/presence/components/OnlineIndicator";
+
 import LabelsDialog from "@/features/labels/components/LabelsDialog";
 import {
     useWorkItemLabels,
@@ -416,16 +418,31 @@ export default function WorkItemCard({
 
                         <div className="
                             min-w-0
+                            flex-1
                         ">
-                            <p className="
-                                truncate
-                                text-xs
-                                font-medium
+                            <div className="
+                                flex
+                                min-w-0
+                                items-center
+                                gap-1.5
                             ">
-                                {
-                                    assignee.fullName
-                                }
-                            </p>
+                                <p className="
+                                    min-w-0
+                                    truncate
+                                    text-xs
+                                    font-medium
+                                ">
+                                    {
+                                        assignee.fullName
+                                    }
+                                </p>
+
+                                <OnlineIndicator
+                                    userId={
+                                        assignee.id
+                                    }
+                                />
+                            </div>
 
                             {assignee.email && (
                                 <p className="

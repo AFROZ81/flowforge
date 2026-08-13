@@ -19,6 +19,8 @@ import {
     useOrganizationUsers,
 } from "@/features/work-items/hooks/useOrganizationUsers";
 
+import OnlineIndicator from "@/features/presence/components/OnlineIndicator";
+
 import {
     useWorkItemWatchers,
 } from "../hooks/useWorkItemWatchers";
@@ -192,13 +194,9 @@ export default function WorkItemWatchers({
      * ========================================
      * WATCHERS DIALOG
      *
-     * IMPORTANT:
-     * The dialog is rendered through a
-     * React portal into document.body.
-     *
-     * This prevents the parent draggable/
-     * transformed WorkItemCard from affecting
-     * the dialog's fixed positioning.
+     * Rendered through a portal so the
+     * parent draggable card does not affect
+     * fixed positioning.
      * ========================================
      */
 
@@ -420,7 +418,9 @@ export default function WorkItemWatchers({
                                       </div>
                                   )}
 
-                              {/* WATCHER LIST */}
+                              {/* =================================
+                                  WATCHER LIST
+                              ================================== */}
 
                               {!isLoading &&
                                   !isError &&
@@ -492,17 +492,35 @@ export default function WorkItemWatchers({
                                                                   min-w-0
                                                               "
                                                           >
-                                                              <p
+                                                              <div
                                                                   className="
-                                                                      truncate
-                                                                      text-xs
-                                                                      font-medium
+                                                                      flex
+                                                                      min-w-0
+                                                                      items-center
+                                                                      gap-1.5
                                                                   "
                                                               >
-                                                                  {
-                                                                      watcher.fullName
-                                                                  }
-                                                              </p>
+                                                                  <p
+                                                                      className="
+                                                                          min-w-0
+                                                                          truncate
+                                                                          text-xs
+                                                                          font-medium
+                                                                      "
+                                                                  >
+                                                                      {
+                                                                          watcher.fullName
+                                                                      }
+                                                                  </p>
+
+                                                                  {/* ONLINE STATUS */}
+
+                                                                  <OnlineIndicator
+                                                                      userId={
+                                                                          watcher.userId
+                                                                      }
+                                                                  />
+                                                              </div>
 
                                                               {watcher.email && (
                                                                   <p
@@ -668,6 +686,7 @@ export default function WorkItemWatchers({
                                                                   setAddOpen(
                                                                       false
                                                                   );
+
                                                                   setSelectedUserId(
                                                                       ""
                                                                   );
@@ -732,9 +751,6 @@ export default function WorkItemWatchers({
         <>
             {/* ========================================
                 CARD TRIGGER
-
-                This remains inside WorkItemCard.
-                Only the trigger is rendered here.
             ======================================== */}
 
             <button
@@ -806,11 +822,7 @@ export default function WorkItemWatchers({
                 </span>
             </button>
 
-            {/* ========================================
-                PORTALED DIALOG
-
-                This is OUTSIDE the card DOM tree.
-            ======================================== */}
+            {/* PORTALED DIALOG */}
 
             {watchersDialog}
         </>

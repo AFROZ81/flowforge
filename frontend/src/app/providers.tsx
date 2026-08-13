@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+
 import { AppProvider } from "@/providers/AppProvider";
+import { PresenceProvider } from "@/features/presence";
 
 type Props = {
     children: ReactNode;
@@ -10,7 +12,9 @@ export function Providers({
 }: Props) {
     return (
         <AppProvider>
-            {children}
+            <PresenceProvider>
+                {children}
+            </PresenceProvider>
         </AppProvider>
     );
 }

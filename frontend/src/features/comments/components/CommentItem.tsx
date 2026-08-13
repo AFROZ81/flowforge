@@ -21,6 +21,8 @@ import type {
     OrganizationUser,
 } from "@/features/work-items/types/user";
 
+import OnlineIndicator from "@/features/presence/components/OnlineIndicator";
+
 type Props = {
     comment: Comment;
     users: OrganizationUser[];
@@ -171,6 +173,8 @@ export default function CommentItem({
 
                 <div className="flex min-w-0 items-center gap-2">
 
+                    {/* Avatar */}
+
                     <div className="
                         flex
                         h-8
@@ -190,16 +194,36 @@ export default function CommentItem({
                             "?"}
                     </div>
 
+                    {/* User information */}
+
                     <div className="min-w-0">
 
-                        <p className="
-                            truncate
-                            text-sm
-                            font-medium
+                        <div className="
+                            flex
+                            items-center
+                            gap-1.5
                         ">
-                            {author?.fullName ??
-                                "Unknown user"}
-                        </p>
+
+                            <p className="
+                                truncate
+                                text-sm
+                                font-medium
+                            ">
+                                {author?.fullName ??
+                                    "Unknown user"}
+                            </p>
+
+                            {/* Online status */}
+
+                            {author?.id && (
+                                <OnlineIndicator
+                                    userId={
+                                        author.id
+                                    }
+                                />
+                            )}
+
+                        </div>
 
                         {author?.email && (
                             <p className="
@@ -350,6 +374,7 @@ export default function CommentItem({
                                 }
                             >
                                 <Trash2 className="mr-1 h-3.5 w-3.5" />
+
                                 {deleteMutation.isPending
                                     ? "Deleting..."
                                     : "Delete"}

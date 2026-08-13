@@ -5,23 +5,50 @@ namespace FlowForge.Infrastructure.Services.Presence;
 
 public sealed class OnlineUserTracker : IOnlineUserTracker
 {
-    private readonly ConcurrentDictionary<Guid, byte> _onlineUsers = new();
+    private readonly ConcurrentDictionary<Guid, int> _connections = new();
 
     public Task UserConnectedAsync(Guid userId)
     {
-        _onlineUsers.TryAdd(userId, 0);
+        _connections.AddOrUpdate(
+            userId,
+            1,
+            (_, count) => count + 1);
+
         return Task.CompletedTask;
     }
 
     public Task UserDisconnectedAsync(Guid userId)
     {
-        _onlineUsers.TryRemove(userId, out _);
-        return Task.CompletedTask;
+        while (true)
+        {
+            if (!_connections.TryGetValue(userId, out var count))
+            {
+                return Task.CompletedTask;
+            }
+
+            if (count <= 1)
+            {
+                _connections.TryRemove(userId, out _);
+                return Task.CompletedTask;
+            }
+
+            if (_connections.TryUpdate(
+                    userId,
+                    count - 1,
+                    count))
+            {
+                return Task.CompletedTask;
+            }
+        }
     }
 
     public bool IsOnline(Guid userId)
-        => _onlineUsers.ContainsKey(userId);
+    {
+        return _connections.ContainsKey(userId);
+    }
 
     public IReadOnlyCollection<Guid> GetOnlineUsers()
-        => _onlineUsers.Keys.ToList();
+    {
+        return _connections.Keys.ToList();
+    }
 }

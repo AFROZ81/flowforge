@@ -2,6 +2,8 @@ import {
     useWorkItemHistory,
 } from "../hooks/useWorkItemHistory";
 
+import OnlineIndicator from "@/features/presence/components/OnlineIndicator";
+
 type OrganizationUser = {
     id: string;
     fullName: string;
@@ -255,6 +257,7 @@ export default function WorkItemHistory({
                                 "
                             >
                                 {/* Timeline */}
+
                                 <div className="
                                     relative
                                     flex
@@ -288,6 +291,7 @@ export default function WorkItemHistory({
                                 </div>
 
                                 {/* Activity */}
+
                                 <div className="
                                     min-w-0
                                     flex-1
@@ -307,12 +311,34 @@ export default function WorkItemHistory({
                                             gap-x-2
                                             gap-y-1
                                         ">
-                                            <span className="
-                                                text-sm
-                                                font-medium
+                                            {/* ACTOR */}
+
+                                            <div className="
+                                                flex
+                                                min-w-0
+                                                items-center
+                                                gap-1.5
                                             ">
-                                                {userName}
-                                            </span>
+                                                <span className="
+                                                    truncate
+                                                    text-sm
+                                                    font-medium
+                                                ">
+                                                    {
+                                                        userName
+                                                    }
+                                                </span>
+
+                                                {user?.id && (
+                                                    <OnlineIndicator
+                                                        userId={
+                                                            user.id
+                                                        }
+                                                    />
+                                                )}
+                                            </div>
+
+                                            {/* ACTION */}
 
                                             <span
                                                 className={`
@@ -325,7 +351,11 @@ export default function WorkItemHistory({
                                                     ${styles.badge}
                                                 `}
                                             >
-                                                {getActionLabel(entry.action)}
+                                                {
+                                                    getActionLabel(
+                                                        entry.action
+                                                    )
+                                                }
                                             </span>
                                         </div>
 
