@@ -1,5 +1,4 @@
 import {
-    Bell,
     Search,
     Sun,
     UserCircle2,
@@ -8,6 +7,11 @@ import {
 import { Input } from "@/components/ui/input";
 
 import OnlineMembers from "@/features/presence/components/OnlineMembers";
+
+import {
+    NotificationBell,
+} from "@/features/notifications";
+
 
 export default function Topbar() {
     return (
@@ -26,15 +30,19 @@ export default function Topbar() {
                 px-8
             "
         >
+
             {/* =================================================
                 LEFT
                ================================================= */}
 
-            <div className="
-                relative
-                w-full
-                max-w-md
-            ">
+            <div
+                className="
+                    relative
+                    w-full
+                    max-w-md
+                "
+            >
+
                 <Search
                     size={18}
                     className="
@@ -54,41 +62,35 @@ export default function Topbar() {
                         pl-11
                     "
                 />
+
             </div>
+
 
             {/* =================================================
                 RIGHT
                ================================================= */}
 
-            <div className="
-                flex
-                items-center
-                gap-2
-            ">
+            <div
+                className="
+                    flex
+                    items-center
+                    gap-2
+                "
+            >
+
                 {/* =============================================
                     ONLINE MEMBERS
                    ============================================= */}
 
                 <OnlineMembers />
 
+
                 {/* =============================================
                     NOTIFICATIONS
                    ============================================= */}
 
-                <button
-                    type="button"
-                    aria-label="Notifications"
-                    className="
-                        rounded-xl
-                        p-2
-                        text-slate-500
-                        transition
-                        hover:bg-slate-100
-                        hover:text-slate-900
-                    "
-                >
-                    <Bell size={20} />
-                </button>
+                <NotificationBell />
+
 
                 {/* =============================================
                     THEME
@@ -109,6 +111,7 @@ export default function Topbar() {
                     <Sun size={20} />
                 </button>
 
+
                 {/* =============================================
                     USER
                    ============================================= */}
@@ -125,32 +128,46 @@ export default function Topbar() {
                         hover:bg-slate-100
                     "
                 >
+
                     <UserCircle2
                         size={36}
                         className="text-slate-500"
                     />
 
-                    <div className="
-                        hidden
-                        text-left
-                        md:block
-                    ">
-                        <p className="
-                            text-sm
-                            font-semibold
-                        ">
+
+                    <div
+                        className="
+                            hidden
+                            text-left
+                            md:block
+                        "
+                    >
+
+                        <p
+                            className="
+                                text-sm
+                                font-semibold
+                            "
+                        >
                             Afroz
                         </p>
 
-                        <p className="
-                            text-xs
-                            text-slate-500
-                        ">
+
+                        <p
+                            className="
+                                text-xs
+                                text-slate-500
+                            "
+                        >
                             Administrator
                         </p>
+
                     </div>
+
                 </button>
+
             </div>
+
         </header>
     );
 }

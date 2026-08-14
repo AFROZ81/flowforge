@@ -16,14 +16,17 @@ import {
 export default function ProjectActions() {
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                >
-                    <MoreHorizontal size={18} />
-                </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        type="button"
+                    >
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                }
+            />
 
             <DropdownMenuContent align="end">
                 <DropdownMenuItem>
