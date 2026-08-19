@@ -15,63 +15,161 @@ import {
     NotificationBell,
 } from "@/features/notifications";
 
+import {
+    useAuthStore,
+} from "@/stores/auth.store";
+
 
 export default function Topbar() {
 
-    const location = useLocation();
+    const location =
+        useLocation();
+
+
+    /* =========================================================
+       AUTHENTICATED USER
+       ========================================================= */
+
+    const user =
+        useAuthStore(
+            (state) =>
+                state.user
+        );
+
 
     /* =========================================================
        PAGE CONTEXT
        ========================================================= */
 
-    const getPageContext = () => {
+    const getPageContext =
+        () => {
 
-        const pathname = location.pathname.toLowerCase();
+            const pathname =
+                location.pathname
+                    .toLowerCase();
 
-        if (pathname === "/dashboard" || pathname === "/") {
-            return {
-                section: "Workspace",
-                page: "Dashboard",
-            };
-        }
 
-        if (pathname.startsWith("/projects")) {
+            if (
+                pathname ===
+                    "/dashboard" ||
+                pathname === "/"
+            ) {
 
-            /*
-             * Board / project pages
-             */
-
-            if (pathname.includes("/boards/")) {
                 return {
-                    section: "Projects",
-                    page: "Board",
+                    section:
+                        "Workspace",
+
+                    page:
+                        "Dashboard",
                 };
             }
 
-            return {
-                section: "Workspace",
-                page: "Projects",
-            };
-        }
 
-        if (pathname.startsWith("/settings")) {
-            return {
-                section: "Workspace",
-                page: "Settings",
-            };
-        }
+            if (
+                pathname.startsWith(
+                    "/projects"
+                )
+            ) {
 
-        return {
-            section: "Workspace",
-            page: "FlowForge",
+                if (
+                    pathname.includes(
+                        "/boards/"
+                    )
+                ) {
+
+                    return {
+                        section:
+                            "Projects",
+
+                        page:
+                            "Board",
+                    };
+                }
+
+
+                return {
+                    section:
+                        "Workspace",
+
+                    page:
+                        "Projects",
+                };
+            }
+
+
+            if (
+                pathname.startsWith(
+                    "/settings"
+                )
+            ) {
+
+                return {
+                    section:
+                        "Workspace",
+
+                    page:
+                        "Settings",
+                };
+            }
+
+
+            return {
+                section:
+                    "Workspace",
+
+                page:
+                    "FlowForge",
+            };
         };
-    };
 
 
-    const context = getPageContext();
+    const context =
+        getPageContext();
+
+
+    /* =========================================================
+       USER DISPLAY
+       ========================================================= */
+
+    const fullName =
+        user?.fullName?.trim() ||
+        "User";
+
+
+    const email =
+        user?.email?.trim() ||
+        "";
+
+
+    /*
+     * Generate initials from the real full name.
+     *
+     * Example:
+     *
+     * John Doe
+     *      ↓
+     * JD
+     *
+     * Afroz
+     *      ↓
+     * A
+     */
+
+    const initials =
+        fullName
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map(
+                (part) =>
+                    part.charAt(0)
+                        .toUpperCase()
+            )
+            .join("");
 
 
     return (
+
         <header
             className="
                 sticky
@@ -102,7 +200,7 @@ export default function Topbar() {
                 "
             >
 
-                {/* Home / workspace icon */}
+                {/* Home */}
 
                 <div
                     className="
@@ -195,23 +293,23 @@ export default function Topbar() {
                 "
             >
 
-                {/* =============================================
+                {/* =================================================
                     ONLINE MEMBERS
-                   ============================================= */}
+                   ================================================= */}
 
                 <OnlineMembers />
 
 
-                {/* =============================================
+                {/* =================================================
                     NOTIFICATIONS
-                   ============================================= */}
+                   ================================================= */}
 
                 <NotificationBell />
 
 
-                {/* =============================================
+                {/* =================================================
                     THEME
-                   ============================================= */}
+                   ================================================= */}
 
                 <button
                     type="button"
@@ -240,9 +338,9 @@ export default function Topbar() {
                 </button>
 
 
-                {/* =============================================
+                {/* =================================================
                     DIVIDER
-                   ============================================= */}
+                   ================================================= */}
 
                 <div
                     className="
@@ -256,9 +354,9 @@ export default function Topbar() {
                 />
 
 
-                {/* =============================================
+                {/* =================================================
                     USER
-                   ============================================= */}
+                   ================================================= */}
 
                 <button
                     type="button"
@@ -274,18 +372,45 @@ export default function Topbar() {
                     "
                 >
 
-                    <UserCircle2
+                    {/* Avatar */}
+
+                    <div
                         className="
+                            flex
                             h-9
                             w-9
-                            text-slate-500
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-full
+                            bg-slate-100
+                            text-sm
+                            font-semibold
+                            text-slate-600
+                            ring-1
+                            ring-slate-200
                         "
-                    />
+                    >
 
+                        {initials || (
+                            <UserCircle2
+                                className="
+                                    h-9
+                                    w-9
+                                    text-slate-500
+                                "
+                            />
+                        )}
+
+                    </div>
+
+
+                    {/* User information */}
 
                     <div
                         className="
                             hidden
+                            min-w-0
                             text-left
                             md:block
                         "
@@ -293,25 +418,31 @@ export default function Topbar() {
 
                         <p
                             className="
+                                max-w-[180px]
+                                truncate
                                 text-sm
                                 font-semibold
                                 leading-4
                                 text-slate-900
                             "
+                            title={fullName}
                         >
-                            Afroz
+                            {fullName}
                         </p>
 
 
                         <p
                             className="
                                 mt-0.5
+                                max-w-[180px]
+                                truncate
                                 text-[10px]
                                 leading-3
                                 text-slate-500
                             "
+                            title={email}
                         >
-                            Administrator
+                            {email}
                         </p>
 
                     </div>

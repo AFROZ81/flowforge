@@ -2,12 +2,17 @@ import {
     FolderKanban,
     LayoutDashboard,
     Settings,
-    UserCircle2,
     ChevronRight,
     ChevronLeft,
+    LogOut,
 } from "lucide-react";
 
-import { NavLink } from "react-router";
+import {
+    NavLink,
+    useNavigate,
+} from "react-router";
+
+import { useAuthStore } from "@/stores/auth.store";
 
 
 type SidebarProps = {
@@ -47,6 +52,32 @@ export default function Sidebar({
     onToggle,
 }: SidebarProps) {
 
+    const navigate = useNavigate();
+
+
+    const logout =
+        useAuthStore(
+            (state) => state.logout
+        );
+
+
+    /* =====================================================
+       LOGOUT
+    ===================================================== */
+
+    const handleLogout = () => {
+
+        logout();
+
+        navigate(
+            "/login",
+            {
+                replace: true,
+            }
+        );
+    };
+
+
     return (
         <aside
             className={[
@@ -81,20 +112,22 @@ export default function Sidebar({
                     ].join(" ")}
                 >
 
-                    <div className="
-                        flex
-                        h-9
-                        w-9
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-xl
-                        bg-blue-600
-                        text-sm
-                        font-bold
-                        text-white
-                        shadow-sm
-                    ">
+                    <div
+                        className="
+                            flex
+                            h-9
+                            w-9
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-blue-600
+                            text-sm
+                            font-bold
+                            text-white
+                            shadow-sm
+                        "
+                    >
                         F
                     </div>
 
@@ -108,21 +141,25 @@ export default function Sidebar({
                         ].join(" ")}
                     >
 
-                        <h1 className="
-                            whitespace-nowrap
-                            text-sm
-                            font-bold
-                            tracking-tight
-                            text-slate-900
-                        ">
+                        <h1
+                            className="
+                                whitespace-nowrap
+                                text-sm
+                                font-bold
+                                tracking-tight
+                                text-slate-900
+                            "
+                        >
                             FlowForge
                         </h1>
 
-                        <p className="
-                            whitespace-nowrap
-                            text-[10px]
-                            text-slate-500
-                        ">
+                        <p
+                            className="
+                                whitespace-nowrap
+                                text-[10px]
+                                text-slate-500
+                            "
+                        >
                             Enterprise Workspace
                         </p>
 
@@ -194,31 +231,35 @@ export default function Sidebar({
                 NAVIGATION
             ===================================================== */}
 
-            <div className="
-                min-h-0
-                flex-1
-                overflow-x-hidden
-                overflow-y-auto
-                px-3
-                py-5
-            ">
+            <div
+                className="
+                    min-h-0
+                    flex-1
+                    overflow-x-hidden
+                    overflow-y-auto
+                    px-3
+                    py-5
+                "
+            >
 
                 {/* =================================================
-                    WORKSPACE
+                    MAIN WORKSPACE
                 ================================================= */}
 
                 <div className="mb-6">
 
                     {!collapsed && (
-                        <p className="
-                            mb-2
-                            px-3
-                            text-[10px]
-                            font-semibold
-                            uppercase
-                            tracking-[0.18em]
-                            text-slate-400
-                        ">
+                        <p
+                            className="
+                                mb-2
+                                px-3
+                                text-[10px]
+                                font-semibold
+                                uppercase
+                                tracking-[0.18em]
+                                text-slate-400
+                            "
+                        >
                             Workspace
                         </p>
                     )}
@@ -257,9 +298,11 @@ export default function Sidebar({
                                                 "text-sm font-medium transition-colors",
                                                 "outline-none",
                                                 "focus-visible:ring-2 focus-visible:ring-blue-500/30",
+
                                                 collapsed
                                                     ? "justify-center"
                                                     : "gap-3 px-3",
+
                                                 isActive
                                                     ? "bg-blue-50 text-blue-700"
                                                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
@@ -288,9 +331,7 @@ export default function Sidebar({
 
 
                                                 {!collapsed && (
-                                                    <span className="
-                                                        truncate
-                                                    ">
+                                                    <span className="truncate">
                                                         {
                                                             item.title
                                                         }
@@ -317,15 +358,17 @@ export default function Sidebar({
                 <div>
 
                     {!collapsed && (
-                        <p className="
-                            mb-2
-                            px-3
-                            text-[10px]
-                            font-semibold
-                            uppercase
-                            tracking-[0.18em]
-                            text-slate-400
-                        ">
+                        <p
+                            className="
+                                mb-2
+                                px-3
+                                text-[10px]
+                                font-semibold
+                                uppercase
+                                tracking-[0.18em]
+                                text-slate-400
+                            "
+                        >
                             Workspace
                         </p>
                     )}
@@ -364,9 +407,11 @@ export default function Sidebar({
                                                 "text-sm font-medium transition-colors",
                                                 "outline-none",
                                                 "focus-visible:ring-2 focus-visible:ring-blue-500/30",
+
                                                 collapsed
                                                     ? "justify-center"
                                                     : "gap-3 px-3",
+
                                                 isActive
                                                     ? "bg-blue-50 text-blue-700"
                                                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
@@ -395,9 +440,7 @@ export default function Sidebar({
 
 
                                                 {!collapsed && (
-                                                    <span className="
-                                                        truncate
-                                                    ">
+                                                    <span className="truncate">
                                                         {
                                                             item.title
                                                         }
@@ -420,85 +463,61 @@ export default function Sidebar({
 
 
             {/* =====================================================
-                USER
+                LOGOUT
             ===================================================== */}
 
-            <div className="
-                shrink-0
-                border-t
-                border-slate-200
-                bg-white
-                p-3
-            ">
+            <div
+                className="
+                    shrink-0
+                    border-t
+                    border-slate-200
+                    bg-white
+                    p-3
+                "
+            >
 
                 <button
                     type="button"
+                    onClick={handleLogout}
                     title={
                         collapsed
-                            ? "Afroz"
+                            ? "Logout"
                             : undefined
                     }
+                    aria-label="Logout"
                     className={[
-                        "group flex w-full items-center rounded-lg",
-                        "py-2.5 text-left transition-colors",
-                        "hover:bg-slate-100",
-                        "focus:outline-none",
-                        "focus-visible:ring-2 focus-visible:ring-blue-500/30",
+                        "group flex h-10 w-full items-center rounded-lg",
+                        "text-sm font-medium",
+                        "text-slate-600",
+                        "transition-colors",
+                        "outline-none",
+                        "hover:bg-red-50",
+                        "hover:text-red-600",
+                        "focus-visible:ring-2",
+                        "focus-visible:ring-red-500/30",
+
                         collapsed
                             ? "justify-center"
                             : "gap-3 px-3",
                     ].join(" ")}
                 >
 
-                    <UserCircle2
-                        size={34}
-                        strokeWidth={1.7}
+                    <LogOut
+                        size={18}
+                        strokeWidth={1.8}
                         className="
                             shrink-0
-                            text-slate-500
+                            text-slate-400
+                            transition-colors
+                            group-hover:text-red-500
                         "
                     />
 
 
                     {!collapsed && (
-                        <>
-
-                            <div className="
-                                min-w-0
-                                flex-1
-                            ">
-
-                                <p className="
-                                    truncate
-                                    text-sm
-                                    font-semibold
-                                    text-slate-900
-                                ">
-                                    Afroz
-                                </p>
-
-                                <p className="
-                                    truncate
-                                    text-[11px]
-                                    text-slate-500
-                                ">
-                                    Administrator
-                                </p>
-
-                            </div>
-
-
-                            <ChevronRight
-                                size={15}
-                                className="
-                                    shrink-0
-                                    text-slate-400
-                                    transition-transform
-                                    group-hover:translate-x-0.5
-                                "
-                            />
-
-                        </>
+                        <span>
+                            Logout
+                        </span>
                     )}
 
                 </button>

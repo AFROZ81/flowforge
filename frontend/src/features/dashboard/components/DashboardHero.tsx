@@ -1,5 +1,4 @@
 import {
-    ArrowRight,
     Plus,
 } from "lucide-react";
 
@@ -150,15 +149,6 @@ export default function DashboardHero() {
                         />
 
                         New Project
-
-                        <ArrowRight
-                            className="
-                                ml-2
-                                h-4
-                                w-4
-                            "
-                        />
-
                     </Button>
 
                 </div>

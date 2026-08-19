@@ -52,6 +52,34 @@ export type BoardViewer = {
 };
 
 
+/*
+ * SignalR can return either camelCase or PascalCase
+ * properties depending on the backend serializer.
+ */
+type RawBoardViewer = {
+    userId?: string;
+    UserId?: string;
+
+    userName?: string;
+    UserName?: string;
+};
+
+
+type BoardPresencePayload = {
+    boardId?: string;
+    BoardId?: string;
+
+    users?: RawBoardViewer[];
+    Users?: RawBoardViewer[];
+};
+
+
+type PresenceUserPayload = {
+    userId?: string;
+    UserId?: string;
+};
+
+
 type PresenceContextValue = {
 
     /* =====================================================
@@ -60,14 +88,8 @@ type PresenceContextValue = {
 
     presence: PresenceState;
 
-    /*
-     * Kept for compatibility with existing components.
-     */
     onlineUserIds: string[];
 
-    /*
-     * Full information about online users.
-     */
     onlineUsers: OnlineUser[];
 
     isOnline: (
@@ -176,30 +198,6 @@ function normalizeUserId(
 
 
     return normalized || null;
-}
-
-
-function getAccessToken(): string | null {
-
-    const token =
-        useAuthStore
-            .getState()
-            .accessToken;
-
-
-    if (
-        typeof token !== "string"
-    ) {
-        return null;
-    }
-
-
-    return token
-        .replace(
-            /^Bearer\s+/i,
-            ""
-        )
-        .trim() || null;
 }
 
 
@@ -366,6 +364,35 @@ export default function PresenceProvider({
 }: Props) {
 
     /* =====================================================
+       AUTHENTICATION
+       ===================================================== */
+
+    /*
+     * These selectors make PresenceProvider reactively
+     * respond when login/logout changes authentication.
+     */
+    const isAuthenticated =
+        useAuthStore(
+            state =>
+                state.isAuthenticated
+        );
+
+
+    const accessToken =
+        useAuthStore(
+            state =>
+                state.accessToken
+        );
+
+
+    const authenticatedUserId =
+        useAuthStore(
+            state =>
+                state.user?.id ?? null
+        );
+
+
+    /* =====================================================
        GLOBAL PRESENCE
        ===================================================== */
 
@@ -417,53 +444,44 @@ export default function PresenceProvider({
         );
 
 
-    /*
-     * Promise for the currently-starting SignalR
-     * connection.
-     */
     const connectionStartRef =
         useRef<
             Promise<void> | null
         >(null);
 
 
-    /*
-     * Shared lifecycle state.
-     *
-     * This is intentionally a ref rather than a local
-     * variable inside useEffect.
-     *
-     * React StrictMode can execute:
-     *
-     *     mount
-     *     cleanup
-     *     mount
-     *
-     * during development.
-     *
-     * The second mount sets this back to true.
-     */
     const isMountedRef =
         useRef(false);
 
 
-    /*
-     * Delayed cleanup timer.
-     *
-     * The second StrictMode mount cancels this timer and
-     * reuses the existing connection.
-     */
     const cleanupTimerRef =
         useRef<
             ReturnType<typeof setTimeout> | null
         >(null);
 
 
-    /*
-     * Board currently being viewed.
-     */
     const requestedBoardIdRef =
         useRef<string | null>(null);
+
+
+    /*
+     * Keep the latest authentication token available
+     * without forcing SignalR callbacks to recreate.
+     */
+    const accessTokenRef =
+        useRef<string | null>(
+            accessToken
+        );
+
+
+    useEffect(() => {
+
+        accessTokenRef.current =
+            accessToken;
+
+    }, [
+        accessToken,
+    ]);
 
 
     /* =====================================================
@@ -505,13 +523,9 @@ export default function PresenceProvider({
                 ) {
 
                     setOnlineUsers(
-                        (
-                            current: OnlineUser[]
-                        ) =>
+                        current =>
                             current.filter(
-                                (
-                                    user: OnlineUser
-                                ) =>
+                                (user: OnlineUser) =>
                                     normalizeUserId(
                                         user.userId
                                     ) !==
@@ -532,21 +546,20 @@ export default function PresenceProvider({
         useCallback(
             async () => {
 
+                const token =
+                    accessTokenRef.current;
+
+
+                if (
+                    !token ||
+                    !isAuthenticated
+                ) {
+
+                    return;
+                }
+
+
                 try {
-
-                    const token =
-                        getAccessToken();
-
-
-                    if (!token) {
-
-                        console.warn(
-                            "Presence: no authenticated JWT found."
-                        );
-
-                        return;
-                    }
-
 
                     const response =
                         await fetch(
@@ -612,8 +625,8 @@ export default function PresenceProvider({
                     const normalizedUsers: OnlineUser[] =
                         rawUsers.reduce<OnlineUser[]>(
                             (
-                                users: OnlineUser[],
-                                rawUser: unknown
+                                users,
+                                rawUser
                             ) => {
 
                                 if (
@@ -684,22 +697,27 @@ export default function PresenceProvider({
                         );
 
 
-                    const uniqueUsers: OnlineUser[] =
+                    const uniqueUsers =
                         Array.from(
                             new Map<
                                 string,
                                 OnlineUser
                             >(
                                 normalizedUsers.map(
-                                    (
-                                        user: OnlineUser
-                                    ) => [
+                                    (user: OnlineUser) => [
                                         user.userId,
                                         user,
                                     ]
                                 )
                             ).values()
                         );
+
+
+                    if (
+                        !isMountedRef.current
+                    ) {
+                        return;
+                    }
 
 
                     setOnlineUsers(
@@ -713,9 +731,7 @@ export default function PresenceProvider({
 
 
                     uniqueUsers.forEach(
-                        (
-                            user: OnlineUser
-                        ) => {
+                        (user: OnlineUser) => {
 
                             nextPresence[
                                 user.userId
@@ -739,7 +755,9 @@ export default function PresenceProvider({
                     );
                 }
             },
-            []
+            [
+                isAuthenticated,
+            ]
         );
 
 
@@ -896,11 +914,123 @@ export default function PresenceProvider({
     useEffect(() => {
 
         /*
-         * Mark provider lifecycle as active.
-         *
-         * This also cancels the temporary cleanup caused
-         * by React StrictMode.
+         * ---------------------------------------------------
+         * LOGGED OUT
+         * ---------------------------------------------------
          */
+
+        if (
+            !isAuthenticated ||
+            !accessToken
+        ) {
+
+            console.log(
+                "Presence: waiting for authenticated session..."
+            );
+
+
+            isMountedRef.current =
+                false;
+
+
+            if (
+                cleanupTimerRef.current
+            ) {
+
+                clearTimeout(
+                    cleanupTimerRef.current
+                );
+
+                cleanupTimerRef.current =
+                    null;
+            }
+
+
+            const connection =
+                connectionRef.current;
+
+
+            if (
+                connection
+            ) {
+
+                if (
+                    connection.state ===
+                    HubConnectionState.Connected
+                ) {
+
+                    void connection
+                        .stop()
+                        .catch(
+                            () => {}
+                        );
+
+                } else if (
+                    connection.state ===
+                    HubConnectionState.Connecting
+                ) {
+
+                    const startPromise =
+                        connectionStartRef.current;
+
+
+                    if (
+                        startPromise
+                    ) {
+
+                        void startPromise
+                            .finally(
+                                () => {
+
+                                    if (
+                                        connectionRef.current ===
+                                        connection
+                                    ) {
+
+                                        void connection
+                                            .stop()
+                                            .catch(
+                                                () => {}
+                                            );
+
+                                        connectionRef.current =
+                                            null;
+                                    }
+                                }
+                            );
+                    }
+
+                } else {
+
+                    connectionRef.current =
+                        null;
+                }
+            }
+
+
+            connectionStartRef.current =
+                null;
+
+
+            setOnlineUsers([]);
+
+            setPresence({});
+
+            setBoardViewers([]);
+
+            setIsBoardConnected(
+                false
+            );
+
+
+            return;
+        }
+
+
+        /* =================================================
+           AUTHENTICATED
+           ================================================= */
+
         isMountedRef.current =
             true;
 
@@ -921,25 +1051,28 @@ export default function PresenceProvider({
         const start =
             async () => {
 
+                /*
+                 * Always use the token from the current
+                 * authentication state.
+                 */
                 const token =
-                    getAccessToken();
+                    accessTokenRef.current;
 
 
                 if (!token) {
 
                     console.warn(
-                        "Presence: cannot connect to SignalR because no authenticated JWT exists."
+                        "Presence: authenticated but JWT is unavailable."
                     );
 
                     return;
                 }
 
 
-                /*
-                 * Reuse an existing connection.
-                 *
-                 * This is essential for React StrictMode.
-                 */
+                /* =============================================
+                   REUSE EXISTING CONNECTION
+                   ============================================= */
+
                 const existingConnection =
                     connectionRef.current;
 
@@ -961,11 +1094,6 @@ export default function PresenceProvider({
                     );
 
 
-                    /*
-                     * If already connected, refresh the
-                     * current online users and join any
-                     * queued board.
-                     */
                     if (
                         existingConnection.state ===
                         HubConnectionState.Connected
@@ -1011,6 +1139,10 @@ export default function PresenceProvider({
                 }
 
 
+                /* =============================================
+                   CREATE CONNECTION
+                   ============================================= */
+
                 console.log(
                     "Presence: creating SignalR connection..."
                 );
@@ -1023,7 +1155,7 @@ export default function PresenceProvider({
                             {
                                 accessTokenFactory:
                                     () =>
-                                        getAccessToken() ??
+                                        accessTokenRef.current ??
                                         "",
 
                                 transport:
@@ -1051,27 +1183,19 @@ export default function PresenceProvider({
                     connection;
 
 
-                /* =================================================
+                /* =============================================
                    REALTIME NOTIFICATIONS
-                   ================================================= */
+                   ============================================= */
 
                 connection.on(
                     "NotificationReceived",
-                    (
-                        payload: unknown
-                    ) => {
+                    payload => {
 
                         if (
                             !isMountedRef.current
                         ) {
                             return;
                         }
-
-
-                        console.log(
-                            "Notifications: NotificationReceived:",
-                            payload
-                        );
 
 
                         const notification =
@@ -1085,7 +1209,7 @@ export default function PresenceProvider({
                         ) {
 
                             console.warn(
-                                "Notifications: received invalid notification payload:",
+                                "Notifications: invalid notification payload:",
                                 payload
                             );
 
@@ -1111,19 +1235,14 @@ export default function PresenceProvider({
                 );
 
 
-                /* =================================================
-                   GLOBAL USER ONLINE
-                   ================================================= */
+                /* =============================================
+                   USER ONLINE
+                   ============================================= */
 
                 connection.on(
                     "UserOnline",
                     (
-                        payload:
-                            | string
-                            | {
-                                  userId?: string;
-                                  UserId?: string;
-                              }
+                        payload: PresenceUserPayload | string
                     ) => {
 
                         if (
@@ -1137,8 +1256,8 @@ export default function PresenceProvider({
                             typeof payload ===
                             "string"
                                 ? payload
-                                : payload?.userId ??
-                                  payload?.UserId;
+                                : payload.userId ??
+                                  payload.UserId;
 
 
                         if (
@@ -1159,19 +1278,14 @@ export default function PresenceProvider({
                 );
 
 
-                /* =================================================
-                   GLOBAL USER OFFLINE
-                   ================================================= */
+                /* =============================================
+                   USER OFFLINE
+                   ============================================= */
 
                 connection.on(
                     "UserOffline",
                     (
-                        payload:
-                            | string
-                            | {
-                                  userId?: string;
-                                  UserId?: string;
-                              }
+                        payload: PresenceUserPayload | string
                     ) => {
 
                         if (
@@ -1185,8 +1299,8 @@ export default function PresenceProvider({
                             typeof payload ===
                             "string"
                                 ? payload
-                                : payload?.userId ??
-                                  payload?.UserId;
+                                : payload.userId ??
+                                  payload.UserId;
 
 
                         if (
@@ -1204,33 +1318,14 @@ export default function PresenceProvider({
                 );
 
 
-                /* =================================================
+                /* =============================================
                    BOARD PRESENCE
-                   ================================================= */
+                   ============================================= */
 
                 connection.on(
                     "BoardPresenceChanged",
                     (
-                        payload: {
-                            boardId?: string;
-                            BoardId?: string;
-
-                            users?: Array<{
-                                userId?: string;
-                                UserId?: string;
-
-                                userName?: string;
-                                UserName?: string;
-                            }>;
-
-                            Users?: Array<{
-                                userId?: string;
-                                UserId?: string;
-
-                                userName?: string;
-                                UserName?: string;
-                            }>;
-                        }
+                        payload: BoardPresencePayload
                     ) => {
 
                         if (
@@ -1241,8 +1336,8 @@ export default function PresenceProvider({
 
 
                         const eventBoardId =
-                            payload?.boardId ??
-                            payload?.BoardId;
+                            payload.boardId ??
+                            payload.BoardId;
 
 
                         const currentBoardId =
@@ -1260,9 +1355,9 @@ export default function PresenceProvider({
                         }
 
 
-                        const users =
-                            payload?.users ??
-                            payload?.Users ??
+                        const users: RawBoardViewer[] =
+                            payload.users ??
+                            payload.Users ??
                             [];
 
 
@@ -1270,7 +1365,7 @@ export default function PresenceProvider({
                             users
                                 .map(
                                     (
-                                        user
+                                        user: RawBoardViewer
                                     ): BoardViewer | null => {
 
                                         const userId =
@@ -1318,9 +1413,9 @@ export default function PresenceProvider({
                 );
 
 
-                /* =================================================
+                /* =============================================
                    RECONNECTED
-                   ================================================= */
+                   ============================================= */
 
                 connection.onreconnected(
                     async () => {
@@ -1345,10 +1440,6 @@ export default function PresenceProvider({
                         await refreshPresence();
 
 
-                        /*
-                         * Tell notification components
-                         * to refresh their API state.
-                         */
                         window.dispatchEvent(
                             new Event(
                                 "flowforge:notifications-refresh"
@@ -1391,9 +1482,9 @@ export default function PresenceProvider({
                 );
 
 
-                /* =================================================
+                /* =============================================
                    RECONNECTING
-                   ================================================= */
+                   ============================================= */
 
                 connection.onreconnecting(
                     () => {
@@ -1417,9 +1508,9 @@ export default function PresenceProvider({
                 );
 
 
-                /* =================================================
+                /* =============================================
                    CLOSED
-                   ================================================= */
+                   ============================================= */
 
                 connection.onclose(
                     () => {
@@ -1448,9 +1539,9 @@ export default function PresenceProvider({
                 );
 
 
-                /* =================================================
-                   START
-                   ================================================= */
+                /* =============================================
+                   START CONNECTION
+                   ============================================= */
 
                 try {
 
@@ -1459,13 +1550,6 @@ export default function PresenceProvider({
                     );
 
 
-                    /*
-                     * Store the startup promise.
-                     *
-                     * Cleanup uses this to make sure stop()
-                     * is never called while SignalR is still
-                     * establishing the connection.
-                     */
                     const startPromise =
                         connection.start();
 
@@ -1487,13 +1571,6 @@ export default function PresenceProvider({
                     }
 
 
-                    /*
-                     * The provider may have been temporarily
-                     * cleaned up by StrictMode.
-                     *
-                     * isMountedRef is shared and will be true
-                     * again if the provider was mounted again.
-                     */
                     if (
                         !isMountedRef.current
                     ) {
@@ -1502,10 +1579,6 @@ export default function PresenceProvider({
                     }
 
 
-                    /*
-                     * Make sure this is still the active
-                     * connection.
-                     */
                     if (
                         connectionRef.current !==
                         connection
@@ -1526,7 +1599,11 @@ export default function PresenceProvider({
 
 
                     /*
-                     * Load the currently online users.
+                     * Immediately refresh online users
+                     * after SignalR connects.
+                     *
+                     * This is what removes the need for
+                     * a browser refresh after login.
                      */
                     await refreshPresence();
 
@@ -1541,10 +1618,10 @@ export default function PresenceProvider({
                     }
 
 
-                    /*
-                     * Join a board that was requested before
-                     * SignalR finished connecting.
-                     */
+                    /* =========================================
+                       JOIN QUEUED BOARD
+                       ========================================= */
+
                     const boardId =
                         requestedBoardIdRef.current;
 
@@ -1576,15 +1653,10 @@ export default function PresenceProvider({
                             error
                         ) {
 
-                            if (
-                                isMountedRef.current
-                            ) {
-
-                                console.error(
-                                    "Presence: failed to join queued board:",
-                                    error
-                                );
-                            }
+                            console.error(
+                                "Presence: failed to join queued board:",
+                                error
+                            );
                         }
                     }
 
@@ -1596,10 +1668,6 @@ export default function PresenceProvider({
                         null;
 
 
-                    /*
-                     * Ignore errors from a connection that
-                     * has already been replaced.
-                     */
                     if (
                         connectionRef.current !==
                         connection
@@ -1609,23 +1677,10 @@ export default function PresenceProvider({
                     }
 
 
-                    if (
-                        error instanceof Error &&
-                        error.name ===
-                            "AbortError"
-                    ) {
-
-                        console.warn(
-                            "Presence: SignalR start was aborted."
-                        );
-
-                    } else {
-
-                        console.error(
-                            "Presence: SignalR connection failed:",
-                            error
-                        );
-                    }
+                    console.error(
+                        "Presence: SignalR connection failed:",
+                        error
+                    );
 
 
                     setIsBoardConnected(
@@ -1654,19 +1709,10 @@ export default function PresenceProvider({
 
         return () => {
 
-            /*
-             * Mark this lifecycle inactive.
-             *
-             * A subsequent StrictMode mount will set it
-             * back to true.
-             */
             isMountedRef.current =
                 false;
 
 
-            /*
-             * Cancel an older cleanup timer.
-             */
             if (
                 cleanupTimerRef.current
             ) {
@@ -1678,21 +1724,13 @@ export default function PresenceProvider({
 
 
             /*
-             * IMPORTANT:
+             * Delay cleanup slightly.
              *
-             * We intentionally DO NOT call connection.stop()
-             * immediately.
+             * This protects us from React StrictMode's:
              *
-             * React StrictMode does:
+             * mount → cleanup → mount
              *
-             *      mount
-             *        ↓
-             *      cleanup
-             *        ↓
-             *      mount
-             *
-             * The delayed cleanup gives the second mount
-             * a chance to reuse the connection.
+             * sequence.
              */
             cleanupTimerRef.current =
                 setTimeout(
@@ -1703,11 +1741,8 @@ export default function PresenceProvider({
 
 
                         /*
-                         * A new mount happened before the
-                         * timer fired.
-                         *
-                         * Therefore this connection is still
-                         * owned by the active provider.
+                         * A new authenticated mount has
+                         * already taken ownership.
                          */
                         if (
                             isMountedRef.current
@@ -1729,12 +1764,10 @@ export default function PresenceProvider({
                         }
 
 
-                        /*
-                         * Connection is still starting.
-                         *
-                         * NEVER call stop() while it is
-                         * Connecting.
-                         */
+                        /* =====================================
+                           CONNECTING
+                           ===================================== */
+
                         if (
                             connection.state ===
                             HubConnectionState.Connecting
@@ -1752,11 +1785,6 @@ export default function PresenceProvider({
                                     .then(
                                         async () => {
 
-                                            /*
-                                             * Provider mounted
-                                             * again while we were
-                                             * waiting.
-                                             */
                                             if (
                                                 isMountedRef.current
                                             ) {
@@ -1765,10 +1793,6 @@ export default function PresenceProvider({
                                             }
 
 
-                                            /*
-                                             * Another connection
-                                             * has replaced this one.
-                                             */
                                             if (
                                                 connectionRef.current !==
                                                 connection
@@ -1778,20 +1802,14 @@ export default function PresenceProvider({
                                             }
 
 
-                                            if (
-                                                connection.state !==
-                                                HubConnectionState.Disconnected
-                                            ) {
+                                            try {
 
-                                                try {
+                                                await connection.stop();
 
-                                                    await connection.stop();
-
-                                                } catch {
-                                                    /*
-                                                     * Cleanup only.
-                                                     */
-                                                }
+                                            } catch {
+                                                /*
+                                                 * Cleanup only.
+                                                 */
                                             }
 
 
@@ -1803,20 +1821,6 @@ export default function PresenceProvider({
                                                 connectionRef.current =
                                                     null;
                                             }
-
-
-                                            requestedBoardIdRef.current =
-                                                null;
-
-
-                                            setBoardViewers(
-                                                []
-                                            );
-
-
-                                            setIsBoardConnected(
-                                                false
-                                            );
 
                                         }
                                     )
@@ -1831,7 +1835,6 @@ export default function PresenceProvider({
                                                 connectionRef.current =
                                                     null;
                                             }
-
                                         }
                                     );
                             }
@@ -1841,9 +1844,10 @@ export default function PresenceProvider({
                         }
 
 
-                        /*
-                         * Connected or reconnecting.
-                         */
+                        /* =====================================
+                           CONNECTED / RECONNECTING
+                           ===================================== */
+
                         if (
                             connection.state ===
                                 HubConnectionState.Connected ||
@@ -1854,11 +1858,7 @@ export default function PresenceProvider({
                             void connection
                                 .stop()
                                 .catch(
-                                    () => {
-                                        /*
-                                         * Cleanup only.
-                                         */
-                                    }
+                                    () => {}
                                 )
                                 .finally(
                                     () => {
@@ -1877,9 +1877,6 @@ export default function PresenceProvider({
 
                         } else {
 
-                            /*
-                             * Already disconnected.
-                             */
                             if (
                                 connectionRef.current ===
                                 connection
@@ -1891,17 +1888,15 @@ export default function PresenceProvider({
                         }
 
 
-                        /*
-                         * The provider is really gone.
-                         */
                         requestedBoardIdRef.current =
                             null;
 
 
-                        setBoardViewers(
-                            []
-                        );
+                        setOnlineUsers([]);
 
+                        setPresence({});
+
+                        setBoardViewers([]);
 
                         setIsBoardConnected(
                             false
@@ -1913,31 +1908,32 @@ export default function PresenceProvider({
         };
 
     }, [
+        isAuthenticated,
+        accessToken,
+        authenticatedUserId,
         refreshPresence,
         updateUserStatus,
     ]);
 
 
-    /* =====================================================
+    /* =========================================================
        ONLINE USER IDS
-       ===================================================== */
+       ========================================================= */
 
     const onlineUserIds =
         useMemo(
             () =>
                 onlineUsers.map(
-                    (
-                        user: OnlineUser
-                    ) =>
+                    (user: OnlineUser) =>
                         user.userId
                 ),
             [onlineUsers]
         );
 
 
-    /* =====================================================
+    /* =========================================================
        IS ONLINE
-       ===================================================== */
+       ========================================================= */
 
     const isOnline =
         useCallback(
@@ -1956,6 +1952,7 @@ export default function PresenceProvider({
                 if (
                     !normalizedId
                 ) {
+
                     return false;
                 }
 
@@ -1971,9 +1968,9 @@ export default function PresenceProvider({
         );
 
 
-    /* =====================================================
+    /* =========================================================
        CONTEXT VALUE
-       ===================================================== */
+       ========================================================= */
 
     const value =
         useMemo<PresenceContextValue>(

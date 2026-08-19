@@ -3,10 +3,9 @@ using FlowForge.Application.Services.Realtime;
 using FlowForge.Application.Common.Constants;
 
 using System.Security.Claims;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-
-using Serilog;
 
 namespace FlowForge.API.Hubs;
 
@@ -14,129 +13,408 @@ namespace FlowForge.API.Hubs;
 public sealed class NotificationHub : Hub
 {
     private readonly IOnlineUserTracker _onlineUserTracker;
+
     private readonly IBoardPresenceTracker _boardPresenceTracker;
+
     private readonly IRealtimeNotifier _realtimeNotifier;
 
-    public NotificationHub(IOnlineUserTracker onlineUserTracker, IBoardPresenceTracker boardPresenceTracker, IRealtimeNotifier realtimeNotifier)
+
+    public NotificationHub(
+        IOnlineUserTracker onlineUserTracker,
+        IBoardPresenceTracker boardPresenceTracker,
+        IRealtimeNotifier realtimeNotifier)
     {
-        _onlineUserTracker = onlineUserTracker;
-        _boardPresenceTracker = boardPresenceTracker;
-        _realtimeNotifier = realtimeNotifier;
+        _onlineUserTracker =
+            onlineUserTracker;
+
+        _boardPresenceTracker =
+            boardPresenceTracker;
+
+        _realtimeNotifier =
+            realtimeNotifier;
     }
-    
+
+
+    /* =========================================================
+       CONNECTION
+       ========================================================= */
+
     public override async Task OnConnectedAsync()
     {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var organizationId = Context.User?.FindFirst("organizationId")?.Value;
+        var userIdValue =
+            Context.User?
+                .FindFirst(
+                    ClaimTypes.NameIdentifier)
+                ?.Value;
 
-        if (!string.IsNullOrWhiteSpace(userId))
+
+        var organizationId =
+            Context.User?
+                .FindFirst(
+                    "organizationId")
+                ?.Value;
+
+
+        if (
+            Guid.TryParse(
+                userIdValue,
+                out var userId)
+        )
+        {
+            /*
+             * User-specific SignalR group.
+             */
+            await Groups.AddToGroupAsync(
+                Context.ConnectionId,
+                $"user:{userId}"
+            );
+
+
+            /*
+             * Global online presence.
+             */
+            await _onlineUserTracker
+                .UserConnectedAsync(
+                    userId
+                );
+
+
+            /*
+             * Notify the rest of the organization.
+             */
+            await _realtimeNotifier
+                .NotifyUserOnlineAsync(
+                    userId
+                );
+        }
+
+
+        if (
+            !string.IsNullOrWhiteSpace(
+                organizationId)
+        )
         {
             await Groups.AddToGroupAsync(
                 Context.ConnectionId,
-                $"user:{userId}");
-
-            await _onlineUserTracker.UserConnectedAsync(Guid.Parse(userId));
-
-            await _realtimeNotifier.NotifyUserOnlineAsync(Guid.Parse(userId));
+                $"organization:{organizationId}"
+            );
         }
 
-        if (!string.IsNullOrWhiteSpace(organizationId))
-        {
-            await Groups.AddToGroupAsync(
-                Context.ConnectionId,
-                $"organization:{organizationId}");
-        }
 
         await base.OnConnectedAsync();
     }
 
-    public override async Task OnDisconnectedAsync(Exception? exception)
-    {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var organizationId = Context.User?.FindFirst("organizationId")?.Value;
 
-        if (!string.IsNullOrWhiteSpace(userId))
+    /* =========================================================
+       DISCONNECTION
+       ========================================================= */
+
+    public override async Task OnDisconnectedAsync(
+        Exception? exception)
+    {
+        var userIdValue =
+            Context.User?
+                .FindFirst(
+                    ClaimTypes.NameIdentifier)
+                ?.Value;
+
+
+        var organizationId =
+            Context.User?
+                .FindFirst(
+                    "organizationId")
+                ?.Value;
+
+
+        /*
+         * FIRST:
+         *
+         * Remove this SignalR connection from all boards.
+         *
+         * This is the part your old implementation was missing.
+         */
+        await _boardPresenceTracker
+            .UserDisconnectedAsync(
+                Context.ConnectionId
+            );
+
+
+        /*
+         * Global user presence.
+         */
+        if (
+            Guid.TryParse(
+                userIdValue,
+                out var userId)
+        )
         {
             await Groups.RemoveFromGroupAsync(
                 Context.ConnectionId,
-                $"user:{userId}");
+                $"user:{userId}"
+            );
 
-            await _onlineUserTracker.UserDisconnectedAsync(Guid.Parse(userId));
 
-            await _realtimeNotifier.NotifyUserOfflineAsync(Guid.Parse(userId));
+            await _onlineUserTracker
+                .UserDisconnectedAsync(
+                    userId
+                );
+
+
+            await _realtimeNotifier
+                .NotifyUserOfflineAsync(
+                    userId
+                );
         }
 
-        if (!string.IsNullOrWhiteSpace(organizationId))
+
+        if (
+            !string.IsNullOrWhiteSpace(
+                organizationId)
+        )
         {
             await Groups.RemoveFromGroupAsync(
                 Context.ConnectionId,
-                $"organization:{organizationId}");
+                $"organization:{organizationId}"
+            );
         }
 
-        await base.OnDisconnectedAsync(exception);
+
+        await base.OnDisconnectedAsync(
+            exception
+        );
     }
 
-    public async Task JoinBoard(Guid boardId)
+
+    /* =========================================================
+       JOIN BOARD
+       ========================================================= */
+
+    public async Task JoinBoard(
+        Guid boardId)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, $"board:{boardId}");
+        var userIdValue =
+            Context.User?
+                .FindFirst(
+                    ClaimTypes.NameIdentifier)
+                ?.Value;
 
-        var userId = Guid.Parse(Context.User!.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-        var userName = Context.User!.FindFirst(ClaimTypes.Name)?.Value ?? "Unknown";
+        if (
+            !Guid.TryParse(
+                userIdValue,
+                out var userId)
+        )
+        {
+            throw new HubException(
+                "Unable to determine current user."
+            );
+        }
 
-        await _boardPresenceTracker.UserJoinedBoardAsync(boardId, userId, userName);
 
-        var users = await _boardPresenceTracker.GetUsersAsync(boardId);
+        var userName =
+            Context.User?
+                .FindFirst(
+                    ClaimTypes.Name)
+                ?.Value
+            ?? "Unknown";
 
-        await _realtimeNotifier.NotifyBoardPresenceChangedAsync(boardId, users);
+
+        /*
+         * Join SignalR board group.
+         */
+        await Groups.AddToGroupAsync(
+            Context.ConnectionId,
+            $"board:{boardId}"
+        );
+
+
+        /*
+         * Track this exact connection.
+         */
+        await _boardPresenceTracker
+            .UserJoinedBoardAsync(
+                boardId,
+                userId,
+                userName,
+                Context.ConnectionId
+            );
+
+
+        /*
+         * Get fresh board presence.
+         */
+        var users =
+            await _boardPresenceTracker
+                .GetUsersAsync(
+                    boardId
+                );
+
+
+        /*
+         * Notify board viewers.
+         */
+        await _realtimeNotifier
+            .NotifyBoardPresenceChangedAsync(
+                boardId,
+                users
+            );
     }
 
-    public async Task LeaveBoard(Guid boardId)
+
+    /* =========================================================
+       LEAVE BOARD
+       ========================================================= */
+
+    public async Task LeaveBoard(
+        Guid boardId)
     {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"board:{boardId}");
+        var userIdValue =
+            Context.User?
+                .FindFirst(
+                    ClaimTypes.NameIdentifier)
+                ?.Value;
 
-        var userId = Guid.Parse(Context.User!.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-        await _boardPresenceTracker.UserLeftBoardAsync(boardId, userId);
+        if (
+            !Guid.TryParse(
+                userIdValue,
+                out var userId)
+        )
+        {
+            return;
+        }
 
-        var users = await _boardPresenceTracker.GetUsersAsync(boardId);
 
-        await _realtimeNotifier.NotifyBoardPresenceChangedAsync(boardId, users);
+        /*
+         * Leave SignalR board group.
+         */
+        await Groups.RemoveFromGroupAsync(
+            Context.ConnectionId,
+            $"board:{boardId}"
+        );
+
+
+        /*
+         * Remove only this connection
+         * from board presence.
+         */
+        await _boardPresenceTracker
+            .UserLeftBoardAsync(
+                boardId,
+                userId,
+                Context.ConnectionId
+            );
+
+
+        /*
+         * Get updated list.
+         */
+        var users =
+            await _boardPresenceTracker
+                .GetUsersAsync(
+                    boardId
+                );
+
+
+        /*
+         * Broadcast updated presence.
+         */
+        await _realtimeNotifier
+            .NotifyBoardPresenceChangedAsync(
+                boardId,
+                users
+            );
     }
 
-    public async Task StartTyping(Guid boardId, Guid workItemId)
+
+    /* =========================================================
+       TYPING STARTED
+       ========================================================= */
+
+    public async Task StartTyping(
+        Guid boardId,
+        Guid workItemId)
     {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var userName = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
+        var userId =
+            Context.User?
+                .FindFirst(
+                    ClaimTypes.NameIdentifier)
+                ?.Value;
+
+
+        var userName =
+            Context.User?
+                .FindFirst(
+                    ClaimTypes.Name)
+                ?.Value;
+
 
         await Clients
-            .GroupExcept($"board:{boardId}", Context.ConnectionId)
+            .GroupExcept(
+                $"board:{boardId}",
+                Context.ConnectionId)
             .SendAsync(
                 RealtimeEvents.TypingStarted,
                 new
                 {
-                    BoardId = boardId,
-                    WorkItemId = workItemId,
-                    UserId = userId,
-                    UserName = userName
-                });
+                    BoardId =
+                        boardId,
+
+                    WorkItemId =
+                        workItemId,
+
+                    UserId =
+                        userId,
+
+                    UserName =
+                        userName
+                }
+            );
     }
 
-    public async Task StopTyping(Guid boardId, Guid workItemId)
+
+    /* =========================================================
+       TYPING STOPPED
+       ========================================================= */
+
+    public async Task StopTyping(
+        Guid boardId,
+        Guid workItemId)
     {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var userName = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
+        var userId =
+            Context.User?
+                .FindFirst(
+                    ClaimTypes.NameIdentifier)
+                ?.Value;
+
+
+        var userName =
+            Context.User?
+                .FindFirst(
+                    ClaimTypes.Name)
+                ?.Value;
+
 
         await Clients
-            .GroupExcept($"board:{boardId}", Context.ConnectionId)
+            .GroupExcept(
+                $"board:{boardId}",
+                Context.ConnectionId)
             .SendAsync(
                 RealtimeEvents.TypingStopped,
                 new
                 {
-                    BoardId = boardId,
-                    WorkItemId = workItemId,
-                    UserId = userId,
-                    UserName = userName
-                });
+                    BoardId =
+                        boardId,
+
+                    WorkItemId =
+                        workItemId,
+
+                    UserId =
+                        userId,
+
+                    UserName =
+                        userName
+                }
+            );
     }
 }

@@ -5,8 +5,6 @@ import {
     TrendingUp,
 } from "lucide-react";
 
-import { useNavigate } from "react-router";
-
 import { Card } from "@/components/ui/card";
 import StatCard from "@/components/dashboard/StatCard";
 
@@ -14,8 +12,6 @@ import { useDashboardOverview } from "../hooks/useDashboardOverview";
 
 
 export default function OverviewCards() {
-
-    const navigate = useNavigate();
 
     const {
         data,
@@ -217,18 +213,6 @@ export default function OverviewCards() {
         },
     ];
 
-
-    /* =========================================================
-       NAVIGATION
-       ========================================================= */
-
-    const handleCardClick = () => {
-
-        navigate("/projects");
-
-    };
-
-
     /* =========================================================
        RENDER
        ========================================================= */
@@ -247,7 +231,6 @@ export default function OverviewCards() {
 
                 <div
                     key={card.title}
-                    role="button"
                     tabIndex={0}
                     onKeyDown={(event) => {
 
@@ -258,14 +241,11 @@ export default function OverviewCards() {
 
                             event.preventDefault();
 
-                            handleCardClick();
-
                         }
 
                     }}
                     className="
                         group
-                        cursor-pointer
                         rounded-3xl
                         outline-none
                         transition

@@ -58,10 +58,14 @@ import {
     renameWorkItemSchema,
 } from "../schemas/renameWorkItem.schema";
 
-import type { WorkItem } from "../types/workItem";
+import type {
+    WorkItem,
+} from "../types/workItem";
+
 
 type Props = {
     open: boolean;
+
     onOpenChange: (
         open: boolean
     ) => void;
@@ -69,13 +73,19 @@ type Props = {
     workItem: WorkItem | null;
 };
 
+
 type WorkItemForm = {
     title: string;
+
     description?: string;
+
     priority: number;
+
     dueDate?: string;
+
     assigneeId: string;
 };
+
 
 function formatDateForInput(
     dueDate?: string | null
@@ -111,11 +121,13 @@ function formatDateForInput(
     return `${year}-${month}-${day}`;
 }
 
+
 export default function EditWorkItemDialog({
     open,
     onOpenChange,
     workItem,
 }: Props) {
+
     const editMutation =
         useEditWorkItem();
 
@@ -135,6 +147,7 @@ export default function EditWorkItemDialog({
     const unassignMutation =
         useUnassignWorkItem();
 
+
     const {
         register,
         handleSubmit,
@@ -152,6 +165,13 @@ export default function EditWorkItemDialog({
                 assigneeId: "",
             },
         });
+
+
+    /*
+     * ========================================
+     * LOAD WORK ITEM INTO FORM
+     * ========================================
+     */
 
     useEffect(() => {
         if (!workItem) {
@@ -185,19 +205,35 @@ export default function EditWorkItemDialog({
         reset,
     ]);
 
+
+    /*
+     * ========================================
+     * SAVING STATE
+     * ========================================
+     */
+
     const isSaving =
         editMutation.isPending ||
         renameMutation.isPending ||
         assignMutation.isPending ||
         unassignMutation.isPending;
 
+
+    /*
+     * ========================================
+     * SUBMIT
+     * ========================================
+     */
+
     const onSubmit =
         async (
             values: WorkItemForm
         ) => {
+
             if (!workItem) {
                 return;
             }
+
 
             const title =
                 values.title.trim();
@@ -205,6 +241,7 @@ export default function EditWorkItemDialog({
             const description =
                 values.description?.trim() ??
                 "";
+
 
             const originalDueDate =
                 formatDateForInput(
@@ -222,7 +259,8 @@ export default function EditWorkItemDialog({
                 );
 
             const newDueDate =
-                values.dueDate ?? "";
+                values.dueDate ??
+                "";
 
             const originalDescription =
                 workItem.description ??
@@ -235,6 +273,7 @@ export default function EditWorkItemDialog({
             const newAssigneeId =
                 values.assigneeId ??
                 "";
+
 
             const titleChanged =
                 title !==
@@ -256,10 +295,18 @@ export default function EditWorkItemDialog({
                 newAssigneeId !==
                 currentAssigneeId;
 
+
+            /*
+             * ====================================
+             * TITLE VALIDATION
+             * ====================================
+             */
+
             const titleValidation =
                 renameWorkItemSchema.safeParse({
                     title,
                 });
+
 
             if (
                 !titleValidation.success
@@ -275,8 +322,18 @@ export default function EditWorkItemDialog({
                 return;
             }
 
+
             try {
-                if (titleChanged) {
+
+                /*
+                 * ====================================
+                 * RENAME
+                 * ====================================
+                 */
+
+                if (
+                    titleChanged
+                ) {
                     await renameMutation.mutateAsync({
                         id:
                             workItem.id,
@@ -287,14 +344,23 @@ export default function EditWorkItemDialog({
                     });
                 }
 
+
+                /*
+                 * ====================================
+                 * OTHER FIELDS
+                 * ====================================
+                 */
+
                 const otherFieldsChanged =
                     descriptionChanged ||
                     priorityChanged ||
                     dueDateChanged;
 
+
                 if (
                     otherFieldsChanged
                 ) {
+
                     const validation =
                         editWorkItemSchema.safeParse({
                             description,
@@ -303,6 +369,7 @@ export default function EditWorkItemDialog({
                             dueDate:
                                 newDueDate,
                         });
+
 
                     if (
                         !validation.success
@@ -319,6 +386,7 @@ export default function EditWorkItemDialog({
 
                         return;
                     }
+
 
                     await editMutation.mutateAsync({
                         id:
@@ -339,12 +407,21 @@ export default function EditWorkItemDialog({
                     });
                 }
 
+
+                /*
+                 * ====================================
+                 * ASSIGNEE
+                 * ====================================
+                 */
+
                 if (
                     assigneeChanged
                 ) {
+
                     if (
                         newAssigneeId
                     ) {
+
                         await assignMutation.mutateAsync({
                             workItemId:
                                 workItem.id,
@@ -352,19 +429,26 @@ export default function EditWorkItemDialog({
                             userId:
                                 newAssigneeId,
                         });
+
                     } else {
+
                         await unassignMutation.mutateAsync(
                             workItem.id
                         );
                     }
                 }
 
+
                 toast.success(
                     "Work Item updated successfully."
                 );
 
-                onOpenChange(false);
+                onOpenChange(
+                    false
+                );
+
             } catch (error) {
+
                 console.error(
                     "Failed to update Work Item:",
                     error
@@ -376,6 +460,13 @@ export default function EditWorkItemDialog({
             }
         };
 
+
+    /*
+     * ========================================
+     * RENDER
+     * ========================================
+     */
+
     return (
         <Dialog
             open={open}
@@ -383,14 +474,17 @@ export default function EditWorkItemDialog({
                 onOpenChange
             }
         >
+
             <DialogContent
                 className="
                     max-h-[90vh]
                     overflow-y-auto
-                    sm:max-w-md
+                    sm:max-w-xl
                 "
             >
+
                 <DialogHeader>
+
                     <DialogTitle>
                         Edit Work Item
                     </DialogTitle>
@@ -398,9 +492,12 @@ export default function EditWorkItemDialog({
                     <DialogDescription>
                         Update the work item details.
                     </DialogDescription>
+
                 </DialogHeader>
 
+
                 {workItem && (
+
                     <form
                         onSubmit={
                             handleSubmit(
@@ -408,18 +505,24 @@ export default function EditWorkItemDialog({
                             )
                         }
                         className="
-                            space-y-4
+                            space-y-5
                         "
                     >
-                        {/* TITLE */}
+
+                        {/* =================================
+                            TITLE
+                        ================================== */}
 
                         <div>
-                            <label className="
-                                mb-1.5
-                                block
-                                text-sm
-                                font-medium
-                            ">
+
+                            <label
+                                className="
+                                    mb-1.5
+                                    block
+                                    text-sm
+                                    font-medium
+                                "
+                            >
                                 Title
                             </label>
 
@@ -433,29 +536,40 @@ export default function EditWorkItemDialog({
                             />
 
                             {errors.title && (
-                                <p className="
-                                    mt-1
-                                    text-xs
-                                    text-red-500
-                                ">
+
+                                <p
+                                    className="
+                                        mt-1
+                                        text-xs
+                                        text-red-500
+                                    "
+                                >
                                     {
                                         errors
                                             .title
                                             .message
                                     }
                                 </p>
+
                             )}
+
                         </div>
 
-                        {/* DESCRIPTION */}
+
+                        {/* =================================
+                            DESCRIPTION
+                        ================================== */}
 
                         <div>
-                            <label className="
-                                mb-1.5
-                                block
-                                text-sm
-                                font-medium
-                            ">
+
+                            <label
+                                className="
+                                    mb-1.5
+                                    block
+                                    text-sm
+                                    font-medium
+                                "
+                            >
                                 Description
                             </label>
 
@@ -468,17 +582,24 @@ export default function EditWorkItemDialog({
                                     isSaving
                                 }
                             />
+
                         </div>
 
-                        {/* PRIORITY */}
+
+                        {/* =================================
+                            PRIORITY
+                        ================================== */}
 
                         <div>
-                            <label className="
-                                mb-1.5
-                                block
-                                text-sm
-                                font-medium
-                            ">
+
+                            <label
+                                className="
+                                    mb-1.5
+                                    block
+                                    text-sm
+                                    font-medium
+                                "
+                            >
                                 Priority
                             </label>
 
@@ -503,6 +624,7 @@ export default function EditWorkItemDialog({
                                     isSaving
                                 }
                             >
+
                                 {Array.from(
                                     {
                                         length: 4,
@@ -511,6 +633,7 @@ export default function EditWorkItemDialog({
                                         _,
                                         index
                                     ) => (
+
                                         <option
                                             key={
                                                 index +
@@ -525,47 +648,66 @@ export default function EditWorkItemDialog({
                                             {index +
                                                 1}
                                         </option>
+
                                     )
                                 )}
+
                             </select>
+
                         </div>
 
-                        {/* ASSIGNEE */}
+
+                        {/* =================================
+                            ASSIGNEE
+                        ================================== */}
 
                         <div>
-                            <label className="
-                                mb-1.5
-                                block
-                                text-sm
-                                font-medium
-                            ">
+
+                            <label
+                                className="
+                                    mb-1.5
+                                    block
+                                    text-sm
+                                    font-medium
+                                "
+                            >
                                 Assignee
                             </label>
 
+
                             {usersLoading ? (
-                                <div className="
-                                    rounded-md
-                                    border
-                                    px-3
-                                    py-2
-                                    text-sm
-                                    text-muted-foreground
-                                ">
+
+                                <div
+                                    className="
+                                        rounded-md
+                                        border
+                                        px-3
+                                        py-2
+                                        text-sm
+                                        text-muted-foreground
+                                    "
+                                >
                                     Loading members...
                                 </div>
+
                             ) : usersError ? (
-                                <div className="
-                                    rounded-md
-                                    border
-                                    border-red-200
-                                    px-3
-                                    py-2
-                                    text-sm
-                                    text-red-500
-                                ">
+
+                                <div
+                                    className="
+                                        rounded-md
+                                        border
+                                        border-red-200
+                                        px-3
+                                        py-2
+                                        text-sm
+                                        text-red-500
+                                    "
+                                >
                                     Failed to load members.
                                 </div>
+
                             ) : (
+
                                 <select
                                     className="
                                         w-full
@@ -583,14 +725,15 @@ export default function EditWorkItemDialog({
                                         isSaving
                                     }
                                 >
+
                                     <option value="">
                                         Unassigned
                                     </option>
 
+
                                     {users.map(
-                                        (
-                                            user
-                                        ) => (
+                                        user => (
+
                                             <option
                                                 key={
                                                     user.id
@@ -599,6 +742,7 @@ export default function EditWorkItemDialog({
                                                     user.id
                                                 }
                                             >
+
                                                 {
                                                     user.fullName
                                                 }
@@ -606,22 +750,33 @@ export default function EditWorkItemDialog({
                                                 {user.email
                                                     ? ` (${user.email})`
                                                     : ""}
+
                                             </option>
+
                                         )
                                     )}
+
                                 </select>
+
                             )}
+
                         </div>
 
-                        {/* DUE DATE */}
+
+                        {/* =================================
+                            DUE DATE
+                        ================================== */}
 
                         <div>
-                            <label className="
-                                mb-1.5
-                                block
-                                text-sm
-                                font-medium
-                            ">
+
+                            <label
+                                className="
+                                    mb-1.5
+                                    block
+                                    text-sm
+                                    font-medium
+                                "
+                            >
                                 Due Date
                             </label>
 
@@ -634,17 +789,24 @@ export default function EditWorkItemDialog({
                                     isSaving
                                 }
                             />
+
                         </div>
 
-                        {/* ACTIONS */}
 
-                        <div className="
-                            flex
-                            justify-end
-                            gap-2
-                            border-t
-                            pt-4
-                        ">
+                        {/* =================================
+                            ACTIONS
+                        ================================== */}
+
+                        <div
+                            className="
+                                flex
+                                justify-end
+                                gap-2
+                                border-t
+                                pt-4
+                            "
+                        >
+
                             <Button
                                 type="button"
                                 variant="outline"
@@ -660,6 +822,7 @@ export default function EditWorkItemDialog({
                                 Cancel
                             </Button>
 
+
                             <Button
                                 type="submit"
                                 disabled={
@@ -668,14 +831,21 @@ export default function EditWorkItemDialog({
                                     usersError
                                 }
                             >
+
                                 {isSaving
                                     ? "Saving..."
                                     : "Save Changes"}
+
                             </Button>
+
                         </div>
+
                     </form>
+
                 )}
+
             </DialogContent>
+
         </Dialog>
     );
 }
