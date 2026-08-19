@@ -1,26 +1,103 @@
-import type { ReactNode } from "react";
+import {
+    useState,
+    type ReactNode,
+} from "react";
 
 import Sidebar from "@/components/layout/Sidebar";
-import Topbar from "@/components/layout/Topbar";
+import TopBar from "@/components/layout/Topbar";
+
 
 type Props = {
     children: ReactNode;
 };
 
+
 export default function AppLayout({
     children,
 }: Props) {
+
+    const [
+        sidebarCollapsed,
+        setSidebarCollapsed,
+    ] = useState(false);
+
+
+    const handleSidebarToggle = () => {
+        setSidebarCollapsed(
+            (current) => !current
+        );
+    };
+
+
     return (
-        <div className="flex min-h-screen bg-slate-50">
+        <div className="
+            flex
+            h-screen
+            w-full
+            overflow-hidden
+            bg-slate-50
+        ">
 
-            <Sidebar />
+            {/* =====================================================
+                SIDEBAR
 
-            <div className="flex flex-1 flex-col">
+                Sidebar stays fixed inside the application viewport.
+                The page itself does NOT scroll.
+            ===================================================== */}
 
-                <Topbar />
+            <Sidebar
+                collapsed={sidebarCollapsed}
+                onToggle={handleSidebarToggle}
+            />
 
-                <main className="flex-1 overflow-auto p-8">
+
+            {/* =====================================================
+                MAIN APPLICATION AREA
+            ===================================================== */}
+
+            <div className="
+                flex
+                min-w-0
+                flex-1
+                flex-col
+                overflow-hidden
+            ">
+
+                {/* =================================================
+                    TOP BAR
+
+                    TopBar stays visible while page content scrolls.
+                ================================================= */}
+
+                <header className="
+                    z-40
+                    shrink-0
+                ">
+
+                    <TopBar />
+
+                </header>
+
+
+                {/* =================================================
+                    SCROLLABLE PAGE CONTENT
+
+                    IMPORTANT:
+                    This is now the ONLY scroll container.
+                ================================================= */}
+
+                <main className="
+                    min-h-0
+                    min-w-0
+                    flex-1
+                    overflow-y-auto
+                    overflow-x-hidden
+                    px-6
+                    py-6
+                ">
+
                     {children}
+
                 </main>
 
             </div>

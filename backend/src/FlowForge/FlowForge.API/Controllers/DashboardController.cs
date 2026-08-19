@@ -3,6 +3,7 @@ using FlowForge.Application.Features.Dashboard.GetWorkItemDistribution;
 using FlowForge.Application.Features.Dashboard.GetProjectProgress;
 using FlowForge.Application.Features.Dashboard.GetDueWorkItems;
 using FlowForge.Application.Features.Dashboard.GetRecentWorkItems;
+using FlowForge.Application.Features.Dashboard.GetWorkItemTrend;
 
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -25,44 +26,80 @@ public sealed class DashboardController : ControllerBase
     #region Queries
 
     [HttpGet("overview")]
-    public async Task<IActionResult> GetOverview(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetOverview(
+        CancellationToken cancellationToken)
     {
-        var response = await _mediator.Send(new GetDashboardOverviewQuery(), cancellationToken);
+        var response =
+            await _mediator.Send(
+                new GetDashboardOverviewQuery(),
+                cancellationToken);
 
         return Ok(response);
     }
 
-    #endregion
-
     [HttpGet("work-item-distribution")]
-    public async Task<IActionResult> GetWorkItemDistribution(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetWorkItemDistribution(
+        CancellationToken cancellationToken)
     {
-        var response = await _mediator.Send(new GetWorkItemDistributionQuery(), cancellationToken);
+        var response =
+            await _mediator.Send(
+                new GetWorkItemDistributionQuery(),
+                cancellationToken);
 
         return Ok(response);
     }
 
     [HttpGet("project-progress")]
-    public async Task<IActionResult> GetProjectProgress(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetProjectProgress(
+        CancellationToken cancellationToken)
     {
-        var response = await _mediator.Send(new GetProjectProgressQuery(), cancellationToken);
+        var response =
+            await _mediator.Send(
+                new GetProjectProgressQuery(),
+                cancellationToken);
 
         return Ok(response);
     }
 
     [HttpGet("due-work-items")]
-    public async Task<IActionResult> GetDueWorkItems(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetDueWorkItems(
+        CancellationToken cancellationToken)
     {
-        var response = await _mediator.Send(new GetDueWorkItemsQuery(), cancellationToken);
+        var response =
+            await _mediator.Send(
+                new GetDueWorkItemsQuery(),
+                cancellationToken);
 
         return Ok(response);
     }
 
     [HttpGet("recent-work-items")]
-    public async Task<IActionResult> GetRecentWorkItems(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetRecentWorkItems(
+        CancellationToken cancellationToken)
     {
-        var response = await _mediator.Send(new GetRecentWorkItemsQuery(), cancellationToken);
+        var response =
+            await _mediator.Send(
+                new GetRecentWorkItemsQuery(),
+                cancellationToken);
 
         return Ok(response);
     }
+
+    [HttpGet("work-item-trend")]
+    public async Task<IActionResult> GetWorkItemTrend(
+        [FromQuery] int days = 7,
+        CancellationToken cancellationToken = default)
+    {
+        var response =
+            await _mediator.Send(
+                new GetWorkItemTrendQuery
+                {
+                    Days = days
+                },
+                cancellationToken);
+
+        return Ok(response);
+    }
+
+    #endregion
 }

@@ -505,7 +505,7 @@ export default function EditWorkItemDialog({
                             >
                                 {Array.from(
                                     {
-                                        length: 10,
+                                        length: 4,
                                     },
                                     (
                                         _,

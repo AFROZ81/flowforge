@@ -54,7 +54,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/edit")]
-    public async Task<IActionResult> Edit(Guid id, EditWorkItemCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> Edit(Guid id, [FromBody] EditWorkItemCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
             command with

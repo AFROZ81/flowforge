@@ -29,5 +29,7 @@ public enum WorkItemHistoryAction
 
     ReminderUpdated,
 
-    ReminderRemoved
+    ReminderRemoved,
+
+    Completed
 }
