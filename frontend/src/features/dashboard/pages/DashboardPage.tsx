@@ -9,6 +9,8 @@ import WorkItemsTrend from "../components/WorkItemsTrend";
 import DueWorkItems from "../components/DueWorkItems";
 import RecentWorkItems from "../components/RecentWorkItems";
 
+import ReminderOverview from "@/features/reminders/components/ReminderOverview";
+
 
 export default function DashboardPage() {
 
@@ -35,11 +37,13 @@ export default function DashboardPage() {
                     STATUS + PROJECT PROGRESS
                    ================================================= */}
 
-                <div className="
-                    grid
-                    gap-8
-                    xl:grid-cols-2
-                ">
+                <div
+                    className="
+                        grid
+                        gap-8
+                        xl:grid-cols-2
+                    "
+                >
 
                     <WorkItemStatus />
 
@@ -52,11 +56,13 @@ export default function DashboardPage() {
                     PRIORITY + WORK ITEM TREND
                    ================================================= */}
 
-                <div className="
-                    grid
-                    gap-8
-                    xl:grid-cols-2
-                ">
+                <div
+                    className="
+                        grid
+                        gap-8
+                        xl:grid-cols-2
+                    "
+                >
 
                     <PriorityDistribution />
 
@@ -66,20 +72,29 @@ export default function DashboardPage() {
 
 
                 {/* =================================================
-                    DUE + RECENT WORK
+                    DUE + REMINDERS
                    ================================================= */}
 
-                <div className="
-                    grid
-                    gap-8
-                    xl:grid-cols-2
-                ">
+                <div
+                    className="
+                        grid
+                        gap-8
+                        xl:grid-cols-2
+                    "
+                >
 
                     <DueWorkItems />
 
-                    <RecentWorkItems />
+                    <ReminderOverview />
 
                 </div>
+
+
+                {/* =================================================
+                    RECENT WORK
+                   ================================================= */}
+
+                <RecentWorkItems />
 
             </div>
 

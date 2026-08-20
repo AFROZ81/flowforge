@@ -65,6 +65,8 @@ import ChecklistSection from "@/features/checklists/components/ChecklistSection"
 
 import WorkItemHistory from "@/features/work-item-histories/components/WorkItemHistory";
 
+import ReminderSection from "@/features/reminders/components/ReminderSection";
+
 import {
     getAttachmentsByWorkItem,
     uploadAttachment,
@@ -90,9 +92,14 @@ type Props = {
 };
 
 
+/* =========================================================
+   STATUS HELPERS
+========================================================= */
+
 function getStatusLabel(
     status: number
 ) {
+
     switch (status) {
 
         case 1:
@@ -113,6 +120,7 @@ function getStatusLabel(
 function getStatusClasses(
     status: number
 ) {
+
     switch (status) {
 
         case 1:
@@ -146,15 +154,22 @@ function getStatusClasses(
 }
 
 
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+
 function formatDueDate(
     value?: string | null
 ) {
+
     if (!value) {
         return null;
     }
 
+
     const date =
         new Date(value);
+
 
     if (
         Number.isNaN(
@@ -163,6 +178,7 @@ function formatDueDate(
     ) {
         return null;
     }
+
 
     return date.toLocaleDateString(
         "en-GB",
@@ -189,6 +205,7 @@ function formatFileSize(
         return "0 Bytes";
     }
 
+
     const units = [
         "Bytes",
         "KB",
@@ -197,11 +214,13 @@ function formatFileSize(
         "TB",
     ];
 
+
     const index =
         Math.floor(
             Math.log(bytes) /
             Math.log(1024)
         );
+
 
     const value =
         bytes /
@@ -209,6 +228,7 @@ function formatFileSize(
             1024,
             index
         );
+
 
     return `${value.toFixed(
         index === 0
@@ -227,6 +247,7 @@ function formatAttachmentDate(
             dateString
         );
 
+
     if (
         Number.isNaN(
             date.getTime()
@@ -234,6 +255,7 @@ function formatAttachmentDate(
     ) {
         return "";
     }
+
 
     return new Intl.DateTimeFormat(
         undefined,
@@ -258,6 +280,7 @@ function getAttachmentIcon(
         return FileImage;
     }
 
+
     if (
         contentType.startsWith(
             "video/"
@@ -265,6 +288,7 @@ function getAttachmentIcon(
     ) {
         return FileVideo;
     }
+
 
     if (
         contentType.includes(
@@ -280,6 +304,7 @@ function getAttachmentIcon(
         return FileText;
     }
 
+
     if (
         contentType.includes(
             "zip"
@@ -293,6 +318,7 @@ function getAttachmentIcon(
     ) {
         return FileArchive;
     }
+
 
     return FileIcon;
 }
@@ -314,6 +340,10 @@ export default function WorkItemDetailsDialog({
     ] = useState(false);
 
 
+    /* =====================================================
+       WORK ITEM
+    ===================================================== */
+
     const {
         data: workItem,
         isLoading,
@@ -324,23 +354,35 @@ export default function WorkItemDetailsDialog({
         );
 
 
+    /* =====================================================
+       ORGANIZATION USERS
+    ===================================================== */
+
     const {
         data: users = [],
     } =
         useOrganizationUsers();
 
 
+    /* =====================================================
+       WORK ITEM MUTATIONS
+    ===================================================== */
+
     const archiveMutation =
         useArchiveWorkItem();
+
 
     const restoreMutation =
         useRestoreWorkItem();
 
+
     const completeMutation =
         useCompleteWorkItem();
 
+
     const blockMutation =
         useBlockWorkItem();
+
 
     const activateMutation =
         useActivateWorkItem();
@@ -423,16 +465,19 @@ export default function WorkItemDetailsDialog({
                 return;
             }
 
+
             try {
 
                 setAttachmentsLoading(
                     true
                 );
 
+
                 const result =
                     await getAttachmentsByWorkItem(
                         workItemId
                     );
+
 
                 setAttachments(
                     result
@@ -444,6 +489,7 @@ export default function WorkItemDetailsDialog({
                     "Failed to load attachments:",
                     error
                 );
+
 
                 toast.error(
                     "Failed to load attachments."
@@ -464,8 +510,11 @@ export default function WorkItemDetailsDialog({
             open &&
             workItemId
         ) {
+
             void loadAttachments();
+
         }
+
 
         if (!open) {
 
@@ -473,17 +522,21 @@ export default function WorkItemDetailsDialog({
                 []
             );
 
+
             setUploading(
                 false
             );
+
 
             setUploadProgress(
                 0
             );
 
+
             setUploadingFileName(
                 null
             );
+
         }
 
     }, [
@@ -503,15 +556,18 @@ export default function WorkItemDetailsDialog({
                 return;
             }
 
+
             try {
 
                 await completeMutation.mutateAsync(
                     workItemId
                 );
 
+
                 toast.success(
                     "Work Item completed."
                 );
+
 
                 onOpenChange(
                     false
@@ -522,6 +578,7 @@ export default function WorkItemDetailsDialog({
                 console.error(
                     error
                 );
+
 
                 toast.error(
                     "Failed to complete Work Item."
@@ -541,15 +598,18 @@ export default function WorkItemDetailsDialog({
                 return;
             }
 
+
             try {
 
                 await blockMutation.mutateAsync(
                     workItemId
                 );
 
+
                 toast.success(
                     "Work Item blocked."
                 );
+
 
                 onOpenChange(
                     false
@@ -560,6 +620,7 @@ export default function WorkItemDetailsDialog({
                 console.error(
                     error
                 );
+
 
                 toast.error(
                     "Failed to block Work Item."
@@ -579,15 +640,18 @@ export default function WorkItemDetailsDialog({
                 return;
             }
 
+
             try {
 
                 await activateMutation.mutateAsync(
                     workItemId
                 );
 
+
                 toast.success(
                     "Work Item activated."
                 );
+
 
                 onOpenChange(
                     false
@@ -598,6 +662,7 @@ export default function WorkItemDetailsDialog({
                 console.error(
                     error
                 );
+
 
                 toast.error(
                     "Failed to activate Work Item."
@@ -617,15 +682,18 @@ export default function WorkItemDetailsDialog({
                 return;
             }
 
+
             try {
 
                 await archiveMutation.mutateAsync(
                     workItemId
                 );
 
+
                 toast.success(
                     "Work Item archived."
                 );
+
 
                 onOpenChange(
                     false
@@ -636,6 +704,7 @@ export default function WorkItemDetailsDialog({
                 console.error(
                     error
                 );
+
 
                 toast.error(
                     "Failed to archive Work Item."
@@ -655,15 +724,18 @@ export default function WorkItemDetailsDialog({
                 return;
             }
 
+
             try {
 
                 await restoreMutation.mutateAsync(
                     workItemId
                 );
 
+
                 toast.success(
                     "Work Item restored."
                 );
+
 
                 onOpenChange(
                     false
@@ -674,6 +746,7 @@ export default function WorkItemDetailsDialog({
                 console.error(
                     error
                 );
+
 
                 toast.error(
                     "Failed to restore Work Item."
@@ -693,6 +766,7 @@ export default function WorkItemDetailsDialog({
 
             const files =
                 event.target.files;
+
 
             if (
                 !files ||
@@ -725,6 +799,7 @@ export default function WorkItemDetailsDialog({
                         file.name
                     );
 
+
                     setUploadProgress(
                         0
                     );
@@ -743,6 +818,7 @@ export default function WorkItemDetailsDialog({
 
                         }
                     );
+
                 }
 
 
@@ -762,6 +838,7 @@ export default function WorkItemDetailsDialog({
                     error
                 );
 
+
                 toast.error(
                     "Failed to upload attachment."
                 );
@@ -772,9 +849,11 @@ export default function WorkItemDetailsDialog({
                     false
                 );
 
+
                 setUploadProgress(
                     0
                 );
+
 
                 setUploadingFileName(
                     null
@@ -787,7 +866,9 @@ export default function WorkItemDetailsDialog({
 
                     fileInputRef.current.value =
                         "";
+
                 }
+
             }
         };
 
@@ -815,6 +896,7 @@ export default function WorkItemDetailsDialog({
                     error
                 );
 
+
                 toast.error(
                     "Failed to download attachment."
                 );
@@ -823,7 +905,7 @@ export default function WorkItemDetailsDialog({
 
 
     /* =====================================================
-       DELETE
+       DELETE ATTACHMENT
     ===================================================== */
 
     const handleDelete =
@@ -877,6 +959,7 @@ export default function WorkItemDetailsDialog({
                     error
                 );
 
+
                 toast.error(
                     "Failed to delete attachment."
                 );
@@ -886,6 +969,7 @@ export default function WorkItemDetailsDialog({
                 setDeletingAttachmentId(
                     null
                 );
+
             }
         };
 
@@ -917,7 +1001,7 @@ export default function WorkItemDetailsDialog({
     const dueDate =
         workItem
             ? formatDueDate(
-                  workItem.dueDate
+                workItem.dueDate
               )
             : null;
 
@@ -925,9 +1009,9 @@ export default function WorkItemDetailsDialog({
     const assignee =
         workItem?.assigneeId
             ? users.find(
-                  user =>
-                      user.id ===
-                      workItem.assigneeId
+                user =>
+                    user.id ===
+                    workItem.assigneeId
               )
             : undefined;
 
@@ -938,6 +1022,10 @@ export default function WorkItemDetailsDialog({
 
     return (
         <>
+
+            {/* =================================================
+                DETAILS DIALOG
+            ================================================= */}
 
             <Dialog
                 open={
@@ -956,6 +1044,10 @@ export default function WorkItemDetailsDialog({
                         sm:max-w-2xl
                     "
                 >
+
+                    {/* =================================================
+                        HEADER
+                    ================================================= */}
 
                     <DialogHeader>
 
@@ -985,6 +1077,7 @@ export default function WorkItemDetailsDialog({
                                         "Work Item"
                                     }
                                 </DialogTitle>
+
 
                                 <DialogDescription>
                                     Work item details and activity.
@@ -1020,6 +1113,10 @@ export default function WorkItemDetailsDialog({
                     </DialogHeader>
 
 
+                    {/* =================================================
+                        LOADING
+                    ================================================= */}
+
                     {isLoading && (
 
                         <div
@@ -1035,6 +1132,10 @@ export default function WorkItemDetailsDialog({
 
                     )}
 
+
+                    {/* =================================================
+                        ERROR
+                    ================================================= */}
 
                     {isError && (
 
@@ -1052,6 +1153,10 @@ export default function WorkItemDetailsDialog({
                     )}
 
 
+                    {/* =================================================
+                        CONTENT
+                    ================================================= */}
+
                     {workItem &&
                         !isLoading &&
                         !isError && (
@@ -1062,9 +1167,9 @@ export default function WorkItemDetailsDialog({
                                 "
                             >
 
-                                {/* =================================
+                                {/* =================================================
                                     BASIC INFORMATION
-                                ================================== */}
+                                ================================================= */}
 
                                 <div
                                     className="
@@ -1082,6 +1187,8 @@ export default function WorkItemDetailsDialog({
                                         "
                                     >
 
+                                        {/* PRIORITY */}
+
                                         <div>
 
                                             <p
@@ -1092,6 +1199,7 @@ export default function WorkItemDetailsDialog({
                                             >
                                                 Priority
                                             </p>
+
 
                                             <p
                                                 className="
@@ -1109,6 +1217,8 @@ export default function WorkItemDetailsDialog({
                                         </div>
 
 
+                                        {/* DUE DATE */}
+
                                         <div>
 
                                             <p
@@ -1119,6 +1229,7 @@ export default function WorkItemDetailsDialog({
                                             >
                                                 Due Date
                                             </p>
+
 
                                             <p
                                                 className="
@@ -1136,6 +1247,8 @@ export default function WorkItemDetailsDialog({
                                         </div>
 
 
+                                        {/* DESCRIPTION */}
+
                                         <div
                                             className="
                                                 sm:col-span-2
@@ -1150,6 +1263,7 @@ export default function WorkItemDetailsDialog({
                                             >
                                                 Description
                                             </p>
+
 
                                             <p
                                                 className="
@@ -1167,6 +1281,8 @@ export default function WorkItemDetailsDialog({
                                         </div>
 
 
+                                        {/* ASSIGNEE */}
+
                                         <div>
 
                                             <p
@@ -1177,6 +1293,7 @@ export default function WorkItemDetailsDialog({
                                             >
                                                 Assignee
                                             </p>
+
 
                                             <p
                                                 className="
@@ -1190,6 +1307,7 @@ export default function WorkItemDetailsDialog({
                                                     "Unassigned"
                                                 }
                                             </p>
+
 
                                             {assignee?.email && (
 
@@ -1209,6 +1327,8 @@ export default function WorkItemDetailsDialog({
                                         </div>
 
 
+                                        {/* STATUS */}
+
                                         <div>
 
                                             <p
@@ -1219,6 +1339,7 @@ export default function WorkItemDetailsDialog({
                                             >
                                                 Status
                                             </p>
+
 
                                             <p
                                                 className="
@@ -1239,9 +1360,9 @@ export default function WorkItemDetailsDialog({
                                 </div>
 
 
-                                {/* =================================
+                                {/* =================================================
                                     ATTACHMENTS
-                                ================================== */}
+                                ================================================= */}
 
                                 <div>
 
@@ -1349,6 +1470,7 @@ export default function WorkItemDetailsDialog({
 
                                                 )}
 
+
                                                 {
                                                     uploading
                                                         ? "Uploading..."
@@ -1444,7 +1566,7 @@ export default function WorkItemDetailsDialog({
                                     )}
 
 
-                                    {/* LOADING */}
+                                    {/* ATTACHMENTS LOADING */}
 
                                     {attachmentsLoading ? (
 
@@ -1469,6 +1591,7 @@ export default function WorkItemDetailsDialog({
                                                 "
                                             />
 
+
                                             <span
                                                 className="
                                                     text-sm
@@ -1482,7 +1605,7 @@ export default function WorkItemDetailsDialog({
 
                                     ) : attachments.length === 0 ? (
 
-                                        /* EMPTY STATE */
+                                        /* EMPTY */
 
                                         <div
                                             className="
@@ -1784,6 +1907,7 @@ export default function WorkItemDetailsDialog({
                                                         </div>
 
                                                     );
+
                                                 }
                                             )}
 
@@ -1794,9 +1918,26 @@ export default function WorkItemDetailsDialog({
                                 </div>
 
 
-                                {/* =================================
+                                {/* =================================================
+                                    REMINDER
+                                ================================================= */}
+
+                                <ReminderSection
+                                    workItemId={
+                                        workItem.id
+                                    }
+                                    dueDate={
+                                        workItem.dueDate
+                                    }
+                                    disabled={
+                                        workItem.isArchived
+                                    }
+                                />
+
+
+                                {/* =================================================
                                     CHECKLIST
-                                ================================== */}
+                                ================================================= */}
 
                                 <div>
 
@@ -1833,9 +1974,9 @@ export default function WorkItemDetailsDialog({
                                 </div>
 
 
-                                {/* =================================
+                                {/* =================================================
                                     ACTIVITY
-                                ================================== */}
+                                ================================================= */}
 
                                 <div>
 
@@ -1872,9 +2013,9 @@ export default function WorkItemDetailsDialog({
                                 </div>
 
 
-                                {/* =================================
+                                {/* =================================================
                                     ACTIONS
-                                ================================== */}
+                                ================================================= */}
 
                                 <div
                                     className="
@@ -1898,6 +2039,8 @@ export default function WorkItemDetailsDialog({
                                             gap-2
                                         "
                                     >
+
+                                        {/* COMPLETE */}
 
                                         {!workItem.isArchived &&
                                             Number(
@@ -1929,6 +2072,8 @@ export default function WorkItemDetailsDialog({
                                             )}
 
 
+                                        {/* BLOCK */}
+
                                         {!workItem.isArchived &&
                                             Number(
                                                 workItem.status
@@ -1959,6 +2104,8 @@ export default function WorkItemDetailsDialog({
                                             )}
 
 
+                                        {/* ACTIVATE */}
+
                                         {!workItem.isArchived &&
                                             Number(
                                                 workItem.status
@@ -1988,6 +2135,8 @@ export default function WorkItemDetailsDialog({
 
                                             )}
 
+
+                                        {/* ARCHIVE / RESTORE */}
 
                                         {workItem.isArchived ? (
 
@@ -2032,7 +2181,7 @@ export default function WorkItemDetailsDialog({
                                     </div>
 
 
-                                    {/* EDIT / CLOSE */}
+                                    {/* CLOSE / EDIT */}
 
                                     <div
                                         className="
@@ -2085,9 +2234,9 @@ export default function WorkItemDetailsDialog({
             </Dialog>
 
 
-            {/* =========================================
-                EDIT DIALOG
-            ========================================== */}
+            {/* =================================================
+                EDIT WORK ITEM DIALOG
+            ================================================= */}
 
             <EditWorkItemDialog
                 open={
