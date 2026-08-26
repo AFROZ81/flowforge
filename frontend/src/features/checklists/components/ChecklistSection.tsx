@@ -2,6 +2,7 @@ import {
     useEffect,
     useState,
 } from "react";
+
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -20,20 +21,26 @@ import type {
     ChecklistItem,
 } from "../types/checklist";
 
+
 type Props = {
     workItemId: string;
     disabled?: boolean;
 };
 
+
 export default function ChecklistSection({
     workItemId,
     disabled = false,
 }: Props) {
+
     const {
         data: checklistItems = [],
         isLoading,
         isError,
-    } = useChecklists(workItemId);
+    } = useChecklists(
+        workItemId
+    );
+
 
     const {
         data: progress,
@@ -41,33 +48,44 @@ export default function ChecklistSection({
         workItemId
     );
 
+
     const createMutation =
         useCreateChecklist();
+
 
     const updateMutation =
         useUpdateChecklist();
 
+
     const deleteMutation =
         useDeleteChecklist();
+
 
     const completeMutation =
         useCompleteChecklist();
 
+
     const uncompleteMutation =
         useUncompleteChecklist();
+
 
     const reorderMutation =
         useReorderChecklists();
 
+
     const [
         items,
         setItems,
-    ] = useState<ChecklistItem[]>([]);
+    ] = useState<ChecklistItem[]>(
+        []
+    );
+
 
     const [
         newTitle,
         setNewTitle,
     ] = useState("");
+
 
     const [
         editingId,
@@ -76,10 +94,12 @@ export default function ChecklistSection({
         null
     );
 
+
     const [
         editingTitle,
         setEditingTitle,
     ] = useState("");
+
 
     const [
         draggingId,
@@ -88,14 +108,94 @@ export default function ChecklistSection({
         null
     );
 
+
+    /*
+     * =========================================================
+     * SYNC SERVER ITEMS INTO LOCAL DRAG STATE
+     *
+     * IMPORTANT:
+     * We do NOT blindly call setItems().
+     *
+     * React Query / the checklist hook may provide a new array
+     * reference even when the actual checklist data has not
+     * changed. Calling setItems() every time would cause:
+     *
+     * render -> effect -> setState -> render -> effect -> ...
+     *
+     * which produced:
+     *
+     * "Maximum update depth exceeded"
+     *
+     * We only update local state when the actual checklist
+     * contents have changed.
+     * =========================================================
+     */
+
     useEffect(() => {
-        setItems(
+
+        const sortedItems =
             [...checklistItems].sort(
                 (a, b) =>
-                    a.order - b.order
-            )
+                    a.order -
+                    b.order
+            );
+
+
+        setItems(
+            currentItems => {
+
+                if (
+                    currentItems.length ===
+                    sortedItems.length
+                ) {
+
+                    const unchanged =
+                        currentItems.every(
+                            (
+                                currentItem,
+                                index
+                            ) => {
+
+                                const serverItem =
+                                    sortedItems[
+                                        index
+                                    ];
+
+
+                                return (
+                                    currentItem.id ===
+                                        serverItem.id &&
+
+                                    currentItem.order ===
+                                        serverItem.order &&
+
+                                    currentItem.title ===
+                                        serverItem.title &&
+
+                                    currentItem.isCompleted ===
+                                        serverItem.isCompleted
+                                );
+
+                            }
+                        );
+
+
+                    if (
+                        unchanged
+                    ) {
+                        return currentItems;
+                    }
+                }
+
+
+                return sortedItems;
+            }
         );
-    }, [checklistItems]);
+
+    }, [
+        checklistItems,
+    ]);
+
 
     const isMutating =
         createMutation.isPending ||
@@ -105,356 +205,569 @@ export default function ChecklistSection({
         uncompleteMutation.isPending ||
         reorderMutation.isPending;
 
-    const handleAdd = async () => {
-        const title =
-            newTitle.trim();
 
-        if (!title) {
-            toast.error(
-                "Checklist title is required."
-            );
-            return;
-        }
+    /*
+     * =========================================================
+     * ADD
+     * =========================================================
+     */
 
-        try {
-            await createMutation.mutateAsync({
-                workItemId,
-                title,
-            });
+    const handleAdd =
+        async () => {
 
-            setNewTitle("");
+            const title =
+                newTitle.trim();
 
-            toast.success(
-                "Checklist item added."
-            );
-        } catch (error) {
-            console.error(
-                "Failed to add checklist item:",
-                error
-            );
-
-            toast.error(
-                "Failed to add checklist item."
-            );
-        }
-    };
-
-    const handleToggle = async (
-        item: ChecklistItem
-    ) => {
-        if (disabled) {
-            return;
-        }
-
-        try {
-            if (item.isCompleted) {
-                await uncompleteMutation.mutateAsync(
-                    {
-                        workItemId,
-                        checklistItemId:
-                            item.id,
-                    }
-                );
-            } else {
-                await completeMutation.mutateAsync(
-                    {
-                        workItemId,
-                        checklistItemId:
-                            item.id,
-                    }
-                );
-            }
-        } catch (error) {
-            console.error(
-                "Failed to update checklist status:",
-                error
-            );
-
-            toast.error(
-                "Failed to update checklist item."
-            );
-        }
-    };
-
-    const startEditing = (
-        item: ChecklistItem
-    ) => {
-        setEditingId(item.id);
-        setEditingTitle(item.title);
-    };
-
-    const cancelEditing = () => {
-        setEditingId(null);
-        setEditingTitle("");
-    };
-
-    const handleUpdate = async (
-        item: ChecklistItem
-    ) => {
-        const title =
-            editingTitle.trim();
-
-        if (!title) {
-            toast.error(
-                "Checklist title is required."
-            );
-            return;
-        }
-
-        try {
-            await updateMutation.mutateAsync({
-                workItemId,
-
-                data: {
-                    checklistItemId:
-                        item.id,
-                    title,
-                },
-            });
-
-            cancelEditing();
-
-            toast.success(
-                "Checklist item updated."
-            );
-        } catch (error) {
-            console.error(
-                "Failed to update checklist item:",
-                error
-            );
-
-            toast.error(
-                "Failed to update checklist item."
-            );
-        }
-    };
-
-    const handleDelete = async (
-        item: ChecklistItem
-    ) => {
-        if (disabled) {
-            return;
-        }
-
-        try {
-            await deleteMutation.mutateAsync({
-                workItemId,
-                checklistItemId:
-                    item.id,
-            });
 
             if (
-                editingId === item.id
+                !title
             ) {
-                cancelEditing();
+
+                toast.error(
+                    "Checklist title is required."
+                );
+
+                return;
             }
 
-            toast.success(
-                "Checklist item deleted."
-            );
-        } catch (error) {
-            console.error(
-                "Failed to delete checklist item:",
-                error
-            );
 
-            toast.error(
-                "Failed to delete checklist item."
-            );
-        }
-    };
+            try {
 
-    const handleDragStart = (
-        itemId: string
-    ) => {
-        if (disabled) {
-            return;
-        }
+                await createMutation.mutateAsync({
+                    workItemId,
+                    title,
+                });
 
-        setDraggingId(itemId);
-    };
 
-    const handleDrop = async (
-        targetId: string
-    ) => {
-        if (
-            disabled ||
-            !draggingId ||
-            draggingId === targetId
-        ) {
-            return;
-        }
+                setNewTitle("");
 
-        const currentItems = [
-            ...items,
-        ];
 
-        const fromIndex =
-            currentItems.findIndex(
-                (item) =>
-                    item.id ===
-                    draggingId
-            );
+                toast.success(
+                    "Checklist item added."
+                );
 
-        const toIndex =
-            currentItems.findIndex(
-                (item) =>
-                    item.id ===
-                    targetId
-            );
+            } catch (error) {
 
-        if (
-            fromIndex === -1 ||
-            toIndex === -1
-        ) {
-            setDraggingId(null);
-            return;
-        }
+                console.error(
+                    "Failed to add checklist item:",
+                    error
+                );
 
-        const [
-            movedItem,
-        ] = currentItems.splice(
-            fromIndex,
-            1
-        );
 
-        currentItems.splice(
-            toIndex,
-            0,
-            movedItem
-        );
+                toast.error(
+                    "Failed to add checklist item."
+                );
+            }
+        };
 
-        const reordered =
-            currentItems.map(
-                (
-                    item,
-                    index
-                ) => ({
-                    ...item,
-                    order:
-                        index + 1,
-                })
-            );
 
-        setItems(reordered);
-        setDraggingId(null);
+    /*
+     * =========================================================
+     * TOGGLE
+     * =========================================================
+     */
 
-        try {
-            await reorderMutation.mutateAsync({
-                workItemId,
+    const handleToggle =
+        async (
+            item: ChecklistItem
+        ) => {
 
-                data: {
-                    items:
-                        reordered.map(
-                            (
-                                item
-                            ) => ({
-                                checklistItemId:
-                                    item.id,
-                                order:
-                                    item.order,
-                            })
-                        ),
-                },
-            });
-        } catch (error) {
-            console.error(
-                "Failed to reorder checklist:",
-                error
+            if (
+                disabled ||
+                isMutating
+            ) {
+                return;
+            }
+
+
+            try {
+
+                if (
+                    item.isCompleted
+                ) {
+
+                    await uncompleteMutation.mutateAsync({
+                        workItemId,
+
+                        checklistItemId:
+                            item.id,
+                    });
+
+                } else {
+
+                    await completeMutation.mutateAsync({
+                        workItemId,
+
+                        checklistItemId:
+                            item.id,
+                    });
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to update checklist status:",
+                    error
+                );
+
+
+                toast.error(
+                    "Failed to update checklist item."
+                );
+            }
+        };
+
+
+    /*
+     * =========================================================
+     * EDIT
+     * =========================================================
+     */
+
+    const startEditing =
+        (
+            item: ChecklistItem
+        ) => {
+
+            setEditingId(
+                item.id
             );
 
-            toast.error(
-                "Failed to reorder checklist."
+
+            setEditingTitle(
+                item.title
             );
-        }
-    };
+        };
+
+
+    const cancelEditing =
+        () => {
+
+            setEditingId(
+                null
+            );
+
+
+            setEditingTitle(
+                ""
+            );
+        };
+
+
+    const handleUpdate =
+        async (
+            item: ChecklistItem
+        ) => {
+
+            const title =
+                editingTitle.trim();
+
+
+            if (
+                !title
+            ) {
+
+                toast.error(
+                    "Checklist title is required."
+                );
+
+                return;
+            }
+
+
+            try {
+
+                await updateMutation.mutateAsync({
+                    workItemId,
+
+                    data: {
+                        checklistItemId:
+                            item.id,
+
+                        title,
+                    },
+                });
+
+
+                cancelEditing();
+
+
+                toast.success(
+                    "Checklist item updated."
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to update checklist item:",
+                    error
+                );
+
+
+                toast.error(
+                    "Failed to update checklist item."
+                );
+            }
+        };
+
+
+    /*
+     * =========================================================
+     * DELETE
+     * =========================================================
+     */
+
+    const handleDelete =
+        async (
+            item: ChecklistItem
+        ) => {
+
+            if (
+                disabled ||
+                isMutating
+            ) {
+                return;
+            }
+
+
+            try {
+
+                await deleteMutation.mutateAsync({
+                    workItemId,
+
+                    checklistItemId:
+                        item.id,
+                });
+
+
+                if (
+                    editingId ===
+                    item.id
+                ) {
+
+                    cancelEditing();
+                }
+
+
+                toast.success(
+                    "Checklist item deleted."
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to delete checklist item:",
+                    error
+                );
+
+
+                toast.error(
+                    "Failed to delete checklist item."
+                );
+            }
+        };
+
+
+    /*
+     * =========================================================
+     * DRAG START
+     * =========================================================
+     */
+
+    const handleDragStart =
+        (
+            itemId: string
+        ) => {
+
+            if (
+                disabled ||
+                isMutating
+            ) {
+                return;
+            }
+
+
+            setDraggingId(
+                itemId
+            );
+        };
+
+
+    /*
+     * =========================================================
+     * DROP / REORDER
+     * =========================================================
+     */
+
+    const handleDrop =
+        async (
+            targetId: string
+        ) => {
+
+            if (
+                disabled ||
+                !draggingId ||
+                draggingId === targetId ||
+                isMutating
+            ) {
+
+                setDraggingId(
+                    null
+                );
+
+                return;
+            }
+
+
+            const currentItems =
+                [...items];
+
+
+            const fromIndex =
+                currentItems.findIndex(
+                    item =>
+                        item.id ===
+                        draggingId
+                );
+
+
+            const toIndex =
+                currentItems.findIndex(
+                    item =>
+                        item.id ===
+                        targetId
+                );
+
+
+            if (
+                fromIndex === -1 ||
+                toIndex === -1
+            ) {
+
+                setDraggingId(
+                    null
+                );
+
+                return;
+            }
+
+
+            const [
+                movedItem,
+            ] =
+                currentItems.splice(
+                    fromIndex,
+                    1
+                );
+
+
+            currentItems.splice(
+                toIndex,
+                0,
+                movedItem
+            );
+
+
+            const reordered =
+                currentItems.map(
+                    (
+                        item,
+                        index
+                    ) => ({
+                        ...item,
+
+                        order:
+                            index + 1,
+                    })
+                );
+
+
+            /*
+             * Optimistic local update.
+             */
+
+            setItems(
+                reordered
+            );
+
+
+            setDraggingId(
+                null
+            );
+
+
+            try {
+
+                await reorderMutation.mutateAsync({
+                    workItemId,
+
+                    data: {
+                        items:
+                            reordered.map(
+                                item => ({
+                                    checklistItemId:
+                                        item.id,
+
+                                    order:
+                                        item.order,
+                                })
+                            ),
+                    },
+                });
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to reorder checklist:",
+                    error
+                );
+
+
+                toast.error(
+                    "Failed to reorder checklist."
+                );
+
+                /*
+                 * Let the server/query state restore the
+                 * correct ordering after a failed mutation.
+                 */
+            }
+        };
+
+
+    /*
+     * =========================================================
+     * PROGRESS
+     * =========================================================
+     */
 
     const total =
         progress?.totalItems ??
         items.length;
 
+
     const completed =
         progress?.completedItems ??
         items.filter(
-            (item) =>
+            item =>
                 item.isCompleted
         ).length;
 
+
     const percentage =
         progress?.progressPercentage ??
-        (total > 0
-            ? Math.round(
-                  (completed /
-                      total) *
-                      100
-              )
-            : 0);
+        (
+            total > 0
+                ? Math.round(
+                    (
+                        completed /
+                        total
+                    ) * 100
+                )
+                : 0
+        );
+
 
     return (
-        <section className="
-            rounded-lg
-            border
-            bg-muted/10
-            p-3
-        ">
+        <section
+            className="
+                rounded-lg
+                border
+                bg-muted/10
+                p-3
+            "
+        >
 
-            <div className="
-                mb-3
-                flex
-                items-center
-                justify-between
-                gap-3
-            ">
+            {/* =====================================================
+                HEADER
+            ====================================================== */}
+
+            <div
+                className="
+                    mb-3
+                    flex
+                    items-center
+                    justify-between
+                    gap-3
+                "
+            >
+
                 <div>
-                    <div className="
-                        flex
-                        items-center
-                        gap-2
-                    ">
-                        <h3 className="
-                            text-sm
-                            font-semibold
-                        ">
+
+                    <div
+                        className="
+                            flex
+                            items-center
+                            gap-2
+                        "
+                    >
+
+                        <h3
+                            className="
+                                text-sm
+                                font-semibold
+                            "
+                        >
                             Checklist
                         </h3>
 
-                        <span className="
-                            rounded-full
-                            bg-muted
-                            px-1.5
-                            py-0.5
-                            text-[10px]
-                            font-medium
-                        ">
+
+                        <span
+                            className="
+                                rounded-full
+                                bg-muted
+                                px-1.5
+                                py-0.5
+                                text-[10px]
+                                font-medium
+                            "
+                        >
                             {completed}/{total}
                         </span>
+
                     </div>
 
-                    <p className="
-                        mt-0.5
-                        text-xs
-                        text-muted-foreground
-                    ">
+
+                    <p
+                        className="
+                            mt-0.5
+                            text-xs
+                            text-muted-foreground
+                        "
+                    >
                         {completed} of {total} completed
                     </p>
+
                 </div>
 
-                <span className="
-                    text-xs
-                    font-medium
-                    text-muted-foreground
-                ">
+
+                <span
+                    className="
+                        text-xs
+                        font-medium
+                        text-muted-foreground
+                    "
+                >
                     {percentage}%
                 </span>
+
             </div>
 
-            <div className="
-                mb-3
-                h-1.5
-                overflow-hidden
-                rounded-full
-                bg-muted
-            ">
+
+            {/* =====================================================
+                PROGRESS BAR
+            ====================================================== */}
+
+            <div
+                className="
+                    mb-3
+                    h-1.5
+                    overflow-hidden
+                    rounded-full
+                    bg-muted
+                "
+            >
+
                 <div
                     className="
                         h-full
@@ -463,73 +776,112 @@ export default function ChecklistSection({
                         transition-all
                     "
                     style={{
-                        width: `${Math.min(
-                            100,
-                            Math.max(
-                                0,
-                                percentage
-                            )
-                        )}%`,
+                        width:
+                            `${Math.min(
+                                100,
+                                Math.max(
+                                    0,
+                                    percentage
+                                )
+                            )}%`,
                     }}
                 />
+
             </div>
 
+
+            {/* =====================================================
+                LOADING
+            ====================================================== */}
+
             {isLoading && (
-                <div className="
-                    rounded-md
-                    border
-                    bg-background
-                    px-3
-                    py-4
-                    text-center
-                    text-xs
-                    text-muted-foreground
-                ">
-                    Loading checklist...
-                </div>
-            )}
 
-            {isError && (
-                <div className="
-                    rounded-md
-                    border
-                    border-red-200
-                    bg-red-50
-                    px-3
-                    py-3
-                    text-xs
-                    text-red-600
-                ">
-                    Failed to load checklist.
-                </div>
-            )}
-
-            {!isLoading &&
-                !isError &&
-                items.length === 0 && (
-                    <div className="
+                <div
+                    className="
                         rounded-md
                         border
-                        border-dashed
                         bg-background
                         px-3
                         py-4
                         text-center
                         text-xs
                         text-muted-foreground
-                    ">
+                    "
+                >
+                    Loading checklist...
+                </div>
+
+            )}
+
+
+            {/* =====================================================
+                ERROR
+            ====================================================== */}
+
+            {isError && (
+
+                <div
+                    className="
+                        rounded-md
+                        border
+                        border-red-200
+                        bg-red-50
+                        px-3
+                        py-3
+                        text-xs
+                        text-red-600
+                    "
+                >
+                    Failed to load checklist.
+                </div>
+
+            )}
+
+
+            {/* =====================================================
+                EMPTY
+            ====================================================== */}
+
+            {!isLoading &&
+                !isError &&
+                items.length === 0 && (
+
+                    <div
+                        className="
+                            rounded-md
+                            border
+                            border-dashed
+                            bg-background
+                            px-3
+                            py-4
+                            text-center
+                            text-xs
+                            text-muted-foreground
+                        "
+                    >
                         No checklist items yet.
                     </div>
+
                 )}
+
+
+            {/* =====================================================
+                ITEMS
+            ====================================================== */}
 
             {!isLoading &&
                 !isError &&
                 items.length > 0 && (
-                    <div className="
-                        space-y-2
-                    ">
+
+                    <div
+                        className="
+                            space-y-2
+                        "
+                    >
+
                         {items.map(
-                            (item) => (
+                            item => (
+
                                 <div
                                     key={
                                         item.id
@@ -549,7 +901,7 @@ export default function ChecklistSection({
                                         event.preventDefault();
                                     }}
                                     onDrop={() =>
-                                        handleDrop(
+                                        void handleDrop(
                                             item.id
                                         )
                                     }
@@ -567,13 +919,18 @@ export default function ChecklistSection({
                                         }
                                     `}
                                 >
+
                                     {editingId ===
                                     item.id ? (
-                                        <div className="
-                                            flex
-                                            items-center
-                                            gap-2
-                                        ">
+
+                                        <div
+                                            className="
+                                                flex
+                                                items-center
+                                                gap-2
+                                            "
+                                        >
+
                                             <Input
                                                 value={
                                                     editingTitle
@@ -582,9 +939,7 @@ export default function ChecklistSection({
                                                     event
                                                 ) =>
                                                     setEditingTitle(
-                                                        event
-                                                            .target
-                                                            .value
+                                                        event.target.value
                                                     )
                                                 }
                                                 disabled={
@@ -598,10 +953,12 @@ export default function ChecklistSection({
                                                 onKeyDown={(
                                                     event
                                                 ) => {
+
                                                     if (
                                                         event.key ===
                                                         "Enter"
                                                     ) {
+
                                                         event.preventDefault();
 
                                                         void handleUpdate(
@@ -609,21 +966,27 @@ export default function ChecklistSection({
                                                         );
                                                     }
 
+
                                                     if (
                                                         event.key ===
                                                         "Escape"
                                                     ) {
+
                                                         event.preventDefault();
 
                                                         cancelEditing();
                                                     }
+
                                                 }}
                                             />
+
 
                                             <Button
                                                 type="button"
                                                 size="sm"
-                                                className="h-8"
+                                                className="
+                                                    h-8
+                                                "
                                                 onClick={() =>
                                                     void handleUpdate(
                                                         item
@@ -636,11 +999,14 @@ export default function ChecklistSection({
                                                 Save
                                             </Button>
 
+
                                             <Button
                                                 type="button"
                                                 size="sm"
                                                 variant="outline"
-                                                className="h-8"
+                                                className="
+                                                    h-8
+                                                "
                                                 onClick={
                                                     cancelEditing
                                                 }
@@ -650,13 +1016,19 @@ export default function ChecklistSection({
                                             >
                                                 Cancel
                                             </Button>
+
                                         </div>
+
                                     ) : (
-                                        <div className="
-                                            flex
-                                            items-center
-                                            gap-2
-                                        ">
+
+                                        <div
+                                            className="
+                                                flex
+                                                items-center
+                                                gap-2
+                                            "
+                                        >
+
                                             <input
                                                 type="checkbox"
                                                 checked={
@@ -680,6 +1052,7 @@ export default function ChecklistSection({
                                                 "
                                             />
 
+
                                             <span
                                                 className={`
                                                     min-w-0
@@ -697,8 +1070,11 @@ export default function ChecklistSection({
                                                 }
                                             </span>
 
+
                                             {!disabled && (
+
                                                 <>
+
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
@@ -719,6 +1095,7 @@ export default function ChecklistSection({
                                                     >
                                                         Edit
                                                     </Button>
+
 
                                                     <Button
                                                         type="button"
@@ -742,23 +1119,40 @@ export default function ChecklistSection({
                                                     >
                                                         Delete
                                                     </Button>
+
                                                 </>
+
                                             )}
+
                                         </div>
+
                                     )}
+
                                 </div>
+
                             )
                         )}
+
                     </div>
+
                 )}
 
+
+            {/* =====================================================
+                ADD
+            ====================================================== */}
+
             {!disabled && (
-                <div className="
-                    mt-3
-                    flex
-                    items-center
-                    gap-2
-                ">
+
+                <div
+                    className="
+                        mt-3
+                        flex
+                        items-center
+                        gap-2
+                    "
+                >
+
                     <Input
                         value={
                             newTitle
@@ -774,25 +1168,34 @@ export default function ChecklistSection({
                         disabled={
                             isMutating
                         }
-                        className="h-9"
+                        className="
+                            h-9
+                        "
                         onKeyDown={(
                             event
                         ) => {
+
                             if (
                                 event.key ===
                                 "Enter"
                             ) {
+
                                 event.preventDefault();
 
                                 void handleAdd();
                             }
+
                         }}
                     />
+
 
                     <Button
                         type="button"
                         size="sm"
-                        className="h-9 shrink-0"
+                        className="
+                            h-9
+                            shrink-0
+                        "
                         onClick={() =>
                             void handleAdd()
                         }
@@ -803,8 +1206,11 @@ export default function ChecklistSection({
                     >
                         Add
                     </Button>
+
                 </div>
+
             )}
+
         </section>
     );
 }

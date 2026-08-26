@@ -1,6 +1,5 @@
 import {
     useEffect,
-    useMemo,
     useState,
 } from "react";
 
@@ -68,6 +67,7 @@ function toDateTimeLocal(
     const year =
         date.getFullYear();
 
+
     const month =
         String(
             date.getMonth() + 1
@@ -75,6 +75,7 @@ function toDateTimeLocal(
             2,
             "0"
         );
+
 
     const day =
         String(
@@ -84,6 +85,7 @@ function toDateTimeLocal(
             "0"
         );
 
+
     const hours =
         String(
             date.getHours()
@@ -91,6 +93,7 @@ function toDateTimeLocal(
             2,
             "0"
         );
+
 
     const minutes =
         String(
@@ -137,6 +140,91 @@ function formatReminderDate(
             minute: "2-digit",
         }
     ).format(date);
+}
+
+
+/*
+ * =========================================================
+ * DETERMINE HOW MANY DAYS WE NEED TO SEARCH
+ *
+ * We only need enough days to reach the work item's due date.
+ *
+ * Examples:
+ *
+ * Due in 7 days  -> 7
+ * Due in 30 days -> 30
+ * Due in 200 days -> 90 (maximum)
+ * No due date -> 30
+ *
+ * This prevents the previous 3650-day request.
+ * =========================================================
+ */
+
+function getReminderSearchDays(
+    dueDate?: string | null
+): number {
+
+    const DEFAULT_DAYS =
+        30;
+
+
+    const MAX_DAYS =
+        90;
+
+
+    if (
+        !dueDate
+    ) {
+        return DEFAULT_DAYS;
+    }
+
+
+    const due =
+        new Date(
+            dueDate
+        );
+
+
+    if (
+        Number.isNaN(
+            due.getTime()
+        )
+    ) {
+        return DEFAULT_DAYS;
+    }
+
+
+    const difference =
+        due.getTime() -
+        Date.now();
+
+
+    if (
+        difference <= 0
+    ) {
+        return DEFAULT_DAYS;
+    }
+
+
+    const days =
+        Math.ceil(
+            difference /
+            (
+                1000 *
+                60 *
+                60 *
+                24
+            )
+        );
+
+
+    return Math.min(
+        Math.max(
+            days,
+            1
+        ),
+        MAX_DAYS
+    );
 }
 
 
@@ -198,16 +286,9 @@ export default function ReminderSection({
 
 
     /*
-     * ==========================================
+     * =========================================================
      * LOAD CURRENT REMINDER
-     * ==========================================
-     *
-     * The backend does not expose:
-     *
-     * GET /Reminders/{workItemId}
-     *
-     * Therefore we discover future reminders
-     * through the upcoming endpoint.
+     * =========================================================
      */
 
     useEffect(() => {
@@ -215,89 +296,94 @@ export default function ReminderSection({
         let cancelled = false;
 
 
-        const load =
-            async () => {
+        const load = async () => {
 
-                try {
-
-                    setLoading(
-                        true
-                    );
-
-                    setError(
-                        false
-                    );
+            if (!workItemId) {
+                setLoading(false);
+                return;
+            }
 
 
-                    /*
-                     * Large enough window to find
-                     * an existing future reminder.
-                     */
+            try {
 
-                    const reminders =
-                        await getUpcomingReminders(
-                            3650
-                        );
+                setLoading(true);
+                setError(false);
 
 
-                    if (
-                        cancelled
-                    ) {
-                        return;
-                    }
-
-
-                    const current =
-                        reminders.find(
-                            item =>
-                                item.workItemId ===
-                                workItemId
-                        );
-
-
-                    setReminder(
-                        current ??
-                        null
+                const searchDays =
+                    getReminderSearchDays(
+                        dueDate
                     );
 
 
-                    setReminderDate(
-                        toDateTimeLocal(
-                            current?.reminderDate
-                        )
-                    );
-
-                } catch (loadError) {
-
-                    if (
-                        cancelled
-                    ) {
-                        return;
-                    }
-
-
-                    console.error(
-                        "Failed to load reminder:",
-                        loadError
+                const reminders =
+                    await getUpcomingReminders(
+                        searchDays
                     );
 
 
-                    setError(
-                        true
-                    );
-
-                } finally {
-
-                    if (
-                        !cancelled
-                    ) {
-
-                        setLoading(
-                            false
-                        );
-                    }
+                if (cancelled) {
+                    return;
                 }
-            };
+
+
+                const current =
+                    reminders.find(
+                        item =>
+                            item.workItemId ===
+                            workItemId
+                    );
+
+
+                setReminder(
+                    current ??
+                    null
+                );
+
+
+                setReminderDate(
+                    toDateTimeLocal(
+                        current?.reminderDate
+                    )
+                );
+
+
+            } catch (loadError) {
+
+                if (cancelled) {
+                    return;
+                }
+
+
+                console.error(
+                    "Failed to load reminder:",
+                    loadError
+                );
+
+
+                /*
+                * Don't let a temporary 429 make the
+                * entire Details dialog look broken.
+                *
+                * The reminder simply remains unavailable
+                * for this load.
+                */
+
+                setReminder(null);
+                setReminderDate("");
+                setError(true);
+
+
+            } finally {
+
+                if (!cancelled) {
+
+                    setLoading(false);
+
+                }
+
+            }
+        };
 
 
         void load();
@@ -311,42 +397,39 @@ export default function ReminderSection({
 
     }, [
         workItemId,
+        dueDate,
     ]);
 
 
     /*
-     * ==========================================
-     * DEFAULT REMINDER DATE
-     * ==========================================
+     * =========================================================
+     * MINIMUM REMINDER DATE
+     * =========================================================
      */
 
-    const minimumReminderDate =
-        useMemo(
-            () => {
+    const getMinimumReminderDate =
+        () => {
 
-                const now =
-                    new Date();
-
-
-                now.setSeconds(
-                    0,
-                    0
-                );
+            const now =
+                new Date();
 
 
-                return toDateTimeLocal(
-                    now.toISOString()
-                );
+            now.setSeconds(
+                0,
+                0
+            );
 
-            },
-            []
-        );
+
+            return toDateTimeLocal(
+                now.toISOString()
+            );
+        };
 
 
     /*
-     * ==========================================
+     * =========================================================
      * SAVE
-     * ==========================================
+     * =========================================================
      */
 
     const handleSave =
@@ -472,12 +555,15 @@ export default function ReminderSection({
                         : "Reminder set successfully."
                 );
 
-            } catch (saveError) {
+            } catch (
+                saveError
+            ) {
 
                 console.error(
                     "Failed to save reminder:",
                     saveError
                 );
+
 
                 toast.error(
                     "Failed to save reminder."
@@ -493,9 +579,9 @@ export default function ReminderSection({
 
 
     /*
-     * ==========================================
+     * =========================================================
      * DELETE
-     * ==========================================
+     * =========================================================
      */
 
     const handleDelete =
@@ -545,12 +631,15 @@ export default function ReminderSection({
                     "Reminder removed successfully."
                 );
 
-            } catch (deleteError) {
+            } catch (
+                deleteError
+            ) {
 
                 console.error(
                     "Failed to delete reminder:",
                     deleteError
                 );
+
 
                 toast.error(
                     "Failed to remove reminder."
@@ -568,9 +657,9 @@ export default function ReminderSection({
     return (
         <div>
 
-            {/* ==========================================
+            {/* =====================================================
                 HEADER
-            =========================================== */}
+            ====================================================== */}
 
             <div
                 className="
@@ -621,9 +710,9 @@ export default function ReminderSection({
             </div>
 
 
-            {/* ==========================================
+            {/* =====================================================
                 LOADING
-            =========================================== */}
+            ====================================================== */}
 
             {loading && (
 
@@ -648,6 +737,7 @@ export default function ReminderSection({
                         "
                     />
 
+
                     <span
                         className="
                             text-sm
@@ -662,9 +752,9 @@ export default function ReminderSection({
             )}
 
 
-            {/* ==========================================
+            {/* =====================================================
                 ERROR
-            =========================================== */}
+            ====================================================== */}
 
             {!loading &&
                 error && (
@@ -686,9 +776,9 @@ export default function ReminderSection({
                 )}
 
 
-            {/* ==========================================
+            {/* =====================================================
                 EXISTING REMINDER
-            =========================================== */}
+            ====================================================== */}
 
             {!loading &&
                 !error &&
@@ -857,9 +947,9 @@ export default function ReminderSection({
                 )}
 
 
-            {/* ==========================================
+            {/* =====================================================
                 NO REMINDER
-            =========================================== */}
+            ====================================================== */}
 
             {!loading &&
                 !error &&
@@ -931,9 +1021,9 @@ export default function ReminderSection({
                 )}
 
 
-            {/* ==========================================
-                EDIT / CREATE
-            =========================================== */}
+            {/* =====================================================
+                CREATE / EDIT
+            ====================================================== */}
 
             {!loading &&
                 !error &&
@@ -947,65 +1037,47 @@ export default function ReminderSection({
                         "
                     >
 
-                        <div
+                        <label
                             className="
-                                grid
-                                gap-4
-                                sm:grid-cols-2
+                                mb-1.5
+                                block
+                                text-sm
+                                font-medium
                             "
                         >
-
-                            <div
-                                className="
-                                    sm:col-span-2
-                                "
-                            >
-
-                                <label
-                                    className="
-                                        mb-1.5
-                                        block
-                                        text-sm
-                                        font-medium
-                                    "
-                                >
-                                    Reminder date & time
-                                </label>
+                            Reminder date & time
+                        </label>
 
 
-                                <Input
-                                    type="datetime-local"
-                                    value={
-                                        reminderDate
-                                    }
-                                    min={
-                                        minimumReminderDate
-                                    }
-                                    onChange={
-                                        event =>
-                                            setReminderDate(
-                                                event.target.value
-                                            )
-                                    }
-                                    disabled={
-                                        saving
-                                    }
-                                />
+                        <Input
+                            type="datetime-local"
+                            value={
+                                reminderDate
+                            }
+                            min={
+                                getMinimumReminderDate()
+                            }
+                            onChange={
+                                event =>
+                                    setReminderDate(
+                                        event.target.value
+                                    )
+                            }
+                            disabled={
+                                saving
+                            }
+                        />
 
 
-                                <p
-                                    className="
-                                        mt-1.5
-                                        text-xs
-                                        text-muted-foreground
-                                    "
-                                >
-                                    Choose when you want FlowForge to remind you.
-                                </p>
-
-                            </div>
-
-                        </div>
+                        <p
+                            className="
+                                mt-1.5
+                                text-xs
+                                text-muted-foreground
+                            "
+                        >
+                            Choose when you want FlowForge to remind you.
+                        </p>
 
 
                         <div
@@ -1025,22 +1097,14 @@ export default function ReminderSection({
                                 }
                                 onClick={() => {
 
-                                    if (
+                                    setReminderDate(
                                         reminder
-                                    ) {
-
-                                        setReminderDate(
-                                            toDateTimeLocal(
+                                            ? toDateTimeLocal(
                                                 reminder.reminderDate
-                                            )
-                                        );
+                                              )
+                                            : ""
+                                    );
 
-                                    } else {
-
-                                        setReminderDate(
-                                            ""
-                                        );
-                                    }
 
                                     setEditing(
                                         false
@@ -1075,7 +1139,6 @@ export default function ReminderSection({
                                         />
 
                                         Saving...
-
                                     </>
 
                                 ) : (

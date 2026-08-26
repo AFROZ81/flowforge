@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
 
 using System.IO.Compression;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -197,12 +198,10 @@ builder.Services
                 ValidIssuer =
                     jwtSettings.Issuer,
 
-
                 ValidateAudience = true,
 
                 ValidAudience =
                     jwtSettings.Audience,
-
 
                 ValidateIssuerSigningKey = true,
 
@@ -212,7 +211,6 @@ builder.Services
                             jwtSettings.Key
                         )
                     ),
-
 
                 ValidateLifetime = true,
 
@@ -245,19 +243,7 @@ builder.Services
                          * =================================================
                          * SIGNALR CONNECTION
                          * =================================================
-                         *
-                         * SignalR can send the JWT through:
-                         *
-                         * Authorization:
-                         *     Bearer eyJ...
-                         *
-                         * OR:
-                         *
-                         * ?access_token=eyJ...
-                         *
-                         * We support both.
                          */
-
 
                         if (
                             !string.IsNullOrWhiteSpace(
@@ -284,16 +270,7 @@ builder.Services
                          * =================================================
                          * AUTHORIZATION HEADER
                          * =================================================
-                         *
-                         * This is primarily useful for:
-                         *
-                         * /negotiate
-                         *
-                         * where SignalR normally sends:
-                         *
-                         * Authorization: Bearer <token>
                          */
-
 
                         var authorizationHeader =
                             context.Request.Headers[
@@ -365,7 +342,7 @@ builder.Services
                         var userId =
                             context.Principal?
                                 .FindFirst(
-                                    System.Security.Claims.ClaimTypes.NameIdentifier
+                                    ClaimTypes.NameIdentifier
                                 )?.Value
                             ??
                             context.Principal?
@@ -495,6 +472,15 @@ builder.Services.AddRateLimiter(options =>
                 "60";
 
 
+            Log.Warning(
+                "Rate limit exceeded. Path: {Path}, User: {User}, IP: {IP}",
+                context.HttpContext.Request.Path,
+                context.HttpContext.User.Identity?.Name
+                    ?? "anonymous",
+                context.HttpContext.Connection.RemoteIpAddress
+            );
+
+
             await context.HttpContext
                 .Response
                 .WriteAsJsonAsync(
@@ -507,6 +493,10 @@ builder.Services.AddRateLimiter(options =>
         };
 
 
+    // ========================================================
+    // GLOBAL RATE LIMITER
+    // ========================================================
+
     options.GlobalLimiter =
         PartitionedRateLimiter.Create<
             HttpContext,
@@ -514,29 +504,92 @@ builder.Services.AddRateLimiter(options =>
         >(
             httpContext =>
             {
-                var key =
+                /*
+                 * =================================================
+                 * IMPORTANT
+                 * =================================================
+                 *
+                 * We partition authenticated users by their
+                 * actual stable UserId claim.
+                 *
+                 * This prevents all authenticated users from
+                 * sharing the same "authenticated" bucket.
+                 *
+                 * Authentication now runs BEFORE the rate limiter
+                 * in the middleware pipeline below.
+                 */
+
+                var userId =
                     httpContext.User
-                        .Identity?
-                        .IsAuthenticated == true
+                        .FindFirst(
+                            ClaimTypes.NameIdentifier
+                        )?.Value
+                    ??
+                    httpContext.User
+                        .FindFirst(
+                            "sub"
+                        )?.Value;
 
-                        ? httpContext.User
-                            .Identity!
-                            .Name
-                            ?? "authenticated"
 
-                        : httpContext.Connection
-                            .RemoteIpAddress?
-                            .ToString()
-                            ?? "anonymous";
+                if (
+                    !string.IsNullOrWhiteSpace(
+                        userId
+                    )
+                )
+                {
+                    return RateLimitPartition
+                        .GetFixedWindowLimiter(
+                            $"user:{userId}",
+                            _ =>
+                                new FixedWindowRateLimiterOptions
+                                {
+                                    /*
+                                     * Normal authenticated
+                                     * application usage.
+                                     */
+
+                                    PermitLimit = 600,
+
+                                    Window =
+                                        TimeSpan.FromMinutes(1),
+
+                                    QueueLimit = 0,
+
+                                    AutoReplenishment =
+                                        true
+                                }
+                        );
+                }
+
+
+                /*
+                 * =================================================
+                 * ANONYMOUS USERS
+                 * =================================================
+                 *
+                 * Requests without a valid JWT are partitioned
+                 * by IP.
+                 */
+
+                var ip =
+                    httpContext.Connection
+                        .RemoteIpAddress?
+                        .ToString()
+                    ?? "unknown";
 
 
                 return RateLimitPartition
                     .GetFixedWindowLimiter(
-                        key,
+                        $"ip:{ip}",
                         _ =>
                             new FixedWindowRateLimiterOptions
                             {
-                                PermitLimit = 100,
+                                /*
+                                 * Anonymous requests should be
+                                 * considerably more restricted.
+                                 */
+
+                                PermitLimit = 30,
 
                                 Window =
                                     TimeSpan.FromMinutes(
@@ -545,27 +598,32 @@ builder.Services.AddRateLimiter(options =>
 
                                 QueueLimit = 0,
 
-                                AutoReplenishment = true
+                                AutoReplenishment =
+                                    true
                             }
                     );
             }
         );
 
 
+    // ========================================================
+    // LOGIN RATE LIMITER
+    // ========================================================
+
     options.AddPolicy(
         "LoginPolicy",
         httpContext =>
         {
-            var key =
+            var ip =
                 httpContext.Connection
                     .RemoteIpAddress?
                     .ToString()
-                ?? "anonymous";
+                ?? "unknown";
 
 
             return RateLimitPartition
                 .GetFixedWindowLimiter(
-                    key,
+                    $"login:{ip}",
                     _ =>
                         new FixedWindowRateLimiterOptions
                         {
@@ -578,7 +636,8 @@ builder.Services.AddRateLimiter(options =>
 
                             QueueLimit = 0,
 
-                            AutoReplenishment = true
+                            AutoReplenishment =
+                                true
                         }
                 );
         }
@@ -728,24 +787,32 @@ app.UseResponseCompression();
 
 
 // ============================================================
-// RATE LIMITING
-// ============================================================
-
-app.UseRateLimiter();
-
-
-// ============================================================
-// SERILOG
-// ============================================================
-
-app.UseSerilogRequestLogging();
-
-
-// ============================================================
 // AUTHENTICATION
 // ============================================================
+//
+// IMPORTANT:
+//
+// Authentication MUST happen before the rate limiter.
+//
+// The rate limiter uses the authenticated user's UserId
+// to create the correct rate-limit partition.
+//
 
 app.UseAuthentication();
+
+
+// ============================================================
+// RATE LIMITING
+// ============================================================
+//
+// Now the limiter can see:
+//
+// HttpContext.User
+//
+// and therefore correctly identify the authenticated user.
+//
+
+app.UseRateLimiter();
 
 
 // ============================================================
@@ -753,6 +820,13 @@ app.UseAuthentication();
 // ============================================================
 
 app.UseAuthorization();
+
+
+// ============================================================
+// SERILOG
+// ============================================================
+
+app.UseSerilogRequestLogging();
 
 
 // ============================================================

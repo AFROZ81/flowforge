@@ -15,6 +15,8 @@ import ProjectDetailsPage from "@/features/projects/pages/ProjectDetailsPage";
 
 import BoardDetailsPage from "@/features/boards/pages/BoardDetailsPage";
 
+import ReportsPage from "@/features/reports/pages/ReportsPage";
+
 import SettingsPage from "@/features/settings/pages/SettingsPage";
 
 import { useAuthStore } from "@/stores/auth.store";
@@ -34,11 +36,11 @@ function RootRedirect() {
 
 
     /*
-     * User is authenticated:
+     * Authenticated:
      *
      *      / → /dashboard
      *
-     * User is not authenticated:
+     * Not authenticated:
      *
      *      / → /login
      */
@@ -84,6 +86,10 @@ export const router =
                 <PublicRoute />,
 
             children: [
+
+                /* -----------------------------------------
+                   LOGIN
+                   ----------------------------------------- */
 
                 {
                     path: "/login",
@@ -144,7 +150,7 @@ export const router =
 
 
                 /* -----------------------------------------
-                   BOARD
+                   BOARD DETAILS
                    ----------------------------------------- */
 
                 {
@@ -153,6 +159,18 @@ export const router =
 
                     element:
                         <BoardDetailsPage />,
+                },
+
+
+                /* -----------------------------------------
+                   REPORTS
+                   ----------------------------------------- */
+
+                {
+                    path: "/reports",
+
+                    element:
+                        <ReportsPage />,
                 },
 
 

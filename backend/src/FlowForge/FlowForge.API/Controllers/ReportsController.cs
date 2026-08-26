@@ -70,8 +70,14 @@ public sealed class ReportsController : ControllerBase
     [HttpGet("export/work-items")]
     public async Task<IActionResult> ExportWorkItems(CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new ExportWorkItemsCsvQuery(), cancellationToken);
+        var result =
+            await _mediator.Send(
+                new ExportWorkItemsXlsxQuery(),
+                cancellationToken);
 
-        return File(result.Content, result.ContentType, result.FileName);
+        return File(
+            result.Content,
+            result.ContentType,
+            result.FileName);
     }
 }

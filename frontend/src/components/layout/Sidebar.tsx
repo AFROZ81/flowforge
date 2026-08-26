@@ -5,6 +5,7 @@ import {
     ChevronRight,
     ChevronLeft,
     LogOut,
+    BarChart3,
 } from "lucide-react";
 
 import {
@@ -21,6 +22,10 @@ type SidebarProps = {
 };
 
 
+/* =========================================================
+   PRIMARY NAVIGATION
+   ========================================================= */
+
 const primaryNavigation = [
     {
         title: "Dashboard",
@@ -34,8 +39,18 @@ const primaryNavigation = [
         href: "/projects",
         end: false,
     },
+    {
+        title: "Reports",
+        icon: BarChart3,
+        href: "/reports",
+        end: false,
+    },
 ];
 
+
+/* =========================================================
+   WORKSPACE NAVIGATION
+   ========================================================= */
 
 const workspaceNavigation = [
     {
@@ -47,13 +62,16 @@ const workspaceNavigation = [
 ];
 
 
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
 export default function Sidebar({
     collapsed,
     onToggle,
 }: SidebarProps) {
 
     const navigate = useNavigate();
-
 
     const logout =
         useAuthStore(
@@ -82,7 +100,7 @@ export default function Sidebar({
         <aside
             className={[
                 "relative flex h-screen shrink-0 flex-col",
-                "border-r border-slate-200 bg-white",
+                "border-r border-slate-200/80 bg-white shadow-[4px_0_24px_-18px_rgba(15,23,42,0.35)]",
                 "transition-[width] duration-300 ease-in-out",
                 collapsed
                     ? "w-[72px]"
@@ -90,13 +108,13 @@ export default function Sidebar({
             ].join(" ")}
         >
 
-            {/* =====================================================
+            {/* =================================================
                 BRAND
-            ===================================================== */}
+            ================================================= */}
 
             <div
                 className={[
-                    "flex h-[60px] shrink-0 items-center border-b border-slate-200",
+                    "flex h-[72px] shrink-0 items-center border-b border-slate-100 bg-white/95",
                     collapsed
                         ? "justify-center px-2"
                         : "px-4",
@@ -112,6 +130,8 @@ export default function Sidebar({
                     ].join(" ")}
                 >
 
+                    {/* Logo */}
+
                     <div
                         className="
                             flex
@@ -121,16 +141,18 @@ export default function Sidebar({
                             items-center
                             justify-center
                             rounded-xl
-                            bg-blue-600
+                            bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-600
                             text-sm
                             font-bold
                             text-white
-                            shadow-sm
+                            shadow-[0_6px_14px_-6px_rgba(37,99,235,0.75)]
                         "
                     >
                         F
                     </div>
 
+
+                    {/* Brand text */}
 
                     <div
                         className={[
@@ -144,7 +166,7 @@ export default function Sidebar({
                         <h1
                             className="
                                 whitespace-nowrap
-                                text-sm
+                                text-[15px]
                                 font-bold
                                 tracking-tight
                                 text-slate-900
@@ -156,8 +178,8 @@ export default function Sidebar({
                         <p
                             className="
                                 whitespace-nowrap
-                                text-[10px]
-                                text-slate-500
+                                text-[11px]
+                                text-slate-400
                             "
                         >
                             Enterprise Workspace
@@ -170,9 +192,9 @@ export default function Sidebar({
             </div>
 
 
-            {/* =====================================================
+            {/* =================================================
                 COLLAPSE BUTTON
-            ===================================================== */}
+            ================================================= */}
 
             <button
                 type="button"
@@ -190,7 +212,7 @@ export default function Sidebar({
                 className="
                     absolute
                     -right-3
-                    top-[47px]
+                    top-[55px]
                     z-50
                     flex
                     h-6
@@ -199,11 +221,12 @@ export default function Sidebar({
                     justify-center
                     rounded-full
                     border
-                    border-slate-200
+                    border-slate-200/90
                     bg-white
                     text-slate-500
                     shadow-sm
                     transition-colors
+                    hover:border-slate-300
                     hover:bg-slate-50
                     hover:text-slate-900
                     focus:outline-none
@@ -227,9 +250,9 @@ export default function Sidebar({
             </button>
 
 
-            {/* =====================================================
+            {/* =================================================
                 NAVIGATION
-            ===================================================== */}
+            ================================================= */}
 
             <div
                 className="
@@ -238,7 +261,7 @@ export default function Sidebar({
                     overflow-x-hidden
                     overflow-y-auto
                     px-3
-                    py-5
+                    py-6
                 "
             >
 
@@ -276,15 +299,9 @@ export default function Sidebar({
 
                                 return (
                                     <NavLink
-                                        key={
-                                            item.title
-                                        }
-                                        to={
-                                            item.href
-                                        }
-                                        end={
-                                            item.end
-                                        }
+                                        key={item.title}
+                                        to={item.href}
+                                        end={item.end}
                                         title={
                                             collapsed
                                                 ? item.title
@@ -294,7 +311,7 @@ export default function Sidebar({
                                             isActive,
                                         }) =>
                                             [
-                                                "group flex h-10 w-full items-center rounded-lg",
+                                                "group relative flex h-11 w-full items-center rounded-xl",
                                                 "text-sm font-medium transition-colors",
                                                 "outline-none",
                                                 "focus-visible:ring-2 focus-visible:ring-blue-500/30",
@@ -304,8 +321,8 @@ export default function Sidebar({
                                                     : "gap-3 px-3",
 
                                                 isActive
-                                                    ? "bg-blue-50 text-blue-700"
-                                                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                                                    ? "bg-blue-50/80 text-blue-700 shadow-sm shadow-blue-100/70"
+                                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
                                             ].join(" ")
                                         }
                                     >
@@ -315,6 +332,13 @@ export default function Sidebar({
                                         }) => (
                                             <>
 
+                                                {isActive && !collapsed && (
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="absolute left-0 h-6 w-1 rounded-r-full bg-blue-600"
+                                                    />
+                                                )}
+
                                                 <Icon
                                                     size={18}
                                                     strokeWidth={
@@ -323,18 +347,16 @@ export default function Sidebar({
                                                             : 1.8
                                                     }
                                                     className={
-                                                        isActive
-                                                            ? "shrink-0 text-blue-600"
-                                                            : "shrink-0 text-slate-400 group-hover:text-slate-600"
+                                                isActive
+                                                    ? "shrink-0 text-blue-600"
+                                                    : "shrink-0 text-slate-400 group-hover:text-slate-600"
                                                     }
                                                 />
 
 
                                                 {!collapsed && (
                                                     <span className="truncate">
-                                                        {
-                                                            item.title
-                                                        }
+                                                        {item.title}
                                                     </span>
                                                 )}
 
@@ -358,7 +380,7 @@ export default function Sidebar({
                 <div>
 
                     {!collapsed && (
-                        <p
+                                    <p
                             className="
                                 mb-2
                                 px-3
@@ -369,7 +391,7 @@ export default function Sidebar({
                                 text-slate-400
                             "
                         >
-                            Workspace
+                            Manage
                         </p>
                     )}
 
@@ -385,15 +407,9 @@ export default function Sidebar({
 
                                 return (
                                     <NavLink
-                                        key={
-                                            item.title
-                                        }
-                                        to={
-                                            item.href
-                                        }
-                                        end={
-                                            item.end
-                                        }
+                                        key={item.title}
+                                        to={item.href}
+                                        end={item.end}
                                         title={
                                             collapsed
                                                 ? item.title
@@ -403,7 +419,7 @@ export default function Sidebar({
                                             isActive,
                                         }) =>
                                             [
-                                                "group flex h-10 w-full items-center rounded-lg",
+                                                "group relative flex h-11 w-full items-center rounded-xl",
                                                 "text-sm font-medium transition-colors",
                                                 "outline-none",
                                                 "focus-visible:ring-2 focus-visible:ring-blue-500/30",
@@ -413,8 +429,8 @@ export default function Sidebar({
                                                     : "gap-3 px-3",
 
                                                 isActive
-                                                    ? "bg-blue-50 text-blue-700"
-                                                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                                                    ? "bg-blue-50/80 text-blue-700 shadow-sm shadow-blue-100/70"
+                                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
                                             ].join(" ")
                                         }
                                     >
@@ -423,6 +439,13 @@ export default function Sidebar({
                                             isActive,
                                         }) => (
                                             <>
+
+                                                {isActive && !collapsed && (
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="absolute left-0 h-6 w-1 rounded-r-full bg-blue-600"
+                                                    />
+                                                )}
 
                                                 <Icon
                                                     size={18}
@@ -441,9 +464,7 @@ export default function Sidebar({
 
                                                 {!collapsed && (
                                                     <span className="truncate">
-                                                        {
-                                                            item.title
-                                                        }
+                                                        {item.title}
                                                     </span>
                                                 )}
 
@@ -462,16 +483,16 @@ export default function Sidebar({
             </div>
 
 
-            {/* =====================================================
+            {/* =================================================
                 LOGOUT
-            ===================================================== */}
+            ================================================= */}
 
             <div
                 className="
                     shrink-0
                     border-t
-                    border-slate-200
-                    bg-white
+                    border-slate-100
+                    bg-slate-50/50
                     p-3
                 "
             >
@@ -486,9 +507,9 @@ export default function Sidebar({
                     }
                     aria-label="Logout"
                     className={[
-                        "group flex h-10 w-full items-center rounded-lg",
+                        "group flex h-11 w-full items-center rounded-xl",
                         "text-sm font-medium",
-                        "text-slate-600",
+                        "text-slate-500",
                         "transition-colors",
                         "outline-none",
                         "hover:bg-red-50",

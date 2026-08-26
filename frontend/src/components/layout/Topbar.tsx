@@ -176,7 +176,7 @@ export default function Topbar() {
                 top-0
                 z-40
                 flex
-                h-[58px]
+                h-[72px]
                 items-center
                 justify-between
                 border-b
