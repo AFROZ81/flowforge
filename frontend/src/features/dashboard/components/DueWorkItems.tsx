@@ -163,45 +163,45 @@ function priorityClass(
         case "critical":
 
             return `
-                border-red-100
-                bg-red-50
-                text-red-600
+                border-danger-subtle
+                bg-danger-subtle
+                text-danger-foreground
             `;
 
 
         case "high":
 
             return `
-                border-orange-100
-                bg-orange-50
-                text-orange-600
+                border-warning-subtle
+                bg-warning-subtle
+                text-warning-foreground
             `;
 
 
         case "medium":
 
             return `
-                border-amber-100
-                bg-amber-50
-                text-amber-600
+                border-warning-subtle
+                bg-warning-subtle
+                text-warning-foreground
             `;
 
 
         case "low":
 
             return `
-                border-blue-100
-                bg-blue-50
-                text-blue-600
+                border-primary-subtle
+                bg-primary-subtle
+                text-primary
             `;
 
 
         default:
 
             return `
-                border-slate-200
-                bg-slate-100
-                text-slate-600
+                border-border
+                bg-surface-sunken
+                text-muted-foreground
             `;
     }
 }
@@ -241,11 +241,10 @@ export default function DueWorkItems() {
         return (
             <Card
                 className="
-                    rounded-3xl
+                    rounded-xl
                     border
-                    border-slate-200
-                    bg-white
-                    p-8
+                    border-border
+                    bg-card
                     shadow-sm
                 "
             >
@@ -264,7 +263,7 @@ export default function DueWorkItems() {
                                 h-6
                                 w-40
                                 rounded
-                                bg-slate-200
+                                bg-border
                             " />
 
                             <div className="
@@ -272,7 +271,7 @@ export default function DueWorkItems() {
                                 h-4
                                 w-56
                                 rounded
-                                bg-slate-100
+                                bg-surface-sunken
                             " />
 
                         </div>
@@ -282,7 +281,7 @@ export default function DueWorkItems() {
                             h-10
                             w-10
                             rounded-xl
-                            bg-slate-100
+                            bg-surface-sunken
                         " />
 
                     </div>
@@ -298,14 +297,14 @@ export default function DueWorkItems() {
                             h-9
                             w-28
                             rounded-lg
-                            bg-slate-100
+                            bg-surface-sunken
                         " />
 
                         <div className="
                             h-9
                             w-28
                             rounded-lg
-                            bg-slate-100
+                            bg-surface-sunken
                         " />
 
                     </div>
@@ -326,7 +325,7 @@ export default function DueWorkItems() {
                                     className="
                                         h-[86px]
                                         rounded-xl
-                                        bg-slate-100
+                                        bg-surface-sunken
                                     "
                                 />
 
@@ -354,11 +353,10 @@ export default function DueWorkItems() {
         return (
             <Card
                 className="
-                    rounded-3xl
+                    rounded-xl
                     border
-                    border-slate-200
-                    bg-white
-                    p-8
+                    border-border
+                    bg-card
                     shadow-sm
                 "
             >
@@ -379,14 +377,14 @@ export default function DueWorkItems() {
                         items-center
                         justify-center
                         rounded-full
-                        bg-red-50
+                        bg-danger-subtle
                     ">
 
                         <AlertTriangle
                             className="
                                 h-5
                                 w-5
-                                text-red-600
+                                text-danger-foreground
                             "
                         />
 
@@ -397,7 +395,7 @@ export default function DueWorkItems() {
                         mt-3
                         text-sm
                         font-semibold
-                        text-slate-900
+                        text-foreground
                     ">
                         Unable to load due work items
                     </p>
@@ -406,7 +404,7 @@ export default function DueWorkItems() {
                     <p className="
                         mt-1
                         text-xs
-                        text-slate-500
+                        text-muted-foreground
                     ">
                         Please try again later.
                     </p>
@@ -457,11 +455,10 @@ export default function DueWorkItems() {
                 flex
                 h-full
                 flex-col
-                rounded-3xl
+                rounded-xl
                 border
-                border-slate-200
-                bg-white
-                p-8
+                border-border
+                bg-card
                 shadow-sm
             "
         >
@@ -482,7 +479,7 @@ export default function DueWorkItems() {
                     <h2 className="
                         text-xl
                         font-semibold
-                        text-slate-900
+                        text-foreground
                     ">
                         Due Work Items
                     </h2>
@@ -491,7 +488,7 @@ export default function DueWorkItems() {
                     <p className="
                         mt-1
                         text-sm
-                        text-slate-500
+                        text-muted-foreground
                     ">
                         Items requiring your attention
                     </p>
@@ -507,8 +504,8 @@ export default function DueWorkItems() {
                     items-center
                     justify-center
                     rounded-xl
-                    bg-amber-50
-                    text-amber-600
+                    bg-warning-subtle
+                    text-warning-foreground
                 ">
 
                     <CalendarClock
@@ -524,17 +521,22 @@ export default function DueWorkItems() {
                 TABS
                ================================================= */}
 
-            <div className="
+            <div
+                role="tablist"
+                aria-label="Due work items"
+                className="
                 mt-6
                 flex
                 w-fit
                 rounded-xl
-                bg-slate-100
+                bg-surface-sunken
                 p-1
             ">
-
+            
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === "overdue"}
                     onClick={() =>
                         setActiveTab(
                             "overdue"
@@ -550,17 +552,19 @@ export default function DueWorkItems() {
                         text-xs
                         font-medium
                         transition
+                        outline-none
+                        focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring
                         ${
                             activeTab ===
                             "overdue"
                                 ? `
-                                    bg-white
-                                    text-red-600
+                                    bg-card
+                                    text-danger-foreground
                                     shadow-sm
                                   `
                                 : `
-                                    text-slate-500
-                                    hover:text-slate-900
+                                    text-muted-foreground
+                                    hover:text-foreground
                                   `
                         }
                     `}
@@ -583,12 +587,12 @@ export default function DueWorkItems() {
                                 activeTab ===
                                 "overdue"
                                     ? `
-                                        bg-red-50
-                                        text-red-600
+                                        bg-danger-subtle
+                                        text-danger-foreground
                                       `
                                     : `
-                                        bg-slate-200
-                                        text-slate-600
+                                        bg-border
+                                        text-muted-foreground
                                       `
                             }
                         `}
@@ -601,6 +605,8 @@ export default function DueWorkItems() {
 
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === "upcoming"}
                     onClick={() =>
                         setActiveTab(
                             "upcoming"
@@ -616,17 +622,19 @@ export default function DueWorkItems() {
                         text-xs
                         font-medium
                         transition
+                        outline-none
+                        focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring
                         ${
                             activeTab ===
                             "upcoming"
                                 ? `
-                                    bg-white
-                                    text-slate-900
+                                    bg-card
+                                    text-foreground
                                     shadow-sm
                                   `
                                 : `
-                                    text-slate-500
-                                    hover:text-slate-900
+                                    text-muted-foreground
+                                    hover:text-foreground
                                   `
                         }
                     `}
@@ -649,12 +657,12 @@ export default function DueWorkItems() {
                                 activeTab ===
                                 "upcoming"
                                     ? `
-                                        bg-blue-50
-                                        text-blue-600
+                                        bg-primary-subtle
+                                        text-primary
                                       `
                                     : `
-                                        bg-slate-200
-                                        text-slate-600
+                                        bg-border
+                                        text-muted-foreground
                                       `
                             }
                         `}
@@ -690,14 +698,14 @@ export default function DueWorkItems() {
                         items-center
                         justify-center
                         rounded-full
-                        bg-emerald-50
+                        bg-success-subtle
                     ">
 
                         <CheckCircle2
                             className="
                                 h-5
                                 w-5
-                                text-emerald-600
+                                text-success-foreground
                             "
                         />
 
@@ -707,7 +715,7 @@ export default function DueWorkItems() {
                     <p className="
                         mt-3
                         font-medium
-                        text-slate-900
+                        text-foreground
                     ">
 
                         {activeTab === "overdue"
@@ -721,7 +729,7 @@ export default function DueWorkItems() {
                         mt-1
                         max-w-[260px]
                         text-sm
-                        text-slate-500
+                        text-muted-foreground
                     ">
 
                         {activeTab === "overdue"
@@ -766,16 +774,16 @@ export default function DueWorkItems() {
                                         w-full
                                         rounded-xl
                                         border
-                                        border-slate-100
+                                        border-border-subtle
                                         p-4
                                         text-left
                                         transition-all
                                         duration-200
-                                        hover:border-slate-200
-                                        hover:bg-slate-50
-                                        focus:outline-none
+                                        hover:border-border
+                                        hover:bg-surface-muted
+                                        focus-visible:outline-none
                                         focus:ring-2
-                                        focus:ring-blue-500/20
+                                        focus:ring-ring/40
                                     "
                                 >
 
@@ -803,7 +811,7 @@ export default function DueWorkItems() {
                                                     truncate
                                                     text-sm
                                                     font-semibold
-                                                    text-slate-900
+                                                    text-foreground
                                                 ">
                                                     {item.title}
                                                 </p>
@@ -833,14 +841,14 @@ export default function DueWorkItems() {
                                                 mt-1
                                                 truncate
                                                 text-xs
-                                                text-slate-500
+                                                text-muted-foreground
                                             ">
 
                                                 {item.projectName}
 
                                                 <span className="
                                                     mx-1.5
-                                                    text-slate-300
+                                                    text-muted-foreground/60
                                                 ">
                                                     •
                                                 </span>
@@ -849,7 +857,7 @@ export default function DueWorkItems() {
 
                                                 <span className="
                                                     mx-1.5
-                                                    text-slate-300
+                                                    text-muted-foreground/60
                                                 ">
                                                     •
                                                 </span>
@@ -880,12 +888,12 @@ export default function DueWorkItems() {
                                                 ${
                                                     isOverdue
                                                         ? `
-                                                            bg-red-50
-                                                            text-red-600
+                                                            bg-danger-subtle
+                                                            text-danger-foreground
                                                           `
                                                         : `
-                                                            bg-blue-50
-                                                            text-blue-600
+                                                            bg-primary-subtle
+                                                            text-primary
                                                           `
                                                 }
                                             `}
@@ -928,7 +936,7 @@ export default function DueWorkItems() {
                                         items-center
                                         justify-between
                                         border-t
-                                        border-slate-100
+                                        border-border-subtle
                                         pt-3
                                     ">
 
@@ -941,8 +949,8 @@ export default function DueWorkItems() {
                                                 font-medium
                                                 ${
                                                     isOverdue
-                                                        ? "text-red-600"
-                                                        : "text-blue-600"
+                                                        ? "text-danger-foreground"
+                                                        : "text-primary"
                                                 }
                                             `}
                                         >
@@ -966,12 +974,12 @@ export default function DueWorkItems() {
 
                                         <span className="
                                             rounded-md
-                                            bg-slate-100
+                                            bg-surface-sunken
                                             px-2
                                             py-0.5
                                             text-[10px]
                                             font-medium
-                                            text-slate-500
+                                            text-muted-foreground
                                         ">
                                             {item.status}
                                         </span>
@@ -997,7 +1005,7 @@ export default function DueWorkItems() {
                 <div className="
                     mt-4
                     border-t
-                    border-slate-100
+                    border-border-subtle
                     pt-4
                     text-center
                 ">
@@ -1005,7 +1013,7 @@ export default function DueWorkItems() {
                     <span className="
                         text-xs
                         font-medium
-                        text-slate-500
+                        text-muted-foreground
                     ">
                         +{activeItems.length - 5} more{" "}
                         {activeTab === "overdue"

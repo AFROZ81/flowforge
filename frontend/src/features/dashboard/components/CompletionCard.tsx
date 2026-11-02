@@ -1,276 +1,142 @@
+import { Link } from "react-router";
 import {
-    AlertCircle,
-    CheckCircle2,
-    CircleDot,
-    FolderKanban,
+  AlertCircle,
+  CheckCircle2,
+  CircleDot,
+  FolderKanban,
 } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/common/panel";
+import { ProjectMark } from "@/components/common/project-mark";
+import { ProgressBar } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/format";
 
 import { useProjectProgress } from "../hooks/useProjectProgress";
 
-
-function getProgressWidth(
-    value: number
-) {
-
-    if (
-        !Number.isFinite(value)
-    ) {
-        return 0;
-    }
-
-    return Math.min(
-        100,
-        Math.max(
-            0,
-            value
-        )
-    );
+/** Clamp before it reaches a CSS width — a bad percentage shouldn't overflow. */
+function clampPercent(value: number): number {
+  return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
 }
 
+type StatProps = {
+  icon: typeof CircleDot;
+  tone: string;
+  count: number;
+  label: string;
+};
+
+function Stat({ icon: Icon, tone, count, label }: StatProps) {
+  return (
+    <span className="flex items-center gap-1 whitespace-nowrap">
+      <Icon className={cn("size-3.5 shrink-0", tone)} aria-hidden="true" />
+      <span className="font-medium tabular-nums text-foreground/80">
+        {formatNumber(count)}
+      </span>
+      <span className="text-muted-foreground">{label}</span>
+    </span>
+  );
+}
 
 export default function CompletionCard() {
+  const { data, isLoading, error, refetch } = useProjectProgress();
 
-    const {
-        data,
-        isLoading,
-        error,
-    } = useProjectProgress();
+  const projects = Array.isArray(data?.data) ? data.data : [];
 
-
-    if (isLoading) {
-
-        return (
-            <Card className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-
-                <div className="animate-pulse space-y-6">
-
-                    <div className="h-6 w-48 rounded bg-slate-200" />
-
-                    {Array.from({
-                        length: 3,
-                    }).map(
-                        (_, index) => (
-                            <div
-                                key={index}
-                                className="space-y-3"
-                            >
-                                <div className="h-4 w-40 rounded bg-slate-200" />
-
-                                <div className="h-2 rounded-full bg-slate-200" />
-                            </div>
-                        )
-                    )}
-
-                </div>
-
-            </Card>
-        );
-    }
-
-
-    if (
-        error ||
-        !data
-    ) {
+  return (
+    <Panel
+      title="Project Progress"
+      description="Completion across your projects"
+      isLoading={isLoading}
+      error={error}
+      onRetry={() => void refetch()}
+      isEmpty={projects.length === 0}
+      empty={{
+        title: "No projects to measure yet",
+        description:
+          "Once you create a project and add work items, its completion rate appears here.",
+        icon: FolderKanban,
+        action: (
+          <Link
+            to="/projects"
+            className="inline-flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            Go to Projects
+          </Link>
+        ),
+      }}
+      skeletonHeight="h-40"
+      bodyClassName="space-y-5"
+    >
+      {projects.map((project) => {
+        const progress = clampPercent(project.completionPercentage);
 
         return (
-            <Card className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div key={project.projectId} className="space-y-2">
+            <div className="flex items-start justify-between gap-3">
+              <Link
+                to={`/projects/${project.projectId}`}
+                className="group flex min-w-0 items-center gap-2.5 rounded-md -outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                <ProjectMark
+                  color={project.color}
+                  keyName={project.projectKey}
+                  size="md"
+                />
 
-                <div className="flex items-center gap-3 text-red-600">
+                <span className="min-w-0">
+                  <span className="block truncate text-[13px] font-semibold text-foreground group-hover:text-primary">
+                    {project.projectName}
+                  </span>
+                  <span className="block truncate text-[11px] tracking-wide text-muted-foreground uppercase">
+                    {project.projectKey}
+                  </span>
+                </span>
+              </Link>
 
-                    <AlertCircle className="h-5 w-5" />
-
-                    <span className="font-medium">
-                        Failed to load project progress.
-                    </span>
-
-                </div>
-
-            </Card>
-        );
-    }
-
-
-    const projects =
-        Array.isArray(data.data)
-            ? data.data
-            : [];
-
-
-    return (
-        <Card className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-
-            <div className="mb-7 flex items-center justify-between">
-
-                <div>
-
-                    <h2 className="text-xl font-semibold">
-                        Project Progress
-                    </h2>
-
-                    <p className="mt-1 text-sm text-slate-500">
-                        Completion across your projects
-                    </p>
-
-                </div>
-
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-
-                    <FolderKanban className="h-5 w-5" />
-
-                </div>
-
+              <span className="shrink-0 pt-0.5 text-sm font-semibold tabular-nums text-foreground">
+                {Math.round(project.completionPercentage)}%
+              </span>
             </div>
 
+            <ProgressBar
+              value={progress}
+              color={project.color}
+              size="sm"
+              label={`${project.projectName} completion`}
+            />
 
-            {projects.length === 0 ? (
-
-                <div className="flex min-h-[180px] items-center justify-center text-sm text-slate-500">
-
-                    No project progress available.
-
-                </div>
-
-            ) : (
-
-                <div className="space-y-7">
-
-                    {projects.map(
-                        (project) => {
-
-                            const progress =
-                                getProgressWidth(
-                                    project.completionPercentage
-                                );
-
-
-                            return (
-                                <div
-                                    key={
-                                        project.projectId
-                                    }
-                                    className="space-y-3"
-                                >
-
-                                    <div className="flex items-start justify-between gap-4">
-
-                                        <div className="flex min-w-0 items-center gap-3">
-
-                                            <div
-                                                className="h-9 w-9 shrink-0 rounded-xl"
-                                                style={{
-                                                    backgroundColor:
-                                                        project.color
-                                                            ? `${project.color}18`
-                                                            : "#f1f5f9",
-                                                    color:
-                                                        project.color ??
-                                                        "#64748b",
-                                                }}
-                                            >
-                                                <div className="flex h-full items-center justify-center text-xs font-bold">
-                                                    {
-                                                        project.projectKey
-                                                            ?.slice(
-                                                                0,
-                                                                3
-                                                            )
-                                                            .toUpperCase()
-                                                    }
-                                                </div>
-                                            </div>
-
-                                            <div className="min-w-0">
-
-                                                <p className="truncate text-sm font-semibold text-slate-900">
-                                                    {
-                                                        project.projectName
-                                                    }
-                                                </p>
-
-                                                <p className="text-xs text-slate-500">
-                                                    {
-                                                        project.projectKey
-                                                    }
-                                                </p>
-
-                                            </div>
-
-                                        </div>
-
-
-                                        <span className="shrink-0 text-sm font-semibold text-slate-700">
-
-                                            {
-                                                project.completionPercentage
-                                            }%
-
-                                        </span>
-
-                                    </div>
-
-
-                                    <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-
-                                        <div
-                                            className="h-full rounded-full transition-all duration-700"
-                                            style={{
-                                                width:
-                                                    `${progress}%`,
-
-                                                backgroundColor:
-                                                    project.color ??
-                                                    "#2563eb",
-                                            }}
-                                        />
-
-                                    </div>
-
-
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
-
-                                        <span className="flex items-center gap-1">
-
-                                            <CircleDot className="h-3 w-3" />
-
-                                            {
-                                                project.activeWorkItems
-                                            } active
-
-                                        </span>
-
-                                        <span className="flex items-center gap-1">
-
-                                            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-
-                                            {
-                                                project.completedWorkItems
-                                            } completed
-
-                                        </span>
-
-                                        <span className="flex items-center gap-1">
-
-                                            <AlertCircle className="h-3 w-3 text-red-500" />
-
-                                            {
-                                                project.blockedWorkItems
-                                            } blocked
-
-                                        </span>
-
-                                    </div>
-
-                                </div>
-                            );
-                        }
-                    )}
-
-                </div>
-            )}
-
-        </Card>
-    );
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+              <Stat
+                icon={CircleDot}
+                tone="text-info"
+                count={project.activeWorkItems}
+                label="active"
+              />
+              <Stat
+                icon={CheckCircle2}
+                tone="text-success"
+                count={project.completedWorkItems}
+                label="done"
+              />
+              <Stat
+                icon={AlertCircle}
+                tone="text-danger"
+                count={project.blockedWorkItems}
+                label="blocked"
+              />
+              {project.overdueWorkItems > 0 && (
+                <Stat
+                  icon={AlertCircle}
+                  tone="text-warning"
+                  count={project.overdueWorkItems}
+                  label="overdue"
+                />
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </Panel>
+  );
 }

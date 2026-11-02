@@ -1,456 +1,153 @@
-import {
-    ChevronRight,
-    Home,
-    Sun,
-    UserCircle2,
-} from "lucide-react";
+import { ChevronRight, LogOut, Menu, Moon, Sun } from "lucide-react";
 
-import {
-    useLocation,
-} from "react-router";
+import { useLocation, useNavigate } from "react-router";
+import { useTheme } from "next-themes";
 
 import OnlineMembers from "@/features/presence/components/OnlineMembers";
-
+import { NotificationBell } from "@/features/notifications";
+import { Button } from "@/components/ui/button";
 import {
-    NotificationBell,
-} from "@/features/notifications";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { describeRoute } from "@/components/layout/navigation";
+import { useAuthStore } from "@/stores/auth.store";
+import { cn } from "@/lib/utils";
 
-import {
-    useAuthStore,
-} from "@/stores/auth.store";
+type TopbarProps = {
+  /** Opens the mobile navigation drawer. Hidden at the desktop breakpoint. */
+  onMenuClick: () => void;
+};
 
+export default function Topbar({ onMenuClick }: TopbarProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { resolvedTheme, setTheme } = useTheme();
 
-export default function Topbar() {
+  const logout = useAuthStore((state) => state.logout);
 
-    const location =
-        useLocation();
+  const trail = describeRoute(location.pathname);
+  const isDark = resolvedTheme === "dark";
 
+  const handleLogout = () => {
+    logout();
 
-    /* =========================================================
-       AUTHENTICATED USER
-       ========================================================= */
+    navigate("/login", { replace: true });
+  };
 
-    const user =
-        useAuthStore(
-            (state) =>
-                state.user
-        );
-
-
-    /* =========================================================
-       PAGE CONTEXT
-       ========================================================= */
-
-    const getPageContext =
-        () => {
-
-            const pathname =
-                location.pathname
-                    .toLowerCase();
-
-
-            if (
-                pathname ===
-                    "/dashboard" ||
-                pathname === "/"
-            ) {
-
-                return {
-                    section:
-                        "Workspace",
-
-                    page:
-                        "Dashboard",
-                };
-            }
-
-
-            if (
-                pathname.startsWith(
-                    "/projects"
-                )
-            ) {
-
-                if (
-                    pathname.includes(
-                        "/boards/"
-                    )
-                ) {
-
-                    return {
-                        section:
-                            "Projects",
-
-                        page:
-                            "Board",
-                    };
-                }
-
-
-                return {
-                    section:
-                        "Workspace",
-
-                    page:
-                        "Projects",
-                };
-            }
-
-
-            if (
-                pathname.startsWith(
-                    "/settings"
-                )
-            ) {
-
-                return {
-                    section:
-                        "Workspace",
-
-                    page:
-                        "Settings",
-                };
-            }
-
-
-            return {
-                section:
-                    "Workspace",
-
-                page:
-                    "FlowForge",
-            };
-        };
-
-
-    const context =
-        getPageContext();
-
-
-    /* =========================================================
-       USER DISPLAY
-       ========================================================= */
-
-    const fullName =
-        user?.fullName?.trim() ||
-        "User";
-
-
-    const email =
-        user?.email?.trim() ||
-        "";
-
-
-    /*
-     * Generate initials from the real full name.
-     *
-     * Example:
-     *
-     * John Doe
-     *      ↓
-     * JD
-     *
-     * Afroz
-     *      ↓
-     * A
-     */
-
-    const initials =
-        fullName
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(
-                (part) =>
-                    part.charAt(0)
-                        .toUpperCase()
-            )
-            .join("");
-
-
-    return (
-
-        <header
-            className="
-                sticky
-                top-0
-                z-40
-                flex
-                h-[72px]
-                items-center
-                justify-between
-                border-b
-                border-slate-200
-                bg-white
-                px-5
-                lg:px-7
-            "
+  return (
+    <header
+      className={cn(
+        "flex h-[var(--topbar-height)] shrink-0 items-center justify-between gap-3",
+        "border-b border-border bg-card/85 px-3 backdrop-blur-xs sm:px-5 lg:px-6"
+      )}
+    >
+      {/* =================================================
+          LEFT — navigation + breadcrumb
+      ================================================= */}
+      <div className="flex min-w-0 items-center gap-1.5">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onMenuClick}
+          aria-label="Open navigation"
+          className="lg:hidden"
         >
+          <Menu />
+        </Button>
 
-            {/* =================================================
-                LEFT — PAGE CONTEXT
-               ================================================= */}
+        {/* Breadcrumb reads as context, not as a second page title */}
+        <nav aria-label="Breadcrumb" className="min-w-0">
+          <ol className="flex min-w-0 items-center gap-1.5 text-sm">
+            {trail.map((crumb, index) => {
+              const last = index === trail.length - 1;
 
-            <div
-                className="
-                    flex
-                    min-w-0
-                    items-center
-                    gap-2
-                "
-            >
-
-                {/* Home */}
-
-                <div
-                    className="
-                        flex
-                        h-8
-                        w-8
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-lg
-                        bg-slate-50
-                        text-slate-500
-                        ring-1
-                        ring-slate-200
-                    "
+              return (
+                <li
+                  key={`${crumb}-${index}`}
+                  className={cn("flex min-w-0 items-center gap-1.5", last && "min-w-0")}
+                  aria-current={last ? "page" : undefined}
                 >
-
-                    <Home
-                        className="
-                            h-4
-                            w-4
-                        "
-                    />
-
-                </div>
-
-
-                {/* Breadcrumb */}
-
-                <div
-                    className="
-                        flex
-                        min-w-0
-                        items-center
-                        gap-2
-                    "
-                >
-
-                    <span
-                        className="
-                            hidden
-                            text-sm
-                            font-medium
-                            text-slate-400
-                            sm:block
-                        "
-                    >
-                        {context.section}
-                    </span>
-
-
+                  {index > 0 && (
                     <ChevronRight
-                        className="
-                            hidden
-                            h-3.5
-                            w-3.5
-                            text-slate-300
-                            sm:block
-                        "
+                      className="size-3.5 shrink-0 text-muted-foreground/45"
+                      aria-hidden="true"
                     />
+                  )}
 
+                  <span
+                    className={cn(
+                      "truncate",
+                      last
+                        ? "font-semibold text-foreground"
+                        : "hidden text-muted-foreground sm:inline"
+                    )}
+                  >
+                    {crumb}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      </div>
 
-                    <span
-                        className="
-                            truncate
-                            text-sm
-                            font-semibold
-                            text-slate-800
-                        "
-                    >
-                        {context.page}
-                    </span>
+      {/* =================================================
+          RIGHT
+      ================================================= */}
+      <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+        <OnlineMembers />
 
-                </div>
+        <NotificationBell />
 
-            </div>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+                onClick={() => setTheme(isDark ? "light" : "dark")}
+                className="text-muted-foreground hover:text-foreground"
+              />
+            }
+          >
+            {isDark ? <Sun /> : <Moon />}
+          </TooltipTrigger>
 
+          <TooltipContent side="bottom">
+            {isDark ? "Light theme" : "Dark theme"}
+          </TooltipContent>
+        </Tooltip>
 
-            {/* =================================================
-                RIGHT
-               ================================================= */}
+        {/*
+         * A rule between the routine controls and the one that ends the
+         * session — sign-out should not look like a peer of the theme toggle.
+         */}
+        <span
+          aria-hidden="true"
+          className="mx-0.5 h-5 w-px shrink-0 self-center bg-border"
+        />
 
-            <div
-                className="
-                    flex
-                    shrink-0
-                    items-center
-                    gap-1
-                    sm:gap-2
-                "
-            >
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Sign out"
+                onClick={handleLogout}
+                className="shrink-0 text-muted-foreground hover:bg-danger-subtle hover:text-danger-foreground"
+              />
+            }
+          >
+            <LogOut />
+          </TooltipTrigger>
 
-                {/* =================================================
-                    ONLINE MEMBERS
-                   ================================================= */}
-
-                <OnlineMembers />
-
-
-                {/* =================================================
-                    NOTIFICATIONS
-                   ================================================= */}
-
-                <NotificationBell />
-
-
-                {/* =================================================
-                    THEME
-                   ================================================= */}
-
-                <button
-                    type="button"
-                    aria-label="Toggle theme"
-                    className="
-                        flex
-                        h-9
-                        w-9
-                        items-center
-                        justify-center
-                        rounded-xl
-                        text-slate-500
-                        transition
-                        hover:bg-slate-100
-                        hover:text-slate-900
-                    "
-                >
-
-                    <Sun
-                        className="
-                            h-[18px]
-                            w-[18px]
-                        "
-                    />
-
-                </button>
-
-
-                {/* =================================================
-                    DIVIDER
-                   ================================================= */}
-
-                <div
-                    className="
-                        mx-1
-                        hidden
-                        h-7
-                        w-px
-                        bg-slate-200
-                        sm:block
-                    "
-                />
-
-
-                {/* =================================================
-                    USER
-                   ================================================= */}
-
-                <button
-                    type="button"
-                    className="
-                        flex
-                        items-center
-                        gap-2.5
-                        rounded-xl
-                        px-1.5
-                        py-1
-                        transition
-                        hover:bg-slate-50
-                    "
-                >
-
-                    {/* Avatar */}
-
-                    <div
-                        className="
-                            flex
-                            h-9
-                            w-9
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-slate-100
-                            text-sm
-                            font-semibold
-                            text-slate-600
-                            ring-1
-                            ring-slate-200
-                        "
-                    >
-
-                        {initials || (
-                            <UserCircle2
-                                className="
-                                    h-9
-                                    w-9
-                                    text-slate-500
-                                "
-                            />
-                        )}
-
-                    </div>
-
-
-                    {/* User information */}
-
-                    <div
-                        className="
-                            hidden
-                            min-w-0
-                            text-left
-                            md:block
-                        "
-                    >
-
-                        <p
-                            className="
-                                max-w-[180px]
-                                truncate
-                                text-sm
-                                font-semibold
-                                leading-4
-                                text-slate-900
-                            "
-                            title={fullName}
-                        >
-                            {fullName}
-                        </p>
-
-
-                        <p
-                            className="
-                                mt-0.5
-                                max-w-[180px]
-                                truncate
-                                text-[10px]
-                                leading-3
-                                text-slate-500
-                            "
-                            title={email}
-                        >
-                            {email}
-                        </p>
-
-                    </div>
-
-                </button>
-
-            </div>
-
-        </header>
-    );
+          <TooltipContent side="bottom">Sign out</TooltipContent>
+        </Tooltip>
+      </div>
+    </header>
+  );
 }

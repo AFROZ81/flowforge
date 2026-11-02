@@ -1,40 +1,30 @@
-import {
-    useMemo,
-    useState,
-} from "react";
+import { useMemo, useState } from "react";
+import { Check, Loader2, Tag } from "lucide-react";
+import { toast } from "sonner";
 
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-
 import { Button } from "@/components/ui/button";
-
-import {
-    Tag,
-    Check,
-    Loader2,
-} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LabelSwatch } from "./LabelSwatch";
+import { normalizeError } from "@/lib/errors";
+import { cn } from "@/lib/utils";
 
 import { useLabels } from "../hooks/useLabels";
-import {
-    useWorkItemLabels,
-} from "../hooks/useWorkItemLabels";
-import {
-    useAssignLabel,
-} from "../hooks/useAssignLabel";
-import {
-    useRemoveLabel,
-} from "../hooks/useRemoveLabel";
+import { useWorkItemLabels } from "../hooks/useWorkItemLabels";
+import { useAssignLabel } from "../hooks/useAssignLabel";
+import { useRemoveLabel } from "../hooks/useRemoveLabel";
 
 type Props = {
     open: boolean;
-    onOpenChange: (
-        open: boolean
-    ) => void;
+    onOpenChange: (open: boolean) => void;
     workItemId: string;
     workItemTitle: string;
 };
@@ -45,317 +35,174 @@ export default function LabelsDialog({
     workItemId,
     workItemTitle,
 }: Props) {
-    const {
-        data: labels = [],
-        isLoading: labelsLoading,
-    } = useLabels();
+    const { data: labels = [], isLoading: labelsLoading } = useLabels();
 
     const {
         data: workItemLabels = [],
-        isLoading:
-            workItemLabelsLoading,
-    } = useWorkItemLabels(
-        workItemId
+        isLoading: workItemLabelsLoading,
+    } = useWorkItemLabels(workItemId);
+
+    const assignMutation = useAssignLabel();
+    const removeMutation = useRemoveLabel();
+
+    const [processingLabelId, setProcessingLabelId] = useState<
+        string | null
+    >(null);
+
+    const assignedLabelIds = useMemo(
+        () =>
+            new Set(
+                workItemLabels.map((label) => label.labelId)
+            ),
+        [workItemLabels]
     );
 
-    const assignMutation =
-        useAssignLabel();
+    const isLoading = labelsLoading || workItemLabelsLoading;
+    const busy =
+        assignMutation.isPending || removeMutation.isPending;
 
-    const removeMutation =
-        useRemoveLabel();
-
-    const [
-        processingLabelId,
-        setProcessingLabelId,
-    ] = useState<string | null>(
-        null
-    );
-
-    const assignedLabelIds =
-        useMemo(
-            () =>
-                new Set(
-                    workItemLabels.map(
-                        (label) =>
-                            label.labelId
-                    )
-                ),
-            [workItemLabels]
-        );
-
-    const handleLabelClick = async (
-        labelId: string
-    ) => {
-        if (
-            assignMutation.isPending ||
-            removeMutation.isPending
-        ) {
-            return;
-        }
+    async function handleLabelClick(labelId: string) {
+        if (busy) return;
 
         try {
-            setProcessingLabelId(
-                labelId
-            );
+            setProcessingLabelId(labelId);
 
-            if (
-                assignedLabelIds.has(
-                    labelId
-                )
-            ) {
-                await removeMutation.mutateAsync(
-                    {
-                        workItemId,
-                        labelId,
-                    }
-                );
+            if (assignedLabelIds.has(labelId)) {
+                await removeMutation.mutateAsync({ workItemId, labelId });
             } else {
-                await assignMutation.mutateAsync(
-                    {
-                        workItemId,
-                        labelId,
-                    }
-                );
+                await assignMutation.mutateAsync({ workItemId, labelId });
             }
-        } finally {
-            setProcessingLabelId(
-                null
-            );
-        }
-    };
+        } catch (error) {
+            const { title, description } = normalizeError(error, {
+                title: "We couldn't change that label",
+                description: "Nothing was saved — try again.",
+            });
 
-    const isLoading =
-        labelsLoading ||
-        workItemLabelsLoading;
+            toast.error(title, { description });
+        } finally {
+            setProcessingLabelId(null);
+        }
+    }
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={
-                onOpenChange
-            }
-        >
-            <DialogContent
-                className="
-                    max-h-[80vh]
-                    overflow-y-auto
-                    sm:max-w-md
-                "
-            >
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="flex max-h-[88dvh] flex-col sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>
-                        Labels
-                    </DialogTitle>
+                    <DialogTitle>Labels</DialogTitle>
 
                     <DialogDescription>
-                        Manage labels for "
-                        {workItemTitle}"
+                        Tag{" "}
+                        <span className="font-medium text-foreground">
+                            {workItemTitle}
+                        </span>{" "}
+                        so it groups with related work.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="
-                    mt-2
-                ">
-                    <div className="
-                        mb-3
-                        flex
-                        items-center
-                        justify-between
-                    ">
-                        <div className="
-                            flex
-                            items-center
-                            gap-2
-                        ">
-                            <Tag className="
-                                h-4
-                                w-4
-                                text-muted-foreground
-                            " />
-
-                            <span className="
-                                text-sm
-                                font-medium
-                            ">
-                                Labels
-                            </span>
-
-                            <span className="
-                                rounded-full
-                                bg-muted
-                                px-1.5
-                                py-0.5
-                                text-[10px]
-                                font-medium
-                            ">
-                                {
-                                    workItemLabels.length
-                                }
-                            </span>
-                        </div>
-                    </div>
-
+                <DialogBody className="-mx-4 px-4 sm:mx-0 sm:px-0">
                     {isLoading ? (
-                        <div className="
-                            flex
-                            min-h-24
-                            items-center
-                            justify-center
-                            rounded-lg
-                            border
-                        ">
-                            <Loader2 className="
-                                h-5
-                                w-5
-                                animate-spin
-                                text-muted-foreground
-                            " />
+                        <div className="space-y-2" aria-hidden="true">
+                            {Array.from({ length: 4 }).map((_, index) => (
+                                <Skeleton key={index} className="h-12 rounded-lg" />
+                            ))}
                         </div>
                     ) : labels.length === 0 ? (
-                        <div className="
-                            rounded-lg
-                            border
-                            border-dashed
-                            p-8
-                            text-center
-                            text-sm
-                            text-muted-foreground
-                        ">
-                            No labels available.
-                        </div>
+                        <EmptyState
+                            icon={Tag}
+                            title="No labels exist yet"
+                            description="Create labels under Settings → Labels, then assign them here."
+                            size="sm"
+                            className="rounded-lg border border-dashed border-border-strong py-8"
+                        />
                     ) : (
-                        <div className="
-                            space-y-2
-                        ">
-                            {labels.map(
-                                (label) => {
-                                    const isAssigned =
-                                        assignedLabelIds.has(
-                                            label.id
-                                        );
+                        <ul className="space-y-1.5">
+                            {labels.map((label) => {
+                                const isAssigned =
+                                    assignedLabelIds.has(label.id);
+                                const isProcessing =
+                                    processingLabelId === label.id;
 
-                                    const isProcessing =
-                                        processingLabelId ===
-                                        label.id;
-
-                                    return (
-                                        <Button
-                                            key={
-                                                label.id
-                                            }
+                                return (
+                                    <li key={label.id}>
+                                        <button
                                             type="button"
-                                            variant="ghost"
-                                            disabled={
-                                                isProcessing ||
-                                                assignMutation.isPending ||
-                                                removeMutation.isPending
-                                            }
+                                            aria-pressed={isAssigned}
+                                            disabled={isProcessing || busy}
                                             onClick={() =>
-                                                handleLabelClick(
-                                                    label.id
-                                                )
+                                                void handleLabelClick(label.id)
                                             }
-                                            className="
-                                                flex
-                                                h-auto
-                                                w-full
-                                                items-center
-                                                justify-between
-                                                rounded-lg
-                                                border
-                                                px-3
-                                                py-2.5
-                                                text-left
-                                                hover:bg-muted/50
-                                            "
-                                        >
-                                            <div className="
-                                                flex
-                                                min-w-0
-                                                items-center
-                                                gap-2.5
-                                            ">
-                                                <span
-                                                    className="
-                                                        h-3
-                                                        w-3
-                                                        shrink-0
-                                                        rounded-full
-                                                    "
-                                                    style={{
-                                                        backgroundColor:
-                                                            label.color ||
-                                                            "#6b7280",
-                                                    }}
-                                                />
-
-                                                <div className="
-                                                    min-w-0
-                                                ">
-                                                    <p className="
-                                                        truncate
-                                                        text-sm
-                                                        font-medium
-                                                    ">
-                                                        {
-                                                            label.name
-                                                        }
-                                                    </p>
-
-                                                    {label.description && (
-                                                        <p className="
-                                                            truncate
-                                                            text-xs
-                                                            text-muted-foreground
-                                                        ">
-                                                            {
-                                                                label.description
-                                                            }
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {isProcessing ? (
-                                                <Loader2 className="
-                                                    h-4
-                                                    w-4
-                                                    shrink-0
-                                                    animate-spin
-                                                " />
-                                            ) : isAssigned ? (
-                                                <span className="
-                                                    flex
-                                                    h-6
-                                                    w-6
-                                                    shrink-0
-                                                    items-center
-                                                    justify-center
-                                                    rounded-full
-                                                    bg-foreground
-                                                    text-background
-                                                ">
-                                                    <Check className="
-                                                        h-3.5
-                                                        w-3.5
-                                                    " />
-                                                </span>
-                                            ) : (
-                                                <span className="
-                                                    h-6
-                                                    w-6
-                                                    shrink-0
-                                                    rounded-full
-                                                    border
-                                                " />
+                                            className={cn(
+                                                "flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left",
+                                                "transition-colors duration-(--transition-fast)",
+                                                "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                                                "disabled:cursor-not-allowed disabled:opacity-60",
+                                                isAssigned
+                                                    ? "border-primary/25 bg-primary-subtle/60"
+                                                    : "border-border bg-card hover:bg-surface-muted"
                                             )}
-                                        </Button>
-                                    );
-                                }
-                            )}
-                        </div>
+                                        >
+                                            <span
+                                                aria-hidden="true"
+                                                className={cn(
+                                                    "flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors",
+                                                    isAssigned
+                                                        ? "border-primary bg-primary text-primary-foreground"
+                                                        : "border-border-strong bg-card"
+                                                )}
+                                            >
+                                                {isProcessing ? (
+                                                    <Loader2 className="size-3 animate-spin" />
+                                                ) : (
+                                                    isAssigned && (
+                                                        <Check className="size-3" strokeWidth={3} />
+                                                    )
+                                                )}
+                                            </span>
+
+                                            <span
+                                                aria-hidden="true"
+                                                className="size-2.5 shrink-0 rounded-full"
+                                                style={{
+                                                    backgroundColor:
+                                                        label.color || undefined,
+                                                }}
+                                            />
+
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate text-sm font-medium text-foreground">
+                                                    {label.name}
+                                                </span>
+
+                                                {label.description && (
+                                                    <span className="block truncate text-xs text-muted-foreground">
+                                                        {label.description}
+                                                    </span>
+                                                )}
+                                            </span>
+
+                                            {isAssigned && (
+                                                <LabelSwatch
+                                                    name="Assigned"
+                                                    color={label.color}
+                                                    size="sm"
+                                                    className="hidden sm:inline-flex"
+                                                />
+                                            )}
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
                     )}
-                </div>
+                </DialogBody>
+
+                <Button
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    className="w-full sm:w-auto sm:self-end"
+                >
+                    Done
+                </Button>
             </DialogContent>
         </Dialog>
     );

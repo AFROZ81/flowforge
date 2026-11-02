@@ -27,8 +27,8 @@ export default function OnlineIndicator({
             <span
                 className={`inline-block rounded-full ${dotSize} ${
                     online
-                        ? "bg-emerald-500"
-                        : "bg-gray-300"
+                        ? "bg-success"
+                        : "bg-border-strong"
                 }`}
                 title={
                     online
@@ -41,8 +41,8 @@ export default function OnlineIndicator({
                 <span
                     className={
                         online
-                            ? "text-emerald-600"
-                            : "text-gray-400"
+                            ? "text-success-foreground"
+                            : "text-muted-foreground/60"
                     }
                 >
                     {online

@@ -1,11 +1,10 @@
+import { Link } from "react-router";
+import { ArrowLeft, Archive, Pencil } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-    Pencil,
-    Archive,
-    ArrowLeft,
-} from "lucide-react";
-import { Link } from "react-router";
+import { ProjectMark } from "@/components/common/project-mark";
+import ProjectStatusBadge from "./ProjectStatusBadge";
 
 import type { Project } from "../types/project";
 
@@ -13,74 +12,71 @@ type Props = {
     project: Project;
 };
 
-export default function ProjectHeader({
-    project,
-}: Props) {
+export default function ProjectHeader({ project }: Props) {
     return (
-        <div className="space-y-6">
-
+        <header className="space-y-4">
             <Link
                 to="/projects"
-                className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900"
+                className="
+                    inline-flex h-8 items-center gap-1.5 rounded-lg -mx-2 px-2
+                    text-[13px] font-medium text-muted-foreground
+                    transition-colors hover:bg-surface-muted hover:text-foreground
+                    focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring
+                "
             >
-                <ArrowLeft size={16} />
-                Projects
+                <ArrowLeft className="size-4" aria-hidden="true" />
+                All projects
             </Link>
 
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3.5">
+                    <ProjectMark
+                        color={project.color}
+                        icon={project.icon}
+                        keyName={project.key}
+                        size="lg"
+                    />
 
-                <div>
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h1 className="min-w-0 font-heading text-xl leading-tight font-semibold tracking-[-0.02em] text-balance text-foreground sm:text-2xl">
+                                {project.name}
+                            </h1>
 
-                    <div className="flex items-center gap-3">
+                            <ProjectStatusBadge archived={project.archived} />
 
-                        <h1 className="text-4xl font-bold">
-                            {project.name}
-                        </h1>
+                            <Badge
+                                variant="outline"
+                                className="font-mono text-[11px] tracking-[0.06em] uppercase"
+                            >
+                                {project.key}
+                            </Badge>
+                        </div>
 
-                        <Badge>
-                            {project.archived
-                                ? "Archived"
-                                : "Active"}
-                        </Badge>
-
+                        {project.description && (
+                            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                                {project.description}
+                            </p>
+                        )}
                     </div>
-
-                    <p className="mt-3 text-slate-500">
-                        {project.description}
-                    </p>
-
-                    <p className="mt-2 text-sm text-slate-400">
-                        {project.key}
-                    </p>
-
                 </div>
 
-                <div className="flex gap-3">
-
-                    <Button
-                        variant="outline"
-                    >
-                        <Pencil
-                            size={16}
-                            className="mr-2"
-                        />
+                {/*
+                 * Neither action has an endpoint yet. They are disabled
+                 * with a stated reason rather than firing nothing on click.
+                 */}
+                <div className="flex shrink-0 gap-2 [&>*]:grow sm:[&>*]:grow-0">
+                    <Button variant="outline" disabled title="Not available yet">
+                        <Pencil />
                         Edit
                     </Button>
 
-                    <Button
-                        variant="outline"
-                    >
-                        <Archive
-                            size={16}
-                            className="mr-2"
-                        />
+                    <Button variant="outline" disabled title="Not available yet">
+                        <Archive />
                         Archive
                     </Button>
-
                 </div>
-
             </div>
-
-        </div>
+        </header>
     );
 }

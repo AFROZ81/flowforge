@@ -22,6 +22,8 @@ import {
 
 import { reportsService } from "../api/reports.service";
 
+import AppLayout from "@/layouts/AppLayout";
+
 import "./reports.css";
 
 type ReportKey =
@@ -1456,6 +1458,8 @@ const ReportsPage: React.FC = () => {
             days !== 7);
 
     return (
+        <AppLayout>
+
         <div className="reports-page">
             <header className="reports-header">
                 <div>
@@ -1529,10 +1533,8 @@ const ReportsPage: React.FC = () => {
             </header>
 
             {error && (
-                <div className="reports-error">
-                    <CircleAlert
-                        size={16}
-                    />
+                <div className="reports-error" role="alert">
+                    <CircleAlert size={16} />
 
                     <span>
                         {error}
@@ -1604,6 +1606,11 @@ const ReportsPage: React.FC = () => {
                                                             ? "reports-library-item-active"
                                                             : ""
                                                     }`}
+                                                    aria-current={
+                                                        active
+                                                            ? "true"
+                                                            : undefined
+                                                    }
                                                     onClick={() => {
                                                         setSelectedReport(
                                                             report.key
@@ -1670,7 +1677,7 @@ const ReportsPage: React.FC = () => {
                     </div>
                 </aside>
 
-                <main className="reports-workspace">
+                <section className="reports-workspace" aria-label={`${activeReport.title} report`}>
                     <div className="reports-workspace-header">
                         <div className="reports-workspace-title">
                             <div className="reports-workspace-icon">
@@ -1703,11 +1710,26 @@ const ReportsPage: React.FC = () => {
                         <div className="reports-workspace-tools">
                             {showSearch && (
                                 <div className="reports-search">
+                                    <label
+                                        htmlFor="reports-search-input"
+                                        className="sr-only"
+                                    >
+                                        {selectedReport ===
+                                        "projects"
+                                            ? "Search projects"
+                                            : selectedReport ===
+                                              "assignees"
+                                            ? "Search members"
+                                            : "Search labels"}
+                                    </label>
+
                                     <Search
                                         size={15}
+                                        aria-hidden="true"
                                     />
 
                                     <input
+                                        id="reports-search-input"
                                         value={
                                             search
                                         }
@@ -1749,21 +1771,30 @@ const ReportsPage: React.FC = () => {
 
                             {selectedReport ===
                                 "productivity" && (
-                                <select
-                                    className="reports-period-select"
-                                    value={days}
-                                    onChange={(
-                                        event
-                                    ) =>
-                                        setDays(
-                                            Number(
-                                                event
-                                                    .target
-                                                    .value
+                                <>
+                                    <label
+                                        htmlFor="reports-period"
+                                        className="sr-only"
+                                    >
+                                        Date range
+                                    </label>
+
+                                    <select
+                                        id="reports-period"
+                                        className="reports-period-select"
+                                        value={days}
+                                        onChange={(
+                                            event
+                                        ) =>
+                                            setDays(
+                                                Number(
+                                                    event
+                                                        .target
+                                                        .value
+                                                )
                                             )
-                                        )
-                                    }
-                                >
+                                        }
+                                    >
                                     <option value={7}>
                                         7 days
                                     </option>
@@ -1783,7 +1814,8 @@ const ReportsPage: React.FC = () => {
                                     <option value={90}>
                                         90 days
                                     </option>
-                                </select>
+                                    </select>
+                                </>
                             )}
 
                             {hasActiveFilter && (
@@ -1853,15 +1885,38 @@ const ReportsPage: React.FC = () => {
                     <div className="reports-workspace-divider" />
 
                     {loading ? (
-                        <div className="reports-loading">
-                            <Loader2
-                                size={22}
-                                className="reports-spin"
-                            />
-
-                            <span>
-                                Preparing report...
+                        /* Skeleton rather than a spinner: the table shape
+         * stays put, so nothing jumps when the data lands.
+         */
+                        <div
+                            className="reports-report-body"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            <span className="sr-only">
+                                Preparing {activeReport.title} report
                             </span>
+
+                            <div className="reports-analysis-grid">
+                                {Array.from({ length: 4 }).map((_, i) => (
+                                    <div className="reports-analysis-item" key={i}>
+                                        <span className="reports-skeleton-line w-20" />
+                                        <strong className="reports-skeleton-block" />
+                                        <small className="reports-skeleton-line w-24" />
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="reports-table-container">
+                                <div className="reports-skeleton-header" />
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <div className="reports-skeleton-row" key={i}>
+                                        <span className="reports-skeleton-line w-2/5" />
+                                        <span className="reports-skeleton-line flex-1 opacity-70" />
+                                        <span className="reports-skeleton-line w-16" />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     ) : (
                         <>
@@ -1915,9 +1970,11 @@ const ReportsPage: React.FC = () => {
                             )}
                         </>
                     )}
-                </main>
+                </section>
             </div>
         </div>
+
+        </AppLayout>
     );
 };
 

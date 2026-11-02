@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 
 export default function RecentBoards() {
     return (
-        <Card className="rounded-3xl p-6">
+        <Card className="rounded-xl">
 
             <div className="flex items-center justify-between">
 
@@ -17,7 +17,7 @@ export default function RecentBoards() {
 
             </div>
 
-            <div className="mt-8 text-center text-slate-500">
+            <div className="mt-8 text-center text-muted-foreground">
 
                 No boards yet.
 

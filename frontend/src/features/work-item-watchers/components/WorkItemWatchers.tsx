@@ -386,7 +386,7 @@ export default function WorkItemWatchers({
                                           p-6
                                           text-center
                                           text-xs
-                                          text-red-500
+                                          text-danger
                                       "
                                   >
                                       Failed to
@@ -431,6 +431,8 @@ export default function WorkItemWatchers({
                                               max-h-64
                                               space-y-2
                                               overflow-y-auto
+                                              overflow-x-clip
+                                              [overflow-clip-margin:0.5rem]
                                               pr-1
                                           "
                                       >
@@ -548,9 +550,9 @@ export default function WorkItemWatchers({
                                                               shrink-0
                                                               px-2
                                                               text-xs
-                                                              text-red-600
-                                                              hover:bg-red-50
-                                                              hover:text-red-700
+                                                              text-danger-foreground
+                                                              hover:bg-danger-subtle
+                                                              hover:text-danger-foreground
                                                           "
                                                           onClick={() =>
                                                               handleRemove(

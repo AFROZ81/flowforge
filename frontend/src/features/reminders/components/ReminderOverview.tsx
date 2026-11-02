@@ -245,12 +245,14 @@ export default function ReminderOverview({
 
     return (
         <section
+            aria-label="Reminders"
             className="
+                h-full
                 rounded-xl
-                border
-                bg-background
+                border border-border
+                bg-card
                 p-5
-                shadow-sm
+                shadow-xs
             "
         >
 
@@ -285,8 +287,8 @@ export default function ReminderOverview({
                                 items-center
                                 justify-center
                                 rounded-lg
-                                bg-amber-50
-                                text-amber-600
+                                bg-warning-subtle
+                                text-warning-foreground
                             "
                         >
 
@@ -496,8 +498,8 @@ export default function ReminderOverview({
                                 justify-center
                                 rounded-lg
                                 border
-                                border-red-200
-                                bg-red-50
+                                border-danger/40
+                                bg-danger-subtle
                                 px-4
                                 py-8
                                 text-center
@@ -509,7 +511,7 @@ export default function ReminderOverview({
                                     mb-2
                                     h-5
                                     w-5
-                                    text-red-500
+                                    text-danger
                                 "
                             />
 
@@ -518,7 +520,7 @@ export default function ReminderOverview({
                                 className="
                                     text-sm
                                     font-medium
-                                    text-red-700
+                                    text-danger-foreground
                                 "
                             >
                                 Unable to load reminders.
@@ -645,12 +647,12 @@ export default function ReminderOverview({
                                                         activeTab ===
                                                         "overdue"
                                                             ? `
-                                                                bg-red-50
-                                                                text-red-500
+                                                                bg-danger-subtle
+                                                                text-danger
                                                               `
                                                             : `
-                                                                bg-amber-50
-                                                                text-amber-600
+                                                                bg-warning-subtle
+                                                                text-warning-foreground
                                                               `
                                                     }
                                                 `}

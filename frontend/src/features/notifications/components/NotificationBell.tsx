@@ -1,37 +1,26 @@
-import {
-    Bell,
-} from "lucide-react";
+import { Bell } from "lucide-react";
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import {
-    useEffect,
-    useRef,
-    useState,
-} from "react";
+    Popover,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { normalizeError } from "@/lib/errors";
 
-import {
-    toast,
-} from "sonner";
-
-import {
-    useNotifications,
-} from "../hooks/useNotifications";
+import { useNotifications } from "../hooks/useNotifications";
 
 import NotificationDropdown from "./NotificationDropdown";
 
 
+/**
+ * The bell and its panel.
+ *
+ * The dropdown used to be an absolutely positioned div with a hand-rolled
+ * document mousedown listener, so Escape did nothing and focus stayed
+ * behind the trigger. base-ui's Popover owns that now.
+ */
 export default function NotificationBell() {
-
-    const [
-        isOpen,
-        setIsOpen,
-    ] = useState(false);
-
-
-    const containerRef =
-        useRef<HTMLDivElement>(
-            null
-        );
-
 
     const {
         notifications,
@@ -43,297 +32,135 @@ export default function NotificationBell() {
         markAsUnread,
         markAllAsRead,
         remove,
-    } =
-        useNotifications();
+    } = useNotifications();
 
 
-    /* =====================================================
-       CLOSE WHEN CLICKING OUTSIDE
-       ===================================================== */
+    /* ---------- mark read ---------- */
 
-    useEffect(() => {
-
-        function handleOutsideClick(
-            event: MouseEvent
-        ) {
-
-            if (
-                !containerRef.current
-            ) {
-                return;
-            }
-
-
-            if (
-                !containerRef.current.contains(
-                    event.target as Node
-                )
-            ) {
-
-                setIsOpen(
-                    false
-                );
-            }
-        }
-
-
-        if (isOpen) {
-
-            document.addEventListener(
-                "mousedown",
-                handleOutsideClick
+    const handleRead = async (notificationId: string) => {
+        try {
+            await markAsRead(notificationId);
+        } catch (error) {
+            console.error(
+                "Failed to mark notification as read:",
+                error
             );
+
+            const { title, description } = normalizeError(error, {
+                title: "We couldn't mark that as read",
+            });
+
+            toast.error(title, { description });
         }
+    };
 
 
-        return () => {
+    /* ---------- mark unread ---------- */
 
-            document.removeEventListener(
-                "mousedown",
-                handleOutsideClick
+    const handleUnread = async (notificationId: string) => {
+        try {
+            await markAsUnread(notificationId);
+        } catch (error) {
+            console.error(
+                "Failed to mark notification as unread:",
+                error
             );
-        };
 
-    }, [
-        isOpen,
-    ]);
+            const { title, description } = normalizeError(error, {
+                title: "We couldn't mark that as unread",
+            });
 
-
-    /* =====================================================
-       MARK READ
-       ===================================================== */
-
-    const handleRead =
-        async (
-            notificationId: string
-        ) => {
-
-            try {
-
-                await markAsRead(
-                    notificationId
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Failed to mark notification as read:",
-                    error
-                );
-
-                toast.error(
-                    "Failed to mark notification as read."
-                );
-            }
-        };
+            toast.error(title, { description });
+        }
+    };
 
 
-    /* =====================================================
-       MARK UNREAD
-       ===================================================== */
+    /* ---------- mark all read ---------- */
 
-    const handleUnread =
-        async (
-            notificationId: string
-        ) => {
+    const handleReadAll = async () => {
+        try {
+            await markAllAsRead();
 
-            try {
+            toast.success("All notifications marked as read.");
+        } catch (error) {
+            console.error(
+                "Failed to mark all notifications as read:",
+                error
+            );
 
-                await markAsUnread(
-                    notificationId
-                );
+            const { title, description } = normalizeError(error, {
+                title: "We couldn't mark everything as read",
+            });
 
-            } catch (error) {
-
-                console.error(
-                    "Failed to mark notification as unread:",
-                    error
-                );
-
-                toast.error(
-                    "Failed to mark notification as unread."
-                );
-            }
-        };
+            toast.error(title, { description });
+        }
+    };
 
 
-    /* =====================================================
-       MARK ALL READ
-       ===================================================== */
+    /* ---------- delete ---------- */
 
-    const handleReadAll =
-        async () => {
+    const handleDelete = async (notificationId: string) => {
+        try {
+            await remove(notificationId);
+        } catch (error) {
+            console.error(
+                "Failed to delete notification:",
+                error
+            );
 
-            try {
+            const { title, description } = normalizeError(error, {
+                title: "We couldn't delete that notification",
+            });
 
-                await markAllAsRead();
-
-                toast.success(
-                    "All notifications marked as read."
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Failed to mark all notifications as read:",
-                    error
-                );
-
-                toast.error(
-                    "Failed to mark all notifications as read."
-                );
-            }
-        };
-
-
-    /* =====================================================
-       DELETE
-       ===================================================== */
-
-    const handleDelete =
-        async (
-            notificationId: string
-        ) => {
-
-            try {
-
-                await remove(
-                    notificationId
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Failed to delete notification:",
-                    error
-                );
-
-                toast.error(
-                    "Failed to delete notification."
-                );
-            }
-        };
+            toast.error(title, { description });
+        }
+    };
 
 
     return (
-        <div
-            ref={containerRef}
-            className="
-                relative
-                flex
-                items-center
-            "
-        >
-
-            {/* Bell button */}
-
-            <button
-                type="button"
-                aria-label="Notifications"
-                aria-expanded={isOpen}
-                className="
-                    relative
-                    flex
-                    h-9
-                    w-9
-                    items-center
-                    justify-center
-                    rounded-md
-                    text-muted-foreground
-                    transition-colors
-                    hover:bg-muted
-                    hover:text-foreground
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-ring
-                    focus:ring-offset-1
-                "
-                onClick={() =>
-                    setIsOpen(
-                        current =>
-                            !current
-                    )
+        <Popover>
+            <PopoverTrigger
+                aria-label={
+                    unreadCount > 0
+                        ? `Notifications, ${unreadCount} unread`
+                        : "Notifications"
+                }
+                render={
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="relative text-muted-foreground hover:text-foreground"
+                    />
                 }
             >
-
-                <Bell
-                    className="
-                        h-[18px]
-                        w-[18px]
-                    "
-                />
-
-
-                {/* Unread badge */}
+                <Bell />
 
                 {unreadCount > 0 && (
                     <span
+                        aria-hidden="true"
                         className="
-                            absolute
-                            right-0
-                            top-0
-                            flex
-                            min-h-[16px]
-                            min-w-[16px]
-                            translate-x-1/4
-                            -translate-y-1/4
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-red-500
-                            px-1
-                            text-[9px]
-                            font-bold
-                            leading-none
-                            text-white
-                            ring-2
-                            ring-background
+                            absolute top-1 right-1 flex min-w-[15px] translate-x-1/3
+                            -translate-y-1/3 items-center justify-center rounded-full
+                            bg-danger px-1 text-[9px] leading-none font-bold text-white
+                            ring-2 ring-card tabular-nums
                         "
                     >
-                        {unreadCount >
-                        99
-                            ? "99+"
-                            : unreadCount}
+                        {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                 )}
+            </PopoverTrigger>
 
-            </button>
-
-
-            {/* Dropdown */}
-
-            {isOpen && (
-                <NotificationDropdown
-                    notifications={
-                        notifications
-                    }
-                    unreadCount={
-                        unreadCount
-                    }
-                    isLoading={
-                        isLoading
-                    }
-                    isRefreshing={
-                        isRefreshing
-                    }
-                    onRefresh={
-                        refresh
-                    }
-                    onRead={
-                        handleRead
-                    }
-                    onUnread={
-                        handleUnread
-                    }
-                    onReadAll={
-                        handleReadAll
-                    }
-                    onDelete={
-                        handleDelete
-                    }
-                />
-            )}
-
-        </div>
+            <NotificationDropdown
+                notifications={notifications}
+                unreadCount={unreadCount}
+                isLoading={isLoading}
+                isRefreshing={isRefreshing}
+                onRefresh={refresh}
+                onRead={handleRead}
+                onUnread={handleUnread}
+                onReadAll={handleReadAll}
+                onDelete={handleDelete}
+            />
+        </Popover>
     );
 }

@@ -1,160 +1,105 @@
-import {
-    Plus,
-} from "lucide-react";
-
-import { useNavigate } from "react-router";
+import { useState } from "react";
+import { Link } from "react-router";
+import { BarChart3, Plus } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
+import CreateProjectDialog from "@/features/projects/components/CreateProjectDialog";
+import { useAuthStore } from "@/stores/auth.store";
 
-
-function getGreeting(): string {
+function greeting(): string {
     const hour = new Date().getHours();
 
-    if (hour < 12) {
-        return "Good morning";
-    }
-
-    if (hour < 17) {
-        return "Good afternoon";
-    }
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
 
     return "Good evening";
 }
 
-
+/**
+ * The dashboard's opening band.
+ *
+ * Replaces the large white card with two blurred color blobs and an emoji.
+ * The greeting now carries the person's name and the date, and the primary
+ * action opens the real create-project dialog instead of quietly navigating
+ * to a list page.
+ */
 export default function DashboardHero() {
-    const navigate = useNavigate();
-    const greeting = getGreeting();
+    const [createOpen, setCreateOpen] = useState(false);
+    const reduceMotion = useReducedMotion();
+
+    const fullName = useAuthStore((s) => s.user?.fullName);
+    const firstName = fullName?.trim().split(/\s+/)[0];
+
+    const today = new Date().toLocaleDateString("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+    });
 
     return (
-        <section
-            className="
-                relative
-                overflow-hidden
-                rounded-3xl
-                border
-                border-slate-200
-                bg-white
-                px-8
-                py-8
-                shadow-sm
-            "
-        >
-
-            {/* Decorative background */}
-
-            <div
-                className="
-                    pointer-events-none
-                    absolute
-                    -right-24
-                    -top-24
-                    h-64
-                    w-64
-                    rounded-full
-                    bg-blue-50
-                    blur-3xl
-                "
+        <section className="relative overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+            {/* Depth comes from a single low-contrast wash, not from blobs */}
+            <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-primary/40 via-brand-indigo/25 to-transparent"
             />
 
-            <div
+            <motion.div
+                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
                 className="
-                    pointer-events-none
-                    absolute
-                    -bottom-32
-                    right-1/3
-                    h-56
-                    w-56
-                    rounded-full
-                    bg-indigo-50
-                    blur-3xl
-                "
-            />
-
-
-            {/* Main content */}
-
-            <div
-                className="
-                    relative
-                    flex
-                    flex-col
-                    gap-6
-                    lg:flex-row
-                    lg:items-center
-                    lg:justify-between
+                    relative flex flex-col gap-4 p-5 sm:p-6
+                    lg:flex-row lg:items-center lg:justify-between lg:gap-6
                 "
             >
-
-                {/* Left content */}
-
                 <div className="min-w-0">
-
-                    {/* Greeting */}
-
-                    <h1
-                        className="
-                            text-2xl
-                            font-bold
-                            tracking-tight
-                            text-slate-900
-                            sm:text-3xl
-                        "
-                    >
-                        👋 {greeting}
-                    </h1>
-
-
-                    {/* Description */}
-
-                    <p
-                        className="
-                            mt-2
-                            max-w-2xl
-                            text-sm
-                            leading-6
-                            text-slate-500
-                            sm:text-base
-                        "
-                    >
-                        Here's what's happening across your
-                        FlowForge workspace.
+                    <p className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                        {today}
                     </p>
 
+                    <h1 className="mt-1.5 font-heading text-xl leading-tight font-semibold tracking-[-0.02em] text-balance text-foreground sm:text-2xl">
+                        {greeting()}
+                        {firstName ? (
+                            <span>, {firstName}</span>
+                        ) : null}
+                    </h1>
+
+                    <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                        Here&rsquo;s what&rsquo;s moving across your workspace.
+                    </p>
                 </div>
 
-
-                {/* New Project action */}
-
-                <div className="shrink-0">
-
+                <div className="flex shrink-0 flex-wrap items-center gap-2 [&>*]:grow lg:[&>*]:grow-0">
                     <Button
-                        type="button"
-                        size="lg"
-                        onClick={() => navigate("/projects")}
-                        className="
-                            h-11
-                            rounded-xl
-                            px-5
-                            shadow-sm
-                        "
+                        variant="outline"
+                        /*
+                         * This Button renders a router Link, so it is not a
+                         * native button — base-ui needs to be told, otherwise
+                         * it logs a warning on every mount and keeps the
+                         * native-button assumptions.
+                         */
+                        nativeButton={false}
+                        render={
+                            <Link to="/reports" />
+                        }
                     >
-
-                        <Plus
-                            className="
-                                mr-2
-                                h-4
-                                w-4
-                            "
-                        />
-
-                        New Project
+                        <BarChart3 />
+                        Reports
                     </Button>
 
+                    <Button onClick={() => setCreateOpen(true)}>
+                        <Plus />
+                        New Project
+                    </Button>
                 </div>
+            </motion.div>
 
-            </div>
-
+            <CreateProjectDialog
+                open={createOpen}
+                onOpenChange={setCreateOpen}
+            />
         </section>
     );
 }

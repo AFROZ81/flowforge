@@ -355,7 +355,7 @@ export default function WorkItemsTrend({
     return (
         <section
             className={`
-                rounded-2xl
+                rounded-xl
                 border
                 bg-background
                 p-6
@@ -383,8 +383,8 @@ export default function WorkItemsTrend({
                                 items-center
                                 justify-center
                                 rounded-lg
-                                bg-blue-50
-                                text-blue-600
+                                bg-primary-subtle
+                                text-primary
                             "
                         >
 
@@ -492,7 +492,7 @@ export default function WorkItemsTrend({
                                 h-2.5
                                 w-2.5
                                 rounded-full
-                                bg-blue-500
+                                bg-primary
                             " />
 
                             <span className="text-xs text-muted-foreground">
@@ -512,7 +512,7 @@ export default function WorkItemsTrend({
                                 h-2.5
                                 w-2.5
                                 rounded-full
-                                bg-emerald-500
+                                bg-success
                             " />
 
                             <span className="text-xs text-muted-foreground">
@@ -615,8 +615,8 @@ export default function WorkItemsTrend({
                             items-center
                             justify-center
                             rounded-full
-                            bg-red-50
-                            text-red-500
+                            bg-danger-subtle
+                            text-danger
                         ">
 
                             <Activity className="h-5 w-5" />
@@ -805,7 +805,7 @@ export default function WorkItemsTrend({
                                                     y2={y}
                                                     stroke="currentColor"
                                                     className="
-                                                        text-border
+                                                        text-muted-foreground/60
                                                     "
                                                     strokeDasharray={
                                                         ratio === 1
@@ -826,7 +826,7 @@ export default function WorkItemsTrend({
                                                     }
                                                     textAnchor="end"
                                                     className="
-                                                        fill-muted-foreground
+                                                        fill-muted-foreground-foreground
                                                     "
                                                     fontSize="10"
                                                 >
@@ -947,7 +947,7 @@ export default function WorkItemsTrend({
                                                     }
                                                     textAnchor="middle"
                                                     className="
-                                                        fill-muted-foreground
+                                                        fill-muted-foreground-foreground
                                                     "
                                                     fontSize="10"
                                                 >
@@ -1027,7 +1027,7 @@ export default function WorkItemsTrend({
                                                         h-2
                                                         w-2
                                                         rounded-full
-                                                        bg-blue-500
+                                                        bg-primary
                                                     " />
 
                                                     <span className="
@@ -1054,7 +1054,7 @@ export default function WorkItemsTrend({
                                                         h-2
                                                         w-2
                                                         rounded-full
-                                                        bg-emerald-500
+                                                        bg-success
                                                     " />
 
                                                     <span className="
@@ -1113,7 +1113,7 @@ export default function WorkItemsTrend({
                                 className="
                                     h-3.5
                                     w-3.5
-                                    text-blue-500
+                                    text-primary
                                 "
                             />
 
@@ -1134,7 +1134,7 @@ export default function WorkItemsTrend({
                                 className="
                                     h-3.5
                                     w-3.5
-                                    text-emerald-500
+                                    text-success
                                 "
                             />
 

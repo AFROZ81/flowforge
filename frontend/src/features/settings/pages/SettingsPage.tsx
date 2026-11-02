@@ -1,198 +1,182 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+
+import {
+    TagsIcon,
+    UserRoundIcon,
+    SlidersHorizontalIcon,
+    type LucideIcon,
+} from "lucide-react";
+
+import AppLayout from "@/layouts/AppLayout";
+import { PageHeader } from "@/components/ui/page-header";
+import { cn } from "@/lib/utils";
 
 import LabelManagement from "@/features/labels/components/LabelManagement";
 
 type SettingsSection = "general" | "members" | "labels";
 
-export default function SettingsPage() {
-    const navigate = useNavigate();
+type SectionDefinition = {
+    id: SettingsSection;
+    label: string;
+    icon: LucideIcon;
+    title: string;
+    description: string;
+};
 
+const SECTIONS: SectionDefinition[] = [
+    {
+        id: "general",
+        label: "General",
+        icon: SlidersHorizontalIcon,
+        title: "General",
+        description: "General workspace settings.",
+    },
+    {
+        id: "members",
+        label: "Members",
+        icon: UserRoundIcon,
+        title: "Members",
+        description: "Manage workspace members and permissions.",
+    },
+    {
+        id: "labels",
+        label: "Labels",
+        icon: TagsIcon,
+        title: "Labels",
+        description: "Create and organize the labels used across work items.",
+    },
+];
+
+export default function SettingsPage() {
     const [activeSection, setActiveSection] =
         useState<SettingsSection>("labels");
 
-    const navItemClass = (section: SettingsSection) =>
-        `flex w-full items-center rounded-lg px-4 py-3 text-left text-sm transition ${
-            activeSection === section
-                ? "bg-blue-50 font-medium text-blue-600"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-        }`;
+    const active = SECTIONS.find((s) => s.id === activeSection)!;
 
     return (
-        <div className="min-h-[calc(100vh-48px)] bg-[#f8fafc]">
-            <div className="mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-[1500px] gap-8 px-6 py-8 lg:px-8">
+        <AppLayout>
+            <div className="space-y-6">
+
+                <PageHeader
+                    eyebrow="Manage"
+                    title="Settings"
+                    description="Configure your FlowForge workspace."
+                />
 
                 {/* =====================================================
-                    SETTINGS SIDEBAR
-                ====================================================== */}
-                <aside className="w-[240px] shrink-0">
-                    <div className="sticky top-6">
+                    SECTION SWITCHER
 
-                        {/* Back to Dashboard */}
-                        <button
-                            type="button"
-                            onClick={() => navigate("/dashboard")}
-                            className="mb-7 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
-                        >
-                            <span className="text-base">
-                                ←
-                            </span>
+                    Tabs rather than a second sidebar: a nested rail inside
+                    the shell rail read as two competing navigations, and a
+                    240px column can't survive on a phone anyway.
+                ===================================================== */}
+                <nav aria-label="Settings sections">
+                    <ul
+                        className={cn(
+                            "flex gap-1 overflow-x-auto pb-px",
+                            "border-b border-border"
+                        )}
+                    >
+                        {SECTIONS.map((section) => {
+                            const Icon = section.icon;
+                            const selected = section.id === activeSection;
 
-                            <span>
-                                Back to Dashboard
-                            </span>
-                        </button>
+                            return (
+                                <li key={section.id} className="shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setActiveSection(section.id)
+                                        }
+                                        aria-current={
+                                            selected ? "true" : undefined
+                                        }
+                                        className={cn(
+                                            "relative flex h-10 items-center gap-2 rounded-t-lg px-3.5",
+                                            "text-sm font-medium whitespace-nowrap",
+                                            "transition-colors duration-(--transition-fast)",
+                                            "outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                                            selected
+                                                ? "text-primary"
+                                                : "text-muted-foreground hover:bg-surface-muted hover:text-foreground"
+                                        )}
+                                    >
+                                        <Icon
+                                            className="size-4"
+                                            strokeWidth={selected ? 2.1 : 1.8}
+                                        />
+                                        {section.label}
 
-                        {/* Settings Heading */}
-                        <div className="mb-7 px-2">
-                            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-                                Settings
-                            </h1>
+                                        {/* Active tab underline */}
+                                        <span
+                                            aria-hidden="true"
+                                            className={cn(
+                                                "absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-primary",
+                                                "transition-opacity duration-(--transition-fast)",
+                                                selected
+                                                    ? "opacity-100"
+                                                    : "opacity-0"
+                                            )}
+                                        />
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </nav>
 
-                            <p className="mt-1.5 text-sm text-gray-500">
-                                Manage your workspace.
-                            </p>
+                {/* =====================================================
+                    PANEL
+                ===================================================== */}
+                <section
+                    aria-label={active.title}
+                    className={cn(
+                        "min-h-[50vh] overflow-hidden rounded-xl border border-border bg-card shadow-xs",
+                        /* The labels panel brings its own framing */
+                        activeSection === "labels" && "border-none shadow-none bg-transparent"
+                    )}
+                >
+                    {activeSection === "labels" ? (
+                        <LabelManagement />
+                    ) : (
+                        <div className="divide-y divide-border">
+                            <div className="px-5 py-5 sm:px-6">
+                                <h2 className="font-heading text-base font-semibold tracking-tight text-foreground">
+                                    {active.title}
+                                </h2>
+
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    {active.description}
+                                </p>
+                            </div>
+
+                            <div className="px-5 py-6 sm:px-6">
+                                <ComingSoon section={active.label} />
+                            </div>
                         </div>
-
-                        {/* Settings Navigation */}
-                        <nav className="space-y-1">
-
-                            {/* General */}
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setActiveSection("general")
-                                }
-                                className={navItemClass("general")}
-                            >
-                                <span className="mr-3 flex h-7 w-7 items-center justify-center rounded-md bg-gray-100 text-sm">
-                                    ⚙
-                                </span>
-
-                                <span>
-                                    General
-                                </span>
-                            </button>
-
-                            {/* Members */}
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setActiveSection("members")
-                                }
-                                className={navItemClass("members")}
-                            >
-                                <span className="mr-3 flex h-7 w-7 items-center justify-center rounded-md bg-gray-100 text-sm">
-                                    👥
-                                </span>
-
-                                <span>
-                                    Members
-                                </span>
-                            </button>
-
-                            {/* Labels */}
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setActiveSection("labels")
-                                }
-                                className={navItemClass("labels")}
-                            >
-                                <span className="mr-3 flex h-7 w-7 items-center justify-center rounded-md bg-gray-100 text-sm">
-                                    🏷
-                                </span>
-
-                                <span>
-                                    Labels
-                                </span>
-                            </button>
-
-                        </nav>
-                    </div>
-                </aside>
-
-                {/* =====================================================
-                    MAIN CONTENT
-                ====================================================== */}
-                <main className="min-w-0 flex-1">
-
-                    {/* =================================================
-                        GENERAL
-                    ================================================== */}
-                    {activeSection === "general" && (
-                        <section className="min-h-[calc(100vh-112px)] rounded-2xl border border-gray-200 bg-white shadow-sm">
-
-                            <div className="border-b border-gray-200 px-7 py-6">
-                                <h2 className="text-lg font-semibold text-gray-900">
-                                    General
-                                </h2>
-
-                                <p className="mt-1 text-sm text-gray-500">
-                                    General workspace settings.
-                                </p>
-                            </div>
-
-                            <div className="p-7">
-                                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-16 text-center">
-                                    <p className="text-sm font-medium text-gray-600">
-                                        General settings coming soon.
-                                    </p>
-
-                                    <p className="mt-1 text-xs text-gray-400">
-                                        Workspace configuration will appear
-                                        here.
-                                    </p>
-                                </div>
-                            </div>
-
-                        </section>
                     )}
-
-                    {/* =================================================
-                        MEMBERS
-                    ================================================== */}
-                    {activeSection === "members" && (
-                        <section className="min-h-[calc(100vh-112px)] rounded-2xl border border-gray-200 bg-white shadow-sm">
-
-                            <div className="border-b border-gray-200 px-7 py-6">
-                                <h2 className="text-lg font-semibold text-gray-900">
-                                    Members
-                                </h2>
-
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Manage workspace members and
-                                    permissions.
-                                </p>
-                            </div>
-
-                            <div className="p-7">
-                                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-16 text-center">
-                                    <p className="text-sm font-medium text-gray-600">
-                                        Member management coming soon.
-                                    </p>
-
-                                    <p className="mt-1 text-xs text-gray-400">
-                                        Workspace members and permissions
-                                        will appear here.
-                                    </p>
-                                </div>
-                            </div>
-
-                        </section>
-                    )}
-
-                    {/* =================================================
-                        LABELS
-                    ================================================== */}
-                    {activeSection === "labels" && (
-                        <section className="min-h-[calc(100vh-112px)] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                            <LabelManagement />
-                        </section>
-                    )}
-
-                </main>
+                </section>
             </div>
+        </AppLayout>
+    );
+}
+
+/**
+ * A placeholder that says what will land here, rather than an empty
+ * dashed box. Actions are intentionally absent — those features don't
+ * exist yet and inventing buttons would be worse than being honest.
+ */
+function ComingSoon({ section }: { section: string }) {
+    return (
+        <div className="rounded-xl border border-dashed border-border-strong bg-surface-muted/60 px-6 py-12 text-center">
+            <p className="text-sm font-medium text-foreground">
+                {section} settings aren&rsquo;t available yet
+            </p>
+
+            <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-muted-foreground">
+                This area is reserved for {section.toLowerCase()} configuration
+                and will appear here once it ships.
+            </p>
         </div>
     );
 }

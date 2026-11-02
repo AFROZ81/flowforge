@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import {
     Dialog,
     DialogContent,
@@ -9,6 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form-field";
+import { normalizeError } from "@/lib/errors";
 
 import { useCreateBoard } from "../hooks/useCreateBoard";
 
@@ -26,90 +31,118 @@ export default function CreateBoardDialog({
     const mutation = useCreateBoard();
 
     const [name, setName] = useState("");
-    const [description, setDescription] =
-        useState("");
+    const [description, setDescription] = useState("");
+    const [touched, setTouched] = useState(false);
 
-    async function handleSubmit() {
-        if (!name.trim()) return;
-
-        await mutation.mutateAsync({
-            projectId,
-            name,
-            description,
-        });
-
+    const clearDraft = () => {
         setName("");
         setDescription("");
+        setTouched(false);
+    };
 
-        onOpenChange(false);
+    /*
+     * Every close route — Escape, backdrop, Cancel, success — funnels
+     * through here, so a half-typed board never survives to the next visit.
+     */
+    const handleOpenChange = (next: boolean) => {
+        if (!next) clearDraft();
+
+        onOpenChange(next);
+    };
+
+    const nameError =
+        touched && !name.trim() ? "Give the board a name." : undefined;
+
+    async function handleSubmit(event: FormEvent) {
+        event.preventDefault();
+        setTouched(true);
+
+        if (!name.trim()) return;
+
+        try {
+            await mutation.mutateAsync({
+                projectId,
+                name: name.trim(),
+                description: description.trim(),
+            });
+
+            toast.success("Board created", { description: name.trim() });
+            handleOpenChange(false);
+        } catch (error) {
+            const { title, description: detail } = normalizeError(error, {
+                title: "We couldn't create that board",
+            });
+
+            toast.error(title, { description: detail });
+        }
     }
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={onOpenChange}
-        >
-            <DialogContent>
-
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-
-                    <DialogTitle>
-                        Create Board
-                    </DialogTitle>
+                    <DialogTitle>Create board</DialogTitle>
 
                     <DialogDescription>
-                        Create a new board for
-                        this project.
+                        A board holds the columns your work moves through.
                     </DialogDescription>
-
                 </DialogHeader>
 
-                <div className="space-y-4">
-
-                    <Input
-                        placeholder="Board Name"
-                        value={name}
-                        onChange={(e) =>
-                            setName(
-                                e.target.value
-                            )
-                        }
-                    />
-
-                    <Input
-                        placeholder="Description"
-                        value={description}
-                        onChange={(e) =>
-                            setDescription(
-                                e.target.value
-                            )
-                        }
-                    />
-
-                </div>
-
-                <DialogFooter>
-
-                    <Button
-                        variant="outline"
-                        onClick={() =>
-                            onOpenChange(false)
-                        }
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <FormField
+                        label="Board name"
+                        htmlFor="board-name"
+                        required
+                        error={nameError}
                     >
-                        Cancel
-                    </Button>
+                        {(aria) => (
+                            <Input
+                                {...aria}
+                                value={name}
+                                placeholder="Sprint 24"
+                                autoComplete="off"
+                                disabled={mutation.isPending}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                        )}
+                    </FormField>
 
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={
-                            mutation.isPending
-                        }
+                    <FormField
+                        label="Description"
+                        htmlFor="board-description"
+                        optional
                     >
-                        Create
-                    </Button>
+                        {(aria) => (
+                            <Input
+                                {...aria}
+                                value={description}
+                                placeholder="What this board tracks"
+                                disabled={mutation.isPending}
+                                onChange={(e) =>
+                                    setDescription(e.target.value)
+                                }
+                            />
+                        )}
+                    </FormField>
 
-                </DialogFooter>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleOpenChange(false)}
+                            disabled={mutation.isPending}
+                        >
+                            Cancel
+                        </Button>
 
+                        <Button type="submit" disabled={mutation.isPending}>
+                            {mutation.isPending && (
+                                <Loader2 className="animate-spin" />
+                            )}
+                            {mutation.isPending ? "Creating…" : "Create board"}
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );

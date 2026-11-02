@@ -4,6 +4,12 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar } from "@/components/ui/avatar";
+import {
+    useConfirm,
+} from "@/components/common/confirm";
+import { normalizeError } from "@/lib/errors";
+import { formatRelativeTime } from "@/lib/format";
 
 import {
     useUpdateComment,
@@ -76,6 +82,8 @@ export default function CommentItem({
     const deleteMutation =
         useDeleteComment();
 
+    const confirm = useConfirm();
+
     const author =
         users.find(
             (user) =>
@@ -129,10 +137,13 @@ export default function CommentItem({
 
     const handleDelete =
         async () => {
-            const confirmed =
-                window.confirm(
-                    "Delete this comment?"
-                );
+            const confirmed = await confirm({
+                title: "Delete this comment?",
+                description:
+                    "It disappears from the thread for everyone on this work item.",
+                confirmLabel: "Delete comment",
+                tone: "destructive",
+            });
 
             if (!confirmed) {
                 return;
@@ -149,88 +160,61 @@ export default function CommentItem({
                     }
                 );
 
-                toast.success(
-                    "Comment deleted."
-                );
+                toast.success("Comment deleted.");
             } catch (error) {
                 console.error(
                     "Failed to delete comment:",
                     error
                 );
 
-                toast.error(
-                    "Failed to delete comment."
-                );
+                const { title, description } = normalizeError(error, {
+                    title: "We couldn't delete that comment",
+                });
+
+                toast.error(title, { description });
             }
         };
 
     return (
-        <div className="rounded-xl border p-3">
+        <div className="rounded-xl border border-border bg-card p-3 shadow-xs">
 
             {/* Header */}
 
             <div className="flex items-start justify-between gap-3">
 
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2.5">
 
-                    {/* Avatar */}
-
-                    <div className="
-                        flex
-                        h-8
-                        w-8
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-muted
-                        text-xs
-                        font-medium
-                    ">
-                        {author?.fullName
-                            ?.trim()
-                            ?.charAt(0)
-                            ?.toUpperCase() ??
-                            "?"}
-                    </div>
+                    <Avatar
+                        name={author?.fullName}
+                        size="sm"
+                        decorative
+                    />
 
                     {/* User information */}
 
                     <div className="min-w-0">
 
-                        <div className="
-                            flex
-                            items-center
-                            gap-1.5
-                        ">
+                        <div className="flex min-w-0 items-center gap-1.5">
 
-                            <p className="
-                                truncate
-                                text-sm
-                                font-medium
-                            ">
-                                {author?.fullName ??
-                                    "Unknown user"}
+                            <p className="truncate text-[13px] font-medium text-foreground">
+                                {author?.fullName ?? "Unknown user"}
                             </p>
 
                             {/* Online status */}
 
                             {author?.id && (
                                 <OnlineIndicator
-                                    userId={
-                                        author.id
-                                    }
+                                    userId={author.id}
                                 />
                             )}
 
                         </div>
 
                         {author?.email && (
-                            <p className="
-                                truncate
-                                text-xs
-                                text-muted-foreground
-                            ">
+                            <p
+                                className="truncate text-xs text-muted-foreground"
+                                title={formatDate(comment.createdAt)}
+                            >
                                 {author.email}
                             </p>
                         )}
@@ -314,69 +298,40 @@ export default function CommentItem({
                         {comment.content}
                     </p>
 
-                    <div className="
-                        mt-3
-                        flex
-                        items-center
-                        justify-between
-                        gap-3
-                        border-t
-                        pt-2
-                    ">
+                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-border-subtle pt-2">
 
-                        <span className="
-                            text-xs
-                            text-muted-foreground
-                        ">
-                            {formatDate(
-                                (
-                                    comment as Comment & {
-                                        createdAt?: string;
-                                    }
-                                )
-                                    .createdAt
-                            )}
-                        </span>
+                        <time
+                            dateTime={comment.createdAt}
+                            className="text-xs text-muted-foreground"
+                            title={formatDate(comment.createdAt)}
+                        >
+                            {formatRelativeTime(comment.createdAt)}
+                        </time>
 
-                        <div className="
-                            flex
-                            items-center
-                            gap-1
-                        ">
+                        <div className="flex items-center gap-1">
 
                             <Button
                                 type="button"
                                 variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                    setEditing(
-                                        true
-                                    )
-                                }
-                                disabled={
-                                    deleteMutation.isPending
-                                }
+                                size="xs"
+                                onClick={() => setEditing(true)}
+                                disabled={deleteMutation.isPending}
                             >
-                                <Pencil className="mr-1 h-3.5 w-3.5" />
+                                <Pencil />
                                 Edit
                             </Button>
 
                             <Button
                                 type="button"
                                 variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700"
-                                onClick={
-                                    handleDelete
-                                }
-                                disabled={
-                                    deleteMutation.isPending
-                                }
+                                size="xs"
+                                className="text-danger-foreground hover:bg-danger-subtle hover:text-danger-foreground"
+                                onClick={handleDelete}
+                                disabled={deleteMutation.isPending}
                             >
-                                <Trash2 className="mr-1 h-3.5 w-3.5" />
-
+                                <Trash2 />
                                 {deleteMutation.isPending
-                                    ? "Deleting..."
+                                    ? "Deleting…"
                                     : "Delete"}
                             </Button>
 

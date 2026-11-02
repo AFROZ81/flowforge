@@ -6,40 +6,102 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* =========================================================
+   TOKEN → UTILITY MAPPING
+
+   Colors are consumed through var(), so a `.dark` override on
+   the raw tokens re-skins every generated utility automatically.
+   ========================================================= */
+
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
+    --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+
+    /* ---------- Canvas + surfaces ---------- */
     --color-background: var(--background);
+    --color-background-elevated: var(--background-elevated);
+    --color-surface: var(--surface);
+    --color-surface-muted: var(--surface-muted);
+    --color-surface-sunken: var(--surface-sunken);
+
+    /* ---------- Lines ---------- */
+    --color-border: var(--border);
+    --color-border-subtle: var(--border-subtle);
+    --color-border-strong: var(--border-strong);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    /* ---------- Brand action ---------- */
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary-hover: var(--primary-hover);
+    --color-primary-active: var(--primary-active);
+    --color-primary-subtle: var(--primary-subtle);
+    --color-primary-muted: var(--primary-muted);
+
+    /* ---------- Secondary brand accent ---------- */
+    --color-brand-indigo: var(--accent-indigo);
+    --color-brand-indigo-subtle: var(--accent-indigo-subtle);
+
+    /* ---------- Auth scene ----------
+       The sign-in page is a fixed brand surface. Only the values that become
+       utilities are mapped here; the panel, fields and action colours reach the
+       shared primitives through .auth-scene instead (see styles/theme.css). */
+    --color-auth-night: var(--auth-night);
+    --color-auth-dusk: var(--auth-dusk);
+    --color-auth-haze: var(--auth-haze);
+    --color-auth-shade: var(--auth-shade);
+    --color-auth-line: var(--auth-panel-line);
+    --color-auth-field: var(--auth-field);
+    --color-auth-hover: var(--auth-hover);
+    --color-auth-link: var(--auth-link);
+
+    /* ---------- shadcn slots ---------- */
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-foreground: var(--foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+
+    /* ---------- Status ---------- */
+    --color-success: var(--success);
+    --color-success-subtle: var(--success-subtle);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-subtle: var(--warning-subtle);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-danger: var(--danger);
+    --color-danger-subtle: var(--danger-subtle);
+    --color-danger-foreground: var(--danger-foreground);
+    --color-info: var(--info);
+    --color-info-subtle: var(--info-subtle);
+    --color-info-foreground: var(--info-foreground);
+
+    /* ---------- Data viz ---------- */
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    /* ---------- Sidebar ---------- */
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    /* ---------- Radius ---------- */
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -47,85 +109,206 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+
+    /* ---------- Elevation ---------- */
+    --shadow-xs: var(--shadow-xs);
+    --shadow-sm: var(--shadow-sm);
+    --shadow-md: var(--shadow-md);
+    --shadow-lg: var(--shadow-lg);
+    --shadow-xl: var(--shadow-xl);
+
+    /* ---------- Motion ---------- */
+    --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
+    --default-transition-duration: 180ms;
+    --animate-fade-up: ff-fade-up 320ms var(--ease-standard) both;
+    --animate-fade-in: ff-fade-in 200ms var(--ease-standard) both;
 }
 
-:root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-}
 
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
-}
+/* =========================================================
+   BASE
+   ========================================================= */
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+    * {
+        @apply border-border outline-ring/45;
     }
-  body {
-    @apply bg-background text-foreground;
+
+    html {
+        @apply font-sans;
+
+        /* Prevent sub-pixel blurring of the sticky shell on mobile */
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+        scroll-behavior: smooth;
     }
-  html {
-    @apply font-sans;
+
+    body {
+        @apply bg-background text-foreground antialiased;
+
+        font-feature-settings: "cv11", "ss01";
+        font-variation-settings: "opsz" 32;
+        text-rendering: optimizeLegibility;
+    }
+
+    /* ---------- Typography scale ----------
+       Five deliberate steps. Components should reach for these
+       rather than inventing a new size. */
+    h1,
+    h2,
+    h3,
+    h4 {
+        @apply font-heading text-balance;
+        letter-spacing: -0.011em;
+    }
+
+    ::selection {
+        background: color-mix(in oklab, var(--primary) 22%, transparent);
+    }
+
+    /* Numeric data reads as a column, not as a ragged word shape */
+    .tabular,
+    [data-numeric="true"] {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Global keyboard-focus baseline. Uses outline rather than ring
+       so it is never clipped by an `overflow-hidden` ancestor; shadcn
+       primitives keep their own heavier treatment. */
+    :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+
+    /* Elements that paint their own focus ring shouldn't get a second one */
+    :focus-visible:where(
+        .group\/button,
+        [data-slot="dialog-content"],
+        [data-slot="select"]
+    ) {
+        outline: none;
+    }
+
+    /* ---------- Scrollbars ----------
+       Subtle, so the shell doesn't get framed by gray troughs. */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-strong) transparent;
+    }
+
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        border: 3px solid transparent;
+        border-radius: 999px;
+        background-clip: content-box;
+        background-color: var(--border-strong);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: var(--text-tertiary);
+    }
+}
+
+
+/* =========================================================
+   TOUCH TARGETS
+
+   Bumps the *hit area* of our form and button primitives to a
+   comfortable size on coarse pointers, without re-laying-out the
+   dense desktop UI. Opt out with `data-touch="raw"` on controls that
+   are deliberately compact.
+   ========================================================= */
+
+@media (pointer: coarse) {
+
+    [data-slot="button"]:not([data-touch="raw"]),
+    [data-slot="input"]:not([data-touch="raw"]),
+    [data-slot="select"],
+    [data-slot="textarea"] {
+        min-height: 2.75rem;
+    }
+
+    [data-slot="button"]:not([data-touch="raw"]) {
+        min-width: 2.75rem;
+    }
+
+    /* Checkbox: keep the box small, grow the tappable padding */
+    [data-slot="checkbox"] {
+        min-width: 1.25rem;
+        min-height: 1.25rem;
+    }
+
+    /* Tab bars and menus need room for a thumb, not pixel-perfect rows */
+    [role="tab"],
+    [data-slot="dropdown-menu-item"] {
+        min-height: 2.5rem;
+    }
+}
+
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+
+@keyframes ff-fade-up {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 8px, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes ff-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes ff-shimmer {
+    from {
+        background-position: 200% 0;
+    }
+
+    to {
+        background-position: -200% 0;
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   Honored globally rather than per component, so a new
+   animation can't accidentally ship without it.
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }

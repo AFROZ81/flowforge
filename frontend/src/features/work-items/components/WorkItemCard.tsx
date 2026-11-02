@@ -35,6 +35,14 @@ import {
     Tag,
 } from "lucide-react";
 
+import {
+    DueDateChip,
+    PriorityFlag,
+    WorkItemStatusBadge,
+} from "@/components/common/indicators";
+import { Avatar } from "@/components/ui/avatar";
+import { ProgressBar } from "@/components/ui/progress";
+
 type WorkItem = {
     id: string;
     title: string;
@@ -59,85 +67,11 @@ type Props = {
     onClick?: () => void;
 };
 
-function formatDueDate(
-    dueDate?: string | null
-) {
-    if (!dueDate) {
-        return null;
-    }
-
-    const date =
-        new Date(dueDate);
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return null;
-    }
-
-    return date.toLocaleDateString(
-        "en-GB",
-        {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-        }
-    );
-}
-
-function getStatusLabel(
-    status: number
-) {
-    switch (status) {
-        case 1:
-            return "Active";
-
-        case 2:
-            return "Completed";
-
-        case 3:
-            return "Blocked";
-
-        default:
-            return "Unknown";
-    }
-}
-
-function getStatusClasses(
-    status: number
-) {
-    switch (status) {
-        case 1:
-            return `
-                border-blue-200
-                bg-blue-50
-                text-blue-700
-            `;
-
-        case 2:
-            return `
-                border-green-200
-                bg-green-50
-                text-green-700
-            `;
-
-        case 3:
-            return `
-                border-red-200
-                bg-red-50
-                text-red-700
-            `;
-
-        default:
-            return `
-                border-gray-200
-                bg-gray-50
-                text-gray-700
-            `;
-    }
-}
+/*
+ * Status, priority and due-date chips come from components/common/indicators
+ * so a card, a table row and the detail dialog can't disagree about what
+ * "Blocked" or "overdue" looks like.
+ */
 
 export default function WorkItemCard({
     item,
@@ -232,11 +166,6 @@ export default function WorkItemCard({
      * ========================================
      */
 
-    const dueDate =
-        formatDueDate(
-            item.dueDate
-        );
-
     const assignee =
         item.assigneeId
             ? users.find(
@@ -245,16 +174,6 @@ export default function WorkItemCard({
                       item.assigneeId
               )
             : undefined;
-
-    const statusLabel =
-        getStatusLabel(
-            item.status
-        );
-
-    const statusClasses =
-        getStatusClasses(
-            item.status
-        );
 
     /*
      * ========================================
@@ -291,13 +210,23 @@ export default function WorkItemCard({
             <Card
                 draggable
                 onClick={onClick}
+                onKeyDown={(event) => {
+                    /* A card that opens on click must also open on Enter */
+                    if (!onClick) return;
+
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onClick();
+                    }
+                }}
+                role={onClick ? "button" : undefined}
+                tabIndex={onClick ? 0 : undefined}
+                aria-label={onClick ? item.title : undefined}
                 className="
-                    cursor-pointer
-                    rounded-xl
-                    p-3
-                    transition
-                    hover:-translate-y-0.5
-                    hover:shadow-md
+                    cursor-pointer gap-0 rounded-xl border-border p-3 shadow-xs
+                    transition-[transform,box-shadow,border-color] duration-(--transition-normal)
+                    ease-(--ease-standard) hover:-translate-y-px hover:border-border-strong hover:shadow-sm
+                    focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring
                 "
             >
 
@@ -305,52 +234,15 @@ export default function WorkItemCard({
                     HEADER
                 ================================== */}
 
-                <div className="
-                    flex
-                    items-start
-                    justify-between
-                    gap-3
-                ">
+                <div className="flex items-start justify-between gap-2">
 
-                    <h4 className="
-                        min-w-0
-                        font-medium
-                    ">
+                    <h4 className="min-w-0 text-[13px] leading-snug font-medium text-foreground">
                         {item.title}
                     </h4>
 
-                    <div className="
-                        flex
-                        shrink-0
-                        items-center
-                        gap-1.5
-                    ">
-
-                        <span
-                            className={`
-                                rounded-full
-                                border
-                                px-2
-                                py-0.5
-                                text-[10px]
-                                font-medium
-                                ${statusClasses}
-                            `}
-                        >
-                            {statusLabel}
-                        </span>
-
-                        <span className="
-                            rounded-full
-                            bg-muted
-                            px-2
-                            py-0.5
-                            text-[10px]
-                            font-medium
-                        ">
-                            P{item.priority}
-                        </span>
-
+                    <div className="flex shrink-0 items-center gap-1">
+                        <WorkItemStatusBadge status={item.status} />
+                        <PriorityFlag priority={item.priority} />
                     </div>
 
                 </div>
@@ -360,12 +252,7 @@ export default function WorkItemCard({
                 ================================== */}
 
                 {item.description && (
-                    <p className="
-                        mt-2
-                        line-clamp-2
-                        text-sm
-                        text-muted-foreground
-                    ">
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                         {item.description}
                     </p>
                 )}
@@ -374,85 +261,39 @@ export default function WorkItemCard({
                     DUE DATE
                 ================================== */}
 
-                {dueDate && (
-                    <p className="
-                        mt-3
-                        text-xs
-                        text-muted-foreground
-                    ">
-                        Due: {dueDate}
-                    </p>
-                )}
+                <DueDateChip
+                    dueDate={item.dueDate}
+                    completed={Number(item.status) === 2}
+                    prefix={null}
+                    className="mt-2"
+                />
 
                 {/* =================================
                     ASSIGNEE
                 ================================== */}
 
                 {assignee && (
-                    <div className="
-                        mt-3
-                        flex
-                        items-center
-                        gap-2
-                        border-t
-                        pt-3
-                    ">
+                    <div className="mt-2.5 flex items-center gap-2 border-t border-border-subtle pt-2.5">
 
-                        <div className="
-                            flex
-                            h-7
-                            w-7
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-muted
-                            text-xs
-                            font-medium
-                        ">
-                            {assignee.fullName
-                                .trim()
-                                .charAt(0)
-                                .toUpperCase()}
-                        </div>
+                        <Avatar
+                            name={assignee.fullName}
+                            size="sm"
+                        />
 
-                        <div className="
-                            min-w-0
-                            flex-1
-                        ">
-                            <div className="
-                                flex
-                                min-w-0
-                                items-center
-                                gap-1.5
-                            ">
-                                <p className="
-                                    min-w-0
-                                    truncate
-                                    text-xs
-                                    font-medium
-                                ">
-                                    {
-                                        assignee.fullName
-                                    }
-                                </p>
+                        <div className="min-w-0 flex-1">
+                            <p className="flex min-w-0 items-center gap-1.5">
+                                <span className="truncate text-xs font-medium text-foreground">
+                                    {assignee.fullName}
+                                </span>
 
                                 <OnlineIndicator
-                                    userId={
-                                        assignee.id
-                                    }
+                                    userId={assignee.id}
                                 />
-                            </div>
+                            </p>
 
                             {assignee.email && (
-                                <p className="
-                                    truncate
-                                    text-[11px]
-                                    text-muted-foreground
-                                ">
-                                    {
-                                        assignee.email
-                                    }
+                                <p className="truncate text-[11px] leading-tight text-muted-foreground">
+                                    {assignee.email}
                                 </p>
                             )}
                         </div>
@@ -464,172 +305,56 @@ export default function WorkItemCard({
                     CHECKLIST
                 ================================== */}
 
-                <div className="
-                    mt-3
-                    border-t
-                    pt-3
-                ">
-
-                    <div className="
-                        flex
-                        items-center
-                        justify-between
-                        text-xs
-                    ">
-
-                        <div className="
-                            flex
-                            items-center
-                            gap-1.5
-                            text-muted-foreground
-                        ">
-
-                            <CheckSquare className="
-                                h-3.5
-                                w-3.5
-                            " />
-
-                            <span>
+                {checklistTotal > 0 && (
+                    <div className="mt-2.5">
+                        <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                                <CheckSquare className="size-3.5" aria-hidden="true" />
                                 Checklist
                             </span>
 
-                            <span className="
-                                rounded-full
-                                bg-muted
-                                px-1.5
-                                py-0.5
-                                text-[10px]
-                                font-medium
-                                text-foreground
-                            ">
-                                {
-                                    checklistCompleted
-                                }
-                                /
-                                {
-                                    checklistTotal
-                                }
+                            <span className="font-medium tabular-nums text-muted-foreground">
+                                {checklistCompleted}/{checklistTotal}
                             </span>
-
                         </div>
 
-                        <span className="
-                            text-[10px]
-                            text-muted-foreground
-                        ">
-                            {
-                                checklistPercentage
-                            }%
-                        </span>
-
-                    </div>
-
-                    <div className="
-                        mt-2
-                        h-1.5
-                        w-full
-                        overflow-hidden
-                        rounded-full
-                        bg-muted
-                    ">
-
-                        <div
-                            className="
-                                h-full
-                                rounded-full
-                                bg-foreground
-                                transition-all
-                            "
-                            style={{
-                                width: `${Math.min(
-                                    100,
-                                    Math.max(
-                                        0,
-                                        checklistPercentage
-                                    )
-                                )}%`,
-                            }}
+                        <ProgressBar
+                            value={checklistPercentage}
+                            tone={checklistPercentage === 100 ? "success" : "brand"}
+                            size="xs"
+                            label={`${item.title} checklist`}
                         />
-
                     </div>
-
-                </div>
+                )}
 
                 {/* =================================
                     COMMENTS + WATCHERS + LABELS
                 ================================== */}
 
-                <div className="
-                    mt-3
-                    flex
-                    flex-wrap
-                    items-center
-                    gap-x-4
-                    gap-y-1
-                    border-t
-                    pt-3
-                ">
+                <div className="mt-2.5 flex flex-wrap items-center gap-1 border-t border-border-subtle pt-2">
 
                     {/* COMMENTS */}
 
                     <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        className="
-                            h-7
-                            w-auto
-                            justify-start
-                            px-1
-                            text-xs
-                            text-muted-foreground
-                            hover:bg-transparent
-                            hover:text-foreground
-                        "
-                        onClick={
-                            handleCommentsClick
-                        }
+                        size="xs"
+                        aria-label={`${commentCount} comments`}
+                        className="gap-1 text-muted-foreground hover:bg-surface-sunken hover:text-foreground"
+                        onClick={handleCommentsClick}
                     >
-                        <MessageCircle className="
-                            mr-1.5
-                            h-3.5
-                            w-3.5
-                        " />
-
-                        <span>
-                            Comments
-                        </span>
-
-                        <span className="
-                            ml-1
-                            rounded-full
-                            bg-muted
-                            px-1.5
-                            py-0.5
-                            text-[10px]
-                            font-medium
-                            text-foreground
-                        ">
+                        <MessageCircle />
+                        <span className="font-medium tabular-nums">
                             {commentCount}
                         </span>
                     </Button>
 
                     {/* WATCHERS */}
 
-                    <div
-                        onClick={(
-                            event
-                        ) =>
-                            event.stopPropagation()
-                        }
-                    >
+                    <div onClick={(event) => event.stopPropagation()}>
                         <WorkItemWatchers
-                            workItemId={
-                                item.id
-                            }
-                            workItemTitle={
-                                item.title
-                            }
+                            workItemId={item.id}
+                            workItemTitle={item.title}
                         />
                     </div>
 
@@ -638,41 +363,13 @@ export default function WorkItemCard({
                     <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        className="
-                            h-7
-                            w-auto
-                            justify-start
-                            px-1
-                            text-xs
-                            text-muted-foreground
-                            hover:bg-transparent
-                            hover:text-foreground
-                        "
-                        onClick={
-                            handleLabelsClick
-                        }
+                        size="xs"
+                        aria-label={`${labelCount} labels`}
+                        className="gap-1 text-muted-foreground hover:bg-surface-sunken hover:text-foreground"
+                        onClick={handleLabelsClick}
                     >
-                        <Tag className="
-                            mr-1.5
-                            h-3.5
-                            w-3.5
-                        " />
-
-                        <span>
-                            Labels
-                        </span>
-
-                        <span className="
-                            ml-1
-                            rounded-full
-                            bg-muted
-                            px-1.5
-                            py-0.5
-                            text-[10px]
-                            font-medium
-                            text-foreground
-                        ">
+                        <Tag />
+                        <span className="font-medium tabular-nums">
                             {labelCount}
                         </span>
                     </Button>

@@ -70,9 +70,18 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
         var entries = ChangeTracker
             .Entries<EntityBase>();
 
-        var currentUser = _currentUser.User;
-
-        var currentUserId = currentUser.UserId;
+        /*
+         * Audit stamping cannot require a signed-in principal: creating the
+         * first account, and the workspace it lands in, are writes that by
+         * definition happen while nobody is authenticated. Reading the user
+         * here used to throw for those requests, which meant the application
+         * could never bootstrap itself.
+         *
+         * Author columns stay null when there is no one to record; every
+         * endpoint that actually needs a user still asks for one and still
+         * fails closed the same way it always did.
+         */
+        var currentUserId = _currentUser.TryGetUser()?.UserId;
 
         foreach (var entry in entries)
         {
@@ -82,14 +91,18 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
 
                     entry.Entity.CreatedAt = DateTime.UtcNow;
                     entry.Entity.IsDeleted = false;
-                    entry.Entity.CreatedBy = currentUserId;
+
+                    if (currentUserId is not null)
+                        entry.Entity.CreatedBy = currentUserId;
 
                     break;
 
                 case EntityState.Modified:
 
                     entry.Entity.UpdatedAt = DateTime.UtcNow;
-                    entry.Entity.UpdatedBy = currentUserId;
+
+                    if (currentUserId is not null)
+                        entry.Entity.UpdatedBy = currentUserId;
 
                     break;
             }

@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 
 import AppLayout from "@/layouts/AppLayout";
+import { PageHeader } from "@/components/ui/page-header";
+import { ErrorState } from "@/components/ui/error-state";
+import { Button } from "@/components/ui/button";
+import { formatNumber } from "@/lib/format";
 
 import { useProjects } from "../hooks/useProjects";
 
@@ -8,66 +12,87 @@ import ProjectTable from "../components/ProjectTable";
 import ProjectToolbar from "../components/ProjectToolbar";
 import CreateProjectDialog from "../components/CreateProjectDialog";
 
+import type { Project } from "../types/project";
+
 export default function ProjectsPage() {
     const {
         data: projects = [],
         isLoading,
+        error,
+        refetch,
     } = useProjects();
 
     const [search, setSearch] = useState("");
-
     const [open, setOpen] = useState(false);
 
     const filtered = useMemo(() => {
+        const query = search.trim().toLowerCase();
 
-        if (!search.trim())
-            return projects;
+        if (!query) return projects;
 
-        const q = search.toLowerCase();
-
-        return projects.filter(
-            (p: any) =>
-                p.name.toLowerCase().includes(q) ||
-                p.key.toLowerCase().includes(q) ||
-                p.description.toLowerCase().includes(q)
+        // Every field is optional in the payload — a missing description
+        // used to throw here and take the whole page down.
+        return projects.filter((project: Project) =>
+            [project.name, project.key, project.description]
+                .filter(Boolean)
+                .some((field) => String(field).toLowerCase().includes(query))
         );
-
     }, [projects, search]);
 
-    if (isLoading) {
-        return (
-            <div className="rounded-xl border p-8 text-center text-slate-500">
-                Loading projects...
-            </div>
-        );
-    }
+    const isFiltering = search.trim().length > 0;
 
     return (
         <AppLayout>
+            <div className="space-y-5">
 
-            <h1 className="text-4xl font-bold">
-                Projects
-            </h1>
+                <PageHeader
+                    eyebrow="Workspace"
+                    title="Projects"
+                    description={
+                        isLoading
+                            ? "Loading your projects…"
+                            : `${formatNumber(projects.length)} project${projects.length === 1 ? "" : "s"} in this workspace`
+                    }
+                    actions={
+                        <Button
+                            onClick={() => setOpen(true)}
+                            className="w-full sm:w-auto"
+                        >
+                            New Project
+                        </Button>
+                    }
+                    toolbar={
+                        <ProjectToolbar search={search} onSearch={setSearch} />
+                    }
+                />
 
-            <p className="mb-6 text-slate-500">
-                Manage all projects.
-            </p>
+                {error ? (
+                    <ErrorState
+                        error={error}
+                        title="We couldn't load your projects"
+                        action={
+                            <Button
+                                variant="outline"
+                                onClick={() => void refetch()}
+                            >
+                                Try again
+                            </Button>
+                        }
+                    />
+                ) : (
+                    <ProjectTable
+                        data={filtered}
+                        isLoading={isLoading}
+                        filtered={isFiltering}
+                        onCreate={() => setOpen(true)}
+                    />
+                )}
 
-            <ProjectToolbar
-                search={search}
-                onSearch={setSearch}
-                onCreate={() => setOpen(true)}
-            />
-
-            <ProjectTable
-                data={filtered}
-                isLoading={isLoading}
-            />
-
-            <CreateProjectDialog
-                open={open}
-                onOpenChange={setOpen}
-            />
+                <CreateProjectDialog
+                    open={open}
+                    onOpenChange={setOpen}
+                />
+            </div>
         </AppLayout>
     );
 }

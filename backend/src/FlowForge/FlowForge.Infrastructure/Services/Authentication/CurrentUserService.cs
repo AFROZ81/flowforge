@@ -14,32 +14,58 @@ public sealed class CurrentUserService : ICurrentUserService
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public AuthenticatedUser User
-    {
-        get
-        {
-            var user = _httpContextAccessor.HttpContext?.User;
+    public AuthenticatedUser User => Resolve(required: true)!;
 
-            if (user?.Identity?.IsAuthenticated != true)
+    public AuthenticatedUser? TryGetUser() => Resolve(required: false);
+
+    /// <summary>
+    /// Reads the principal off the current request.
+    /// </summary>
+    /// <param name="required">
+    /// When true, an anonymous request or an incomplete identity throws — the
+    /// behaviour every authorised endpoint depends on. When false the same
+    /// situations simply return null, which is what lets a write that happens
+    /// before anyone is signed in (account signup, first-run workspace
+    /// creation) go through at all.
+    /// </param>
+    private AuthenticatedUser? Resolve(bool required)
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            if (required)
                 throw new UnauthorizedAccessException("User is not authenticated.");
 
-            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
-            var organizationId = user.FindFirst("organizationId")?.Value;
+            return null;
+        }
 
-            if (string.IsNullOrWhiteSpace(userId))
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        var organizationId = user.FindFirst("organizationId")?.Value;
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            if (required)
                 throw new UnauthorizedAccessException("UserId claim is missing.");
 
-            if (string.IsNullOrWhiteSpace(organizationId))
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(organizationId))
+        {
+            if (required)
                 throw new UnauthorizedAccessException("OrganizationId claim is missing.");
 
-            return new AuthenticatedUser
-            {
-                UserId = Guid.Parse(userId),
-                Email = user.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty,
-                FullName = user.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty,
-                OrganizationId = Guid.Parse(organizationId)
-            };
+            return null;
         }
+
+        return new AuthenticatedUser
+        {
+            UserId = Guid.Parse(userId),
+            Email = user.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty,
+            FullName = user.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty,
+            OrganizationId = Guid.Parse(organizationId)
+        };
     }
 }

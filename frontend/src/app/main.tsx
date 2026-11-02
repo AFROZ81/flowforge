@@ -5,14 +5,16 @@ import "../index.css";
 
 import App from "./App";
 import { Providers } from "./providers";
-import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <Providers>
-            <App />
-            <Toaster richColors />
+            {/* One provider for the whole tree — the collapsed rail,
+                the top bar and every icon button share its timing. */}
+            <TooltipProvider>
+                <App />
+            </TooltipProvider>
         </Providers>
     </StrictMode>
-    
 );

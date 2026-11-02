@@ -125,7 +125,7 @@ function getStatusIcon(
                     className="
                         h-4
                         w-4
-                        text-emerald-600
+                        text-success-foreground
                     "
                 />
             );
@@ -138,7 +138,7 @@ function getStatusIcon(
                     className="
                         h-4
                         w-4
-                        text-red-600
+                        text-danger-foreground
                     "
                 />
             );
@@ -151,7 +151,7 @@ function getStatusIcon(
                     className="
                         h-4
                         w-4
-                        text-blue-600
+                        text-primary
                     "
                 />
             );
@@ -176,27 +176,27 @@ function statusClass(
         case "completed":
 
             return `
-                border-emerald-100
-                bg-emerald-50
-                text-emerald-700
+                border-success-subtle
+                bg-success-subtle
+                text-success-foreground
             `;
 
 
         case "blocked":
 
             return `
-                border-red-100
-                bg-red-50
-                text-red-700
+                border-danger-subtle
+                bg-danger-subtle
+                text-danger-foreground
             `;
 
 
         default:
 
             return `
-                border-blue-100
-                bg-blue-50
-                text-blue-700
+                border-primary-subtle
+                bg-primary-subtle
+                text-primary-hover
             `;
     }
 }
@@ -220,45 +220,45 @@ function priorityClass(
         case "urgent":
 
             return `
-                border-red-100
-                bg-red-50
-                text-red-700
+                border-danger-subtle
+                bg-danger-subtle
+                text-danger-foreground
             `;
 
 
         case "high":
 
             return `
-                border-orange-100
-                bg-orange-50
-                text-orange-700
+                border-warning-subtle
+                bg-warning-subtle
+                text-warning-foreground
             `;
 
 
         case "medium":
 
             return `
-                border-amber-100
-                bg-amber-50
-                text-amber-700
+                border-warning-subtle
+                bg-warning-subtle
+                text-warning-foreground
             `;
 
 
         case "low":
 
             return `
-                border-blue-100
-                bg-blue-50
-                text-blue-700
+                border-primary-subtle
+                bg-primary-subtle
+                text-primary-hover
             `;
 
 
         default:
 
             return `
-                border-slate-200
-                bg-slate-100
-                text-slate-600
+                border-border
+                bg-surface-sunken
+                text-muted-foreground
             `;
     }
 }
@@ -291,11 +291,10 @@ export default function RecentWorkItems() {
             <Card
                 className="
                     h-full
-                    rounded-3xl
+                    rounded-xl
                     border
-                    border-slate-200
-                    bg-white
-                    p-8
+                    border-border
+                    bg-card
                     shadow-sm
                 "
             >
@@ -314,7 +313,7 @@ export default function RecentWorkItems() {
                                 h-6
                                 w-48
                                 rounded
-                                bg-slate-200
+                                bg-border
                             " />
 
                             <div className="
@@ -322,7 +321,7 @@ export default function RecentWorkItems() {
                                 h-4
                                 w-60
                                 rounded
-                                bg-slate-100
+                                bg-surface-sunken
                             " />
 
                         </div>
@@ -332,7 +331,7 @@ export default function RecentWorkItems() {
                             h-10
                             w-10
                             rounded-xl
-                            bg-slate-100
+                            bg-surface-sunken
                         " />
 
                     </div>
@@ -353,7 +352,7 @@ export default function RecentWorkItems() {
                                     className="
                                         h-[82px]
                                         rounded-xl
-                                        bg-slate-100
+                                        bg-surface-sunken
                                     "
                                 />
 
@@ -387,11 +386,10 @@ export default function RecentWorkItems() {
                     flex-col
                     items-center
                     justify-center
-                    rounded-3xl
+                    rounded-xl
                     border
-                    border-slate-200
-                    bg-white
-                    p-8
+                    border-border
+                    bg-card
                     text-center
                     shadow-sm
                 "
@@ -404,14 +402,14 @@ export default function RecentWorkItems() {
                     items-center
                     justify-center
                     rounded-full
-                    bg-red-50
+                    bg-danger-subtle
                 ">
 
                     <AlertCircle
                         className="
                             h-5
                             w-5
-                            text-red-600
+                            text-danger-foreground
                         "
                     />
 
@@ -422,7 +420,7 @@ export default function RecentWorkItems() {
                     mt-3
                     text-sm
                     font-semibold
-                    text-slate-900
+                    text-foreground
                 ">
                     Unable to load recent work
                 </p>
@@ -431,7 +429,7 @@ export default function RecentWorkItems() {
                 <p className="
                     mt-1
                     text-xs
-                    text-slate-500
+                    text-muted-foreground
                 ">
                     Please try again later.
                 </p>
@@ -467,11 +465,10 @@ export default function RecentWorkItems() {
                     flex-col
                     items-center
                     justify-center
-                    rounded-3xl
+                    rounded-xl
                     border
-                    border-slate-200
-                    bg-white
-                    p-8
+                    border-border
+                    bg-card
                     text-center
                     shadow-sm
                 "
@@ -484,14 +481,14 @@ export default function RecentWorkItems() {
                     items-center
                     justify-center
                     rounded-full
-                    bg-slate-100
+                    bg-surface-sunken
                 ">
 
                     <Activity
                         className="
                             h-5
                             w-5
-                            text-slate-500
+                            text-muted-foreground
                         "
                     />
 
@@ -501,7 +498,7 @@ export default function RecentWorkItems() {
                 <p className="
                     mt-3
                     font-medium
-                    text-slate-900
+                    text-foreground
                 ">
                     No recent activity
                 </p>
@@ -511,7 +508,7 @@ export default function RecentWorkItems() {
                     mt-1
                     max-w-[260px]
                     text-sm
-                    text-slate-500
+                    text-muted-foreground
                 ">
                     Recent work item activity will appear here.
                 </p>
@@ -539,11 +536,10 @@ export default function RecentWorkItems() {
                 flex
                 h-full
                 flex-col
-                rounded-3xl
+                rounded-xl
                 border
-                border-slate-200
-                bg-white
-                p-8
+                border-border
+                bg-card
                 shadow-sm
             "
         >
@@ -564,7 +560,7 @@ export default function RecentWorkItems() {
                     <h2 className="
                         text-xl
                         font-semibold
-                        text-slate-900
+                        text-foreground
                     ">
                         Recent Work Items
                     </h2>
@@ -573,7 +569,7 @@ export default function RecentWorkItems() {
                     <p className="
                         mt-1
                         text-sm
-                        text-slate-500
+                        text-muted-foreground
                     ">
                         Latest activity across your workspace
                     </p>
@@ -589,8 +585,8 @@ export default function RecentWorkItems() {
                     items-center
                     justify-center
                     rounded-xl
-                    bg-blue-50
-                    text-blue-600
+                    bg-primary-subtle
+                    text-primary
                 ">
 
                     <Activity
@@ -632,16 +628,16 @@ export default function RecentWorkItems() {
                                 w-full
                                 rounded-xl
                                 border
-                                border-slate-100
+                                border-border-subtle
                                 p-4
                                 text-left
                                 transition-all
                                 duration-200
-                                hover:border-slate-200
-                                hover:bg-slate-50
-                                focus:outline-none
+                                hover:border-border
+                                hover:bg-surface-muted
+                                focus-visible:outline-none
                                 focus:ring-2
-                                focus:ring-blue-500/20
+                                focus:ring-ring/40
                             "
                         >
 
@@ -663,7 +659,7 @@ export default function RecentWorkItems() {
                                         items-center
                                         justify-center
                                         rounded-full
-                                        bg-slate-50
+                                        bg-surface-muted
                                     "
                                 >
 
@@ -695,7 +691,7 @@ export default function RecentWorkItems() {
                                             truncate
                                             text-sm
                                             font-semibold
-                                            text-slate-900
+                                            text-foreground
                                         ">
                                             {item.title}
                                         </p>
@@ -708,7 +704,7 @@ export default function RecentWorkItems() {
                                                 items-center
                                                 gap-1
                                                 text-[11px]
-                                                text-slate-400
+                                                text-muted-foreground/60
                                             "
                                         >
 
@@ -736,14 +732,14 @@ export default function RecentWorkItems() {
                                         mt-1
                                         truncate
                                         text-xs
-                                        text-slate-500
+                                        text-muted-foreground
                                     ">
 
                                         {item.projectName}
 
                                         <span className="
                                             mx-1.5
-                                            text-slate-300
+                                            text-muted-foreground/60
                                         ">
                                             •
                                         </span>
@@ -752,7 +748,7 @@ export default function RecentWorkItems() {
 
                                         <span className="
                                             mx-1.5
-                                            text-slate-300
+                                            text-muted-foreground/60
                                         ">
                                             •
                                         </span>
@@ -811,11 +807,11 @@ export default function RecentWorkItems() {
                                                 ml-auto
                                                 h-3.5
                                                 w-3.5
-                                                text-slate-300
+                                                text-muted-foreground/60
                                                 opacity-0
                                                 transition
                                                 group-hover:opacity-100
-                                                group-hover:text-blue-500
+                                                group-hover:text-primary
                                             "
                                         />
 
@@ -843,7 +839,7 @@ export default function RecentWorkItems() {
                     <div className="
                         mt-4
                         border-t
-                        border-slate-100
+                        border-border-subtle
                         pt-4
                         text-center
                     ">
@@ -851,7 +847,7 @@ export default function RecentWorkItems() {
                         <span className="
                             text-xs
                             font-medium
-                            text-slate-500
+                            text-muted-foreground
                         ">
                             +{data.data.length - 5} more recent work items
                         </span>

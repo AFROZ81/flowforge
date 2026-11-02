@@ -1,7 +1,18 @@
+import { useState, type FormEvent } from "react";
+import { Loader2 } from "lucide-react";
+
 import {
-    useEffect,
-    useState,
-} from "react";
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { LabelSwatch } from "./LabelSwatch";
 
 import type {
     CreateLabelRequest,
@@ -13,273 +24,204 @@ interface Props {
     label?: Label | null;
     isSubmitting: boolean;
     onClose: () => void;
-    onSubmit: (
-        data: CreateLabelRequest
-    ) => void;
+    onSubmit: (data: CreateLabelRequest) => void;
 }
 
 const DEFAULT_COLOR = "#3B82F6";
 
-export default function LabelFormDialog({
-    open,
+/* =========================================================
+   FORM
+   Mounted only while the dialog is open, so a fresh visit
+   always starts from the label being edited — the previous
+   version carried a useEffect that re-seeded three pieces of
+   state after every open.
+   ========================================================= */
+
+function LabelForm({
     label,
     isSubmitting,
     onClose,
     onSubmit,
-}: Props) {
+}: Omit<Props, "open">) {
     const isEdit = Boolean(label);
 
-    const [name, setName] = useState("");
-    const [color, setColor] =
-        useState(DEFAULT_COLOR);
-    const [description, setDescription] =
-        useState("");
+    const [name, setName] = useState(label?.name ?? "");
+    const [color, setColor] = useState(label?.color || DEFAULT_COLOR);
+    const [description, setDescription] = useState(
+        label?.description ?? ""
+    );
+    const [touched, setTouched] = useState(false);
 
-    useEffect(() => {
-        if (!open) {
-            return;
-        }
+    const trimmed = name.trim();
+    const nameError = touched && !trimmed ? "A label needs a name." : undefined;
 
-        setName(label?.name ?? "");
-        setColor(
-            label?.color || DEFAULT_COLOR
-        );
-        setDescription(
-            label?.description ?? ""
-        );
-    }, [open, label]);
-
-    if (!open) {
-        return null;
-    }
-
-    const handleSubmit = (
-        event: React.FormEvent
-    ) => {
+    function handleSubmit(event: FormEvent) {
         event.preventDefault();
+        setTouched(true);
 
-        const trimmedName =
-            name.trim();
-
-        if (!trimmedName) {
-            return;
-        }
+        if (!trimmed) return;
 
         onSubmit({
-            name: trimmedName,
+            name: trimmed,
             color,
-            description:
-                description.trim(),
+            description: description.trim(),
         });
-    };
+    }
 
     return (
-        <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4"
-            onMouseDown={(event) => {
-                if (
-                    event.target ===
-                    event.currentTarget
-                ) {
-                    onClose();
-                }
-            }}
-        >
-            <div
-                className="w-full max-w-[460px] rounded-xl border border-gray-200 bg-white shadow-xl"
-                onMouseDown={(event) =>
-                    event.stopPropagation()
-                }
-            >
-                {/* Header */}
-                <div className="flex items-start justify-between border-b border-gray-100 px-5 py-4">
-                    <div>
-                        <h2 className="text-base font-semibold text-gray-900">
-                            {isEdit
-                                ? "Edit Label"
-                                : "Create Label"}
-                        </h2>
-
-                        <p className="mt-1 text-xs text-gray-500">
-                            {isEdit
-                                ? "Update the label details."
-                                : "Create a label for your workspace."}
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={
-                            isSubmitting
-                        }
-                        className="flex h-7 w-7 items-center justify-center rounded-md text-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                    >
-                        ×
-                    </button>
-                </div>
-
-                {/* Form */}
-                <form
-                    onSubmit={handleSubmit}
-                    className="space-y-5 px-5 py-5"
+        <form onSubmit={handleSubmit} className="space-y-5">
+            {/* ---------------- NAME ---------------- */}
+            <div className="space-y-1.5">
+                <label
+                    htmlFor="label-name"
+                    className="flex items-center gap-1 text-[13px] font-medium text-foreground"
                 >
-                    {/* Name */}
-                    <div>
-                        <label className="mb-1.5 block text-xs font-medium text-gray-700">
-                            Name
-                        </label>
+                    Name
+                    <span aria-hidden="true" className="text-danger">*</span>
+                </label>
 
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(event) =>
-                                setName(
-                                    event.target.value
-                                )
-                            }
-                            placeholder="e.g. Bug"
-                            maxLength={100}
-                            autoFocus
-                            disabled={
-                                isSubmitting
-                            }
-                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50"
-                        />
-                    </div>
+                <Input
+                    id="label-name"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="e.g. Bug"
+                    maxLength={100}
+                    autoFocus
+                    autoComplete="off"
+                    disabled={isSubmitting}
+                    aria-invalid={Boolean(nameError)}
+                />
 
-                    {/* Color */}
-                    <div>
-                        <label className="mb-1.5 block text-xs font-medium text-gray-700">
-                            Color
-                        </label>
-
-                        <div className="flex items-center gap-3">
-                            <input
-                                type="color"
-                                value={color}
-                                onChange={(
-                                    event
-                                ) =>
-                                    setColor(
-                                        event
-                                            .target
-                                            .value
-                                    )
-                                }
-                                disabled={
-                                    isSubmitting
-                                }
-                                className="h-10 w-12 cursor-pointer rounded-md border border-gray-200 bg-white p-1"
-                            />
-
-                            <input
-                                type="text"
-                                value={color}
-                                onChange={(
-                                    event
-                                ) =>
-                                    setColor(
-                                        event
-                                            .target
-                                            .value
-                                    )
-                                }
-                                maxLength={7}
-                                disabled={
-                                    isSubmitting
-                                }
-                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm uppercase outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        <label className="mb-1.5 block text-xs font-medium text-gray-700">
-                            Description
-                        </label>
-
-                        <textarea
-                            value={
-                                description
-                            }
-                            onChange={(event) =>
-                                setDescription(
-                                    event.target.value
-                                )
-                            }
-                            placeholder="Describe what this label is used for..."
-                            rows={3}
-                            maxLength={500}
-                            disabled={
-                                isSubmitting
-                            }
-                            className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50"
-                        />
-                    </div>
-
-                    {/* Preview */}
-                    <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                        <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-gray-400">
-                            Preview
-                        </p>
-
-                        <span
-                            className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
-                            style={{
-                                color,
-                                borderColor:
-                                    `${color}55`,
-                                backgroundColor:
-                                    `${color}12`,
-                            }}
-                        >
-                            <span
-                                className="mr-1.5 h-1.5 w-1.5 rounded-full"
-                                style={{
-                                    backgroundColor:
-                                        color,
-                                }}
-                            />
-
-                            {name.trim() ||
-                                "Label"}
-                        </span>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex justify-end gap-2 border-t border-gray-100 pt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            disabled={
-                                isSubmitting
-                            }
-                            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            Cancel
-                        </button>
-
-                        <button
-                            type="submit"
-                            disabled={
-                                isSubmitting ||
-                                !name.trim()
-                            }
-                            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {isSubmitting
-                                ? isEdit
-                                    ? "Saving..."
-                                    : "Creating..."
-                                : isEdit
-                                  ? "Save Changes"
-                                  : "Create Label"}
-                        </button>
-                    </div>
-                </form>
+                {nameError && (
+                    <p role="alert" className="text-xs font-medium text-danger-foreground">
+                        {nameError}
+                    </p>
+                )}
             </div>
-        </div>
+
+            {/* ---------------- COLOR ---------------- */}
+            <div className="space-y-1.5">
+                <label
+                    htmlFor="label-color"
+                    className="block text-[13px] font-medium text-foreground"
+                >
+                    Color
+                </label>
+
+                <div className="flex items-center gap-2.5">
+                    {/* The native picker is the shortest route to an exact color
+                        on touch devices, where a custom swatch grid is fiddly. */}
+                    <input
+                        type="color"
+                        value={/^#[0-9a-f]{6}$/i.test(color) ? color : DEFAULT_COLOR}
+                        onChange={(event) => setColor(event.target.value)}
+                        disabled={isSubmitting}
+                        aria-label="Pick a color"
+                        className="
+                            size-9 shrink-0 cursor-pointer rounded-lg border border-input
+                            bg-transparent p-1
+                            disabled:cursor-not-allowed disabled:opacity-60
+                        "
+                    />
+
+                    <Input
+                        id="label-color"
+                        value={color}
+                        onChange={(event) => setColor(event.target.value)}
+                        maxLength={7}
+                        spellCheck={false}
+                        autoComplete="off"
+                        className="font-mono uppercase"
+                        disabled={isSubmitting}
+                    />
+                </div>
+            </div>
+
+            {/* ---------------- DESCRIPTION ---------------- */}
+            <div className="space-y-1.5">
+                <label
+                    htmlFor="label-description"
+                    className="block text-[13px] font-medium text-foreground"
+                >
+                    Description
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">
+                        (optional)
+                    </span>
+                </label>
+
+                <Textarea
+                    id="label-description"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    placeholder="What is this label used for?"
+                    rows={3}
+                    maxLength={500}
+                    disabled={isSubmitting}
+                />
+            </div>
+
+            {/* ---------------- PREVIEW ---------------- */}
+            <div className="rounded-lg border border-border-subtle bg-surface-muted p-3">
+                <p className="mb-2 text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+                    Preview
+                </p>
+
+                <LabelSwatch
+                    name={trimmed || "Label"}
+                    color={color}
+                    dot
+                />
+            </div>
+
+            <DialogFooter>
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                    disabled={isSubmitting}
+                >
+                    Cancel
+                </Button>
+
+                <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="animate-spin" />}
+                    {isSubmitting
+                        ? isEdit
+                            ? "Saving…"
+                            : "Creating…"
+                        : isEdit
+                          ? "Save changes"
+                          : "Create label"}
+                </Button>
+            </DialogFooter>
+        </form>
+    );
+}
+
+/* =========================================================
+   DIALOG
+   ========================================================= */
+
+export default function LabelFormDialog({ open, ...props }: Props) {
+    const isEdit = Boolean(props.label);
+
+    return (
+        <Dialog open={open} onOpenChange={(next) => !next && props.onClose()}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>
+                        {isEdit ? "Edit label" : "Create label"}
+                    </DialogTitle>
+
+                    <DialogDescription>
+                        {isEdit
+                            ? "Update the label details."
+                            : "Labels organize work items across the workspace."}
+                    </DialogDescription>
+                </DialogHeader>
+
+                {open && <LabelForm {...props} />}
+            </DialogContent>
+        </Dialog>
     );
 }

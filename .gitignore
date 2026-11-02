@@ -16,9 +16,14 @@ node_modules/
 # Environment
 .env
 .env.*
+!.env.example
 
 # Logs
 *.log
+
+# EF Core migrations are generated locally from the model and are not
+# committed (the folders are removed from the index below).
+backend/src/FlowForge/FlowForge.Infrastructure/Migrations/
 
 # OS
 Thumbs.db

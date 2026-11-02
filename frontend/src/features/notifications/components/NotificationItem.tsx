@@ -4,94 +4,22 @@ import {
     Trash2,
 } from "lucide-react";
 
-import type {
-    Notification,
-} from "../types/notification";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { formatRelativeTime } from "@/lib/format";
+
+import type { Notification } from "../types/notification";
 
 
 type Props = {
     notification: Notification;
 
-    onRead: (
-        notificationId: string
-    ) => void;
+    onRead: (notificationId: string) => void;
 
-    onUnread: (
-        notificationId: string
-    ) => void;
+    onUnread: (notificationId: string) => void;
 
-    onDelete: (
-        notificationId: string
-    ) => void;
+    onDelete: (notificationId: string) => void;
 };
-
-
-function formatNotificationTime(
-    createdAt: string
-) {
-    const date =
-        new Date(createdAt);
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return "";
-    }
-
-    const now =
-        new Date();
-
-    const difference =
-        now.getTime() -
-        date.getTime();
-
-    const seconds =
-        Math.floor(
-            difference / 1000
-        );
-
-    const minutes =
-        Math.floor(
-            seconds / 60
-        );
-
-    const hours =
-        Math.floor(
-            minutes / 60
-        );
-
-    const days =
-        Math.floor(
-            hours / 24
-        );
-
-    if (seconds < 60) {
-        return "Just now";
-    }
-
-    if (minutes < 60) {
-        return `${minutes}m ago`;
-    }
-
-    if (hours < 24) {
-        return `${hours}h ago`;
-    }
-
-    if (days < 7) {
-        return `${days}d ago`;
-    }
-
-    return date.toLocaleDateString(
-        undefined,
-        {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-        }
-    );
-}
 
 
 export default function NotificationItem({
@@ -101,212 +29,115 @@ export default function NotificationItem({
     onDelete,
 }: Props) {
 
-    const isUnread =
-        !notification.isRead;
-
+    const isUnread = !notification.isRead;
 
     return (
-        <div
-            className={[
-                "group relative flex gap-3 border-b px-4 py-3",
-                "transition-colors",
+        <li
+            className={cn(
+                "group relative flex gap-3 border-b border-border-subtle px-3.5 py-3 transition-colors last:border-b-0",
                 isUnread
-                    ? "bg-blue-50/50"
-                    : "bg-background",
-                "hover:bg-muted/40",
-            ].join(" ")}
+                    ? "bg-primary-subtle/50"
+                    : "hover:bg-surface-muted/60"
+            )}
         >
-
-            {/* Unread indicator */}
-
-            <div className="flex w-2 shrink-0 justify-center pt-2">
-
+            {/* Unread marker — paired with the bold title, never color alone */}
+            <span className="flex w-1.5 shrink-0 justify-center pt-2.5">
                 {isUnread && (
                     <span
-                        className="
-                            h-2
-                            w-2
-                            rounded-full
-                            bg-blue-600
-                        "
+                        aria-hidden="true"
+                        className="size-1.5 rounded-full bg-primary"
                     />
                 )}
+            </span>
 
-            </div>
-
-
-            {/* Notification icon */}
-
-            <div
-                className="
-                    flex
-                    h-9
-                    w-9
-                    shrink-0
-                    items-center
-                    justify-center
-                    rounded-full
-                    bg-muted
-                    text-muted-foreground
-                "
+            <span
+                aria-hidden="true"
+                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-muted-foreground"
             >
-                <MailOpen
-                    className="
-                        h-4
-                        w-4
-                    "
-                />
-            </div>
-
-
-            {/* Content */}
+                <MailOpen className="size-4" />
+            </span>
 
             <div className="min-w-0 flex-1">
 
                 <div className="flex items-start justify-between gap-2">
 
                     <p
-                        className={[
-                            "text-sm",
+                        className={cn(
+                            "min-w-0 text-[13px] leading-snug",
                             isUnread
-                                ? "font-semibold"
-                                : "font-medium",
-                        ].join(" ")}
+                                ? "font-semibold text-foreground"
+                                : "font-medium text-foreground/85"
+                        )}
                     >
                         {notification.title}
+
+                        {isUnread && (
+                            <span className="sr-only"> (unread)</span>
+                        )}
                     </p>
 
-                    <span
-                        className="
-                            shrink-0
-                            text-[11px]
-                            text-muted-foreground
-                        "
+                    <time
+                        dateTime={notification.createdAt}
+                        className="shrink-0 pt-0.5 text-[11px] whitespace-nowrap text-muted-foreground"
                     >
-                        {formatNotificationTime(
-                            notification.createdAt
-                        )}
-                    </span>
+                        {formatRelativeTime(notification.createdAt)}
+                    </time>
 
                 </div>
 
 
-                <p
-                    className="
-                        mt-1
-                        line-clamp-2
-                        text-xs
-                        leading-5
-                        text-muted-foreground
-                    "
-                >
+                <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                     {notification.message}
                 </p>
 
 
-                {/* Actions */}
-
-                <div
-                    className="
-                        mt-2
-                        flex
-                        items-center
-                        gap-3
-                        opacity-100
-                        transition-opacity
-                        sm:opacity-0
-                        sm:group-hover:opacity-100
-                    "
-                >
+                {/*
+                 * Always visible rather than hover-revealed. A hover-only
+                 * action row is unreachable by keyboard and invisible on
+                 * touch, which is exactly where a notification is tapped.
+                 */}
+                <div className="mt-2 flex items-center gap-1">
 
                     {isUnread ? (
-                        <button
+                        <Button
                             type="button"
-                            className="
-                                inline-flex
-                                items-center
-                                gap-1
-                                text-[11px]
-                                font-medium
-                                text-muted-foreground
-                                hover:text-foreground
-                            "
-                            onClick={() =>
-                                onRead(
-                                    notification.id
-                                )
-                            }
+                            variant="ghost"
+                            size="xs"
+                            className="text-muted-foreground"
+                            onClick={() => onRead(notification.id)}
                         >
-                            <Check
-                                className="
-                                    h-3
-                                    w-3
-                                "
-                            />
-
+                            <Check />
                             Mark as read
-                        </button>
+                        </Button>
                     ) : (
-                        <button
+                        <Button
                             type="button"
-                            className="
-                                inline-flex
-                                items-center
-                                gap-1
-                                text-[11px]
-                                font-medium
-                                text-muted-foreground
-                                hover:text-foreground
-                            "
-                            onClick={() =>
-                                onUnread(
-                                    notification.id
-                                )
-                            }
+                            variant="ghost"
+                            size="xs"
+                            className="text-muted-foreground"
+                            onClick={() => onUnread(notification.id)}
                         >
-                            <MailOpen
-                                className="
-                                    h-3
-                                    w-3
-                                "
-                            />
-
+                            <MailOpen />
                             Mark unread
-                        </button>
+                        </Button>
                     )}
 
 
-                    <button
+                    <Button
                         type="button"
-                        className="
-                            inline-flex
-                            items-center
-                            gap-1
-                            text-[11px]
-                            font-medium
-                            text-muted-foreground
-                            hover:text-destructive
-                        "
-                        onClick={() =>
-                            onDelete(
-                                notification.id
-                            )
-                        }
+                        variant="ghost"
+                        size="xs"
+                        className="text-muted-foreground hover:bg-danger-subtle hover:text-danger-foreground"
+                        onClick={() => onDelete(notification.id)}
                     >
-                        <Trash2
-                            className="
-                                h-3
-                                w-3
-                            "
-                        />
-
+                        <Trash2 />
                         Delete
-                    </button>
+                    </Button>
 
                 </div>
 
             </div>
 
-        </div>
+        </li>
     );
 }

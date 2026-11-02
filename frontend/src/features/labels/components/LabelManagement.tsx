@@ -1,352 +1,254 @@
-import {
-    useState,
-} from "react";
+import { useState } from "react";
+import { Tags, Plus, Pencil, Trash2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { SectionHeader } from "@/components/ui/section-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useConfirm } from "@/components/common/confirm";
+import { normalizeError } from "@/lib/errors";
+import { toast } from "sonner";
 
 import LabelFormDialog from "./LabelFormDialog";
+import { LabelSwatch } from "./LabelSwatch";
 
-import {
-    useLabels,
-} from "../hooks/useLabels";
+import { useLabels } from "../hooks/useLabels";
+import { useCreateLabel } from "../hooks/useCreateLabel";
+import { useUpdateLabel } from "../hooks/useUpdateLabel";
+import { useDeleteLabel } from "../hooks/useDeleteLabel";
 
-import {
-    useCreateLabel,
-} from "../hooks/useCreateLabel";
-
-import {
-    useUpdateLabel,
-} from "../hooks/useUpdateLabel";
-
-import {
-    useDeleteLabel,
-} from "../hooks/useDeleteLabel";
-
-import type {
-    CreateLabelRequest,
-    Label,
-} from "../types/label";
+import type { CreateLabelRequest, Label } from "../types/label";
 
 export default function LabelManagement() {
     const {
         data: labels = [],
         isLoading,
         isError,
+        error,
         refetch,
     } = useLabels();
 
-    const createMutation =
-        useCreateLabel();
+    const createMutation = useCreateLabel();
+    const updateMutation = useUpdateLabel();
+    const deleteMutation = useDeleteLabel();
+    const confirm = useConfirm();
 
-    const updateMutation =
-        useUpdateLabel();
-
-    const deleteMutation =
-        useDeleteLabel();
-
-    const [dialogOpen, setDialogOpen] =
-        useState(false);
-
-    const [editingLabel, setEditingLabel] =
-        useState<Label | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [editingLabel, setEditingLabel] = useState<Label | null>(null);
 
     const openCreateDialog = () => {
         setEditingLabel(null);
         setDialogOpen(true);
     };
 
-    const openEditDialog = (
-        label: Label
-    ) => {
+    const openEditDialog = (label: Label) => {
         setEditingLabel(label);
         setDialogOpen(true);
     };
 
     const closeDialog = () => {
-        if (
-            createMutation.isPending ||
-            updateMutation.isPending
-        ) {
-            return;
-        }
+        if (createMutation.isPending || updateMutation.isPending) return;
 
         setDialogOpen(false);
         setEditingLabel(null);
     };
 
-    const handleSubmit = (
-        data: CreateLabelRequest
-    ) => {
+    const handleSubmit = (data: CreateLabelRequest) => {
         if (editingLabel) {
             updateMutation.mutate(
                 {
                     id: editingLabel.id,
-                    data: {
-                        labelId:
-                            editingLabel.id,
-                        ...data,
-                    },
+                    data: { labelId: editingLabel.id, ...data },
                 },
-                {
-                    onSuccess: () => {
-                        closeDialog();
-                    },
-                }
+                { onSuccess: () => closeDialog() }
             );
 
             return;
         }
 
-        createMutation.mutate(
-            data,
-            {
-                onSuccess: () => {
-                    closeDialog();
-                },
-            }
-        );
+        createMutation.mutate(data, {
+            onSuccess: () => closeDialog(),
+        });
     };
 
-    const handleDelete = (
-        label: Label
-    ) => {
-        const confirmed =
-            window.confirm(
-                `Are you sure you want to delete the "${label.name}" label?`
-            );
+    async function handleDelete(label: Label) {
+        const ok = await confirm({
+            title: `Delete the “${label.name}” label?`,
+            description:
+                "It disappears from every work item using it. This can't be undone.",
+            confirmLabel: "Delete label",
+            tone: "destructive",
+        });
 
-        if (!confirmed) {
-            return;
-        }
+        if (!ok) return;
 
-        deleteMutation.mutate(
-            label.id
-        );
-    };
+        deleteMutation.mutate(label.id, {
+            onError: (err) => {
+                const { title, description } = normalizeError(err, {
+                    title: "We couldn't delete that label",
+                });
+
+                toast.error(title, { description });
+            },
+        });
+    }
+
+    const createButton = (
+        <Button size="sm" onClick={openCreateDialog}>
+            <Plus />
+            New label
+        </Button>
+    );
 
     return (
         <>
-            <section className="rounded-xl border border-gray-200 bg-white p-6">
+            <section
+                aria-label="Labels"
+                className="rounded-xl border border-border bg-card p-5 shadow-xs"
+            >
+                <SectionHeader
+                    title="Labels"
+                    description="Tag work items so they can be filtered and reported on together."
+                    action={createButton}
+                />
 
-                {/* Page Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                            Labels
-                        </h2>
-
-                        <p className="mt-1 text-sm text-gray-500">
-                            Manage labels used across your workspace.
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={
-                            openCreateDialog
-                        }
-                        className="shrink-0 rounded-lg bg-gray-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-gray-800"
-                    >
-                        + Create Label
-                    </button>
-                </div>
-
-                {/* Content */}
-                <div className="mt-6">
-
-                    {/* Loading */}
-                    {isLoading && (
-                        <div className="space-y-2">
-                            {[
-                                1, 2, 3,
-                            ].map(
-                                (item) => (
-                                    <div
-                                        key={
-                                            item
-                                        }
-                                        className="h-[72px] animate-pulse rounded-lg border border-gray-100 bg-gray-50"
-                                    />
-                                )
-                            )}
-                        </div>
-                    )}
-
-                    {/* Error */}
-                    {!isLoading &&
-                        isError && (
-                            <div className="rounded-lg border border-red-100 bg-red-50 p-6 text-center">
-                                <p className="text-sm font-medium text-red-700">
-                                    Failed to load labels.
-                                </p>
-
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        refetch()
-                                    }
-                                    className="mt-3 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                <div className="mt-5">
+                    {isLoading ? (
+                        <ul className="space-y-2">
+                            {Array.from({ length: 3 }).map((_, index) => (
+                                <li key={index}>
+                                    <Skeleton className="h-14 rounded-lg" />
+                                </li>
+                            ))}
+                        </ul>
+                    ) : isError ? (
+                        <ErrorState
+                            error={error}
+                            title="We couldn't load your labels"
+                            action={
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => void refetch()}
                                 >
-                                    Try Again
-                                </button>
-                            </div>
-                        )}
-
-                    {/* Empty */}
-                    {!isLoading &&
-                        !isError &&
-                        labels.length ===
-                            0 && (
-                            <div className="rounded-lg border border-dashed border-gray-300 px-6 py-12 text-center">
-                                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-lg">
-                                    🏷
-                                </div>
-
-                                <h3 className="mt-3 text-sm font-semibold text-gray-900">
-                                    No labels yet
-                                </h3>
-
-                                <p className="mx-auto mt-1 max-w-sm text-xs text-gray-500">
-                                    Create your first label to organize work items across your workspace.
-                                </p>
-
-                                <button
-                                    type="button"
-                                    onClick={
-                                        openCreateDialog
+                                    Try again
+                                </Button>
+                            }
+                        />
+                    ) : labels.length === 0 ? (
+                        <EmptyState
+                            icon={Tags}
+                            title="No labels yet"
+                            description="Create your first label to organize work items across the workspace."
+                            action={
+                                <Button onClick={openCreateDialog}>
+                                    <Plus />
+                                    Create label
+                                </Button>
+                            }
+                            size="sm"
+                            className="rounded-lg border border-dashed border-border-strong py-10"
+                        />
+                    ) : (
+                        <ul className="overflow-hidden rounded-lg border border-border">
+                            {labels.map((label, index) => (
+                                <li
+                                    key={label.id}
+                                    className={
+                                        index < labels.length - 1
+                                            ? "border-b border-border-subtle"
+                                            : undefined
                                     }
-                                    className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
                                 >
-                                    + Create Label
-                                </button>
-                            </div>
-                        )}
+                                    {/* Stack on a phone: the name and its actions
+                                        rarely share a line at 360px. */}
+                                    <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <span
+                                                aria-hidden="true"
+                                                className="size-3 shrink-0 rounded-full ring-2 ring-border-subtle"
+                                                style={{
+                                                    backgroundColor:
+                                                        label.color,
+                                                }}
+                                            />
 
-                    {/* Labels */}
-                    {!isLoading &&
-                        !isError &&
-                        labels.length >
-                            0 && (
-                            <div className="overflow-hidden rounded-lg border border-gray-200">
-                                {labels.map(
-                                    (
-                                        label,
-                                        index
-                                    ) => (
-                                        <div
-                                            key={
-                                                label.id
-                                            }
-                                            className={`flex items-center justify-between gap-4 px-4 py-4 ${
-                                                index <
-                                                labels.length -
-                                                    1
-                                                    ? "border-b border-gray-100"
-                                                    : ""
-                                            }`}
-                                        >
-                                            {/* Label Info */}
-                                            <div className="flex min-w-0 items-center gap-3">
+                                            <div className="min-w-0">
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    <span className="truncate text-sm font-medium text-foreground">
+                                                        {label.name}
+                                                    </span>
 
-                                                <span
-                                                    className="h-3 w-3 shrink-0 rounded-full"
-                                                    style={{
-                                                        backgroundColor:
-                                                            label.color,
-                                                    }}
-                                                />
-
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <span
-                                                            className="truncate text-sm font-medium text-gray-900"
-                                                        >
-                                                            {
-                                                                label.name
-                                                            }
-                                                        </span>
-
-                                                        <span
-                                                            className="hidden rounded-full border px-2 py-0.5 text-[10px] font-medium sm:inline-flex"
-                                                            style={{
-                                                                color:
-                                                                    label.color,
-                                                                borderColor:
-                                                                    `${label.color}55`,
-                                                                backgroundColor:
-                                                                    `${label.color}10`,
-                                                            }}
-                                                        >
-                                                            {
-                                                                label.name
-                                                            }
-                                                        </span>
-                                                    </div>
-
-                                                    {label.description && (
-                                                        <p className="mt-1 truncate text-xs text-gray-500">
-                                                            {
-                                                                label.description
-                                                            }
-                                                        </p>
-                                                    )}
+                                                    {/* Hidden on phones; the
+                                                        colored dot already says it */}
+                                                    <LabelSwatch
+                                                        name={label.name}
+                                                        color={label.color}
+                                                        size="sm"
+                                                        className="hidden sm:inline-flex"
+                                                    />
                                                 </div>
-                                            </div>
 
-                                            {/* Actions */}
-                                            <div className="flex shrink-0 items-center gap-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        openEditDialog(
-                                                            label
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        updateMutation.isPending ||
-                                                        deleteMutation.isPending
-                                                    }
-                                                    className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
-                                                >
-                                                    Edit
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleDelete(
-                                                            label
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        deleteMutation.isPending
-                                                    }
-                                                    className="rounded-md px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                                                >
-                                                    Delete
-                                                </button>
+                                                {label.description && (
+                                                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                                        {label.description}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
-                                    )
-                                )}
-                            </div>
-                        )}
+
+                                        <div className="flex shrink-0 items-center gap-1.5 self-end sm:self-auto">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() =>
+                                                    openEditDialog(label)
+                                                }
+                                                disabled={
+                                                    updateMutation.isPending ||
+                                                    deleteMutation.isPending
+                                                }
+                                            >
+                                                <Pencil />
+                                                <span className="hidden sm:inline">
+                                                    Edit
+                                                </span>
+                                            </Button>
+
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() =>
+                                                    void handleDelete(label)
+                                                }
+                                                disabled={
+                                                    deleteMutation.isPending
+                                                }
+                                                className="text-danger-foreground hover:bg-danger-subtle hover:text-danger-foreground"
+                                            >
+                                                <Trash2 />
+                                                <span className="hidden sm:inline">
+                                                    Delete
+                                                </span>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             </section>
 
             <LabelFormDialog
                 open={dialogOpen}
-                label={
-                    editingLabel
-                }
+                label={editingLabel}
                 isSubmitting={
-                    createMutation.isPending ||
-                    updateMutation.isPending
+                    createMutation.isPending || updateMutation.isPending
                 }
-                onClose={
-                    closeDialog
-                }
-                onSubmit={
-                    handleSubmit
-                }
+                onClose={closeDialog}
+                onSubmit={handleSubmit}
             />
         </>
     );

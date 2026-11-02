@@ -10,6 +10,8 @@ import {
 import ColumnGrid from "../components/ColumnGrid";
 import { useBoardDetails } from "../hooks/useBoardDetails";
 
+import AppLayout from "@/layouts/AppLayout";
+
 import BoardPresence from "@/features/presence/components/BoardPresence";
 import {
     usePresenceContext,
@@ -89,16 +91,18 @@ export default function BoardDetailsPage() {
     if (isLoading) {
 
         return (
-            <div className="
-                flex
-                h-[60vh]
-                items-center
-                justify-center
-                text-sm
-                text-muted-foreground
-            ">
-                Loading board...
-            </div>
+            <AppLayout>
+                <div className="
+                    flex
+                    h-[60vh]
+                    items-center
+                    justify-center
+                    text-sm
+                    text-muted-foreground
+                ">
+                    Loading board...
+                </div>
+            </AppLayout>
         );
     }
 
@@ -113,16 +117,18 @@ export default function BoardDetailsPage() {
     ) {
 
         return (
-            <div className="
-                flex
-                h-[60vh]
-                items-center
-                justify-center
-                text-sm
-                text-muted-foreground
-            ">
-                Board not found.
-            </div>
+            <AppLayout>
+                <div className="
+                    flex
+                    h-[60vh]
+                    items-center
+                    justify-center
+                    text-sm
+                    text-muted-foreground
+                ">
+                    Board not found.
+                </div>
+            </AppLayout>
         );
     }
 
@@ -133,9 +139,10 @@ export default function BoardDetailsPage() {
 
     return (
 
+        <AppLayout>
+
         <div className="
-            space-y-8
-            p-6
+            space-y-6
         ">
 
             {/* =================================================
@@ -161,10 +168,10 @@ export default function BoardDetailsPage() {
                         py-2
                         text-sm
                         font-medium
-                        text-gray-500
+                        text-muted-foreground
                         transition
-                        hover:bg-gray-100
-                        hover:text-gray-900
+                        hover:bg-surface-sunken
+                        hover:text-foreground
                     "
                 >
 
@@ -200,7 +207,7 @@ export default function BoardDetailsPage() {
                         <h1 className="
                             text-4xl
                             font-bold
-                            text-gray-900
+                            text-foreground
                         ">
                             {board.name}
                         </h1>
@@ -248,5 +255,7 @@ export default function BoardDetailsPage() {
             />
 
         </div>
+
+        </AppLayout>
     );
 }

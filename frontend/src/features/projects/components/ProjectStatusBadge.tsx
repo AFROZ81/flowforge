@@ -4,21 +4,14 @@ type Props = {
     archived?: boolean;
 };
 
-export default function ProjectStatusBadge({
-    archived,
-}: Props) {
-    return archived ? (
-        <Badge
-            variant="secondary"
-            className="bg-slate-100 text-slate-700"
-        >
-            Archived
-        </Badge>
-    ) : (
-        <Badge
-            className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-        >
-            Active
+/**
+ * Active / Archived, in the same soft tones used by work item status,
+ * so a green chip means "finished, healthy" everywhere in the product.
+ */
+export default function ProjectStatusBadge({ archived }: Props) {
+    return (
+        <Badge variant={archived ? "softNeutral" : "softSuccess"}>
+            {archived ? "Archived" : "Active"}
         </Badge>
     );
 }

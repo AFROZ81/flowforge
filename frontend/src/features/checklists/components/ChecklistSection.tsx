@@ -670,11 +670,9 @@ export default function ChecklistSection({
 
     return (
         <section
+            aria-label="Checklist"
             className="
-                rounded-lg
-                border
-                bg-muted/10
-                p-3
+                rounded-xl border border-border bg-surface-muted/40 p-3
             "
         >
 
@@ -824,12 +822,12 @@ export default function ChecklistSection({
                     className="
                         rounded-md
                         border
-                        border-red-200
-                        bg-red-50
+                        border-danger/40
+                        bg-danger-subtle
                         px-3
                         py-3
                         text-xs
-                        text-red-600
+                        text-danger-foreground
                     "
                 >
                     Failed to load checklist.
@@ -1105,8 +1103,8 @@ export default function ChecklistSection({
                                                             h-7
                                                             px-2
                                                             text-xs
-                                                            text-red-600
-                                                            hover:text-red-700
+                                                            text-danger-foreground
+                                                            hover:text-danger-foreground
                                                         "
                                                         onClick={() =>
                                                             void handleDelete(

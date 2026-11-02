@@ -1,159 +1,173 @@
-import { useState } from "react";
+import { useEffect } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
+import { normalizeError } from "@/lib/errors";
 
+import { AuthPasswordField, AuthTextField } from "./AuthFields";
 import { useLogin } from "../hooks/useLogin";
 import {
     loginSchema,
     type LoginFormValues,
 } from "../validation/login.schema";
 
-export default function LoginForm() {
-    const [showPassword, setShowPassword] = useState(false);
+type Props = {
+    /** Carried over from a successful sign-up. */
+    defaultEmail?: string;
+    onSwitchToRegister: () => void;
+};
 
+/*
+ * This is one face of AuthCard, so it owns no Card, no width and no entrance
+ * animation — the shell that flips it does all three.
+ *
+ * Labels are visually hidden rather than absent: the composition carries no
+ * label text, but `hideLabel` keeps the <label> in the DOM wired to its
+ * control, so every field is still announced and still clickable via its
+ * accessible name.
+ *
+ * "Remember me" and "Forgot password?" stay off this form on purpose. The
+ * session store is pinned to sessionStorage and the API exposes no reset
+ * endpoint, so either control would be a decoration that cannot do anything.
+ */
+export default function LoginForm({ defaultEmail, onSwitchToRegister }: Props) {
     const loginMutation = useLogin();
 
     const {
         register,
         handleSubmit,
-        formState: {
-            errors,
-            isSubmitting,
-        },
+        reset,
+        formState: { errors, isSubmitting },
     } = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
-        defaultValues: {
-            email: "",
-            password: "",
-        },
+        defaultValues: { email: "", password: "" },
     });
+
+    /*
+     * An account that was just created has to be typed in again otherwise —
+     * hand it over instead. `reset` puts the value through react-hook-form
+     * rather than mutating the DOM behind its back.
+     */
+    useEffect(() => {
+        if (!defaultEmail) return;
+
+        reset({ email: defaultEmail, password: "" });
+    }, [defaultEmail, reset]);
+
+    const busy = isSubmitting || loginMutation.isPending;
 
     async function onSubmit(data: LoginFormValues) {
         try {
             await loginMutation.mutateAsync(data);
+            toast.success("Welcome back.");
+        } catch (error) {
+            /*
+             * A wrong password and a dead API are different problems.
+             * Saying "invalid email or password" for both sent people
+             * rewriting credentials that were already correct.
+             */
+            const { title, description } = normalizeError(error, {
+                title: "We couldn't sign you in",
+                description:
+                    "Check your email and password, then try again.",
+            });
 
-            toast.success("Welcome back!");
-        } catch {
-            toast.error("Invalid email or password.");
+            toast.error(title, { description });
         }
     }
 
     return (
-        <Card className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-10 shadow-xl">
-            <h1 className="text-4xl font-bold tracking-tight">
+        <>
+            <h1 className="font-heading text-[28px] leading-[1.1] font-semibold tracking-[-0.03em] text-balance text-foreground sm:text-[32px]">
                 Welcome Back
             </h1>
 
-            <p className="mt-2 text-slate-500">
-                Sign in to continue to your FlowForge workspace.
-            </p>
-
             <form
                 onSubmit={handleSubmit(onSubmit)}
-                className="mt-10 space-y-6"
+                aria-busy={busy}
+                className="mt-7 space-y-5"
             >
-                {/* Email */}
-                <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-
-                    <Input
-                        id="email"
-                        type="email"
-                        placeholder="john@example.com"
-                        className="h-12 rounded-xl"
-                        {...register("email")}
-                    />
-
-                    {errors.email && (
-                        <p className="text-sm text-red-500">
-                            {errors.email.message}
-                        </p>
-                    )}
-                </div>
-
-                {/* Password */}
-                <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-
-                    <div className="relative">
-                        <Input
-                            id="password"
-                            type={showPassword ? "text" : "password"}
-                            placeholder="••••••••"
-                            className="h-12 rounded-xl pr-10"
-                            {...register("password")}
+                <FormField
+                    label="Email"
+                    htmlFor="email"
+                    required
+                    hideLabel
+                    error={errors.email?.message}
+                >
+                    {(aria) => (
+                        <AuthTextField
+                            aria={aria}
+                            icon={Mail}
+                            type="email"
+                            inputMode="email"
+                            autoComplete="email"
+                            placeholder="you@company.com"
+                            disabled={busy}
+                            registered={register("email")}
                         />
-
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setShowPassword((prev) => !prev)
-                            }
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
-                        >
-                            {showPassword ? (
-                                <EyeOff size={18} />
-                            ) : (
-                                <Eye size={18} />
-                            )}
-                        </button>
-                    </div>
-
-                    {errors.password && (
-                        <p className="text-sm text-red-500">
-                            {errors.password.message}
-                        </p>
                     )}
-                </div>
+                </FormField>
 
-                {/* Remember Me */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Checkbox id="remember" />
+                <FormField
+                    label="Password"
+                    htmlFor="password"
+                    required
+                    hideLabel
+                    error={errors.password?.message}
+                >
+                    {(aria) => (
+                        <AuthPasswordField
+                            aria={aria}
+                            autoComplete="current-password"
+                            placeholder="Password"
+                            disabled={busy}
+                            registered={register("password")}
+                        />
+                    )}
+                </FormField>
 
-                        <Label htmlFor="remember">
-                            Remember me
-                        </Label>
-                    </div>
-
-                    <button
-                        type="button"
-                        className="text-sm font-medium text-blue-600 transition hover:text-blue-700"
-                    >
-                        Forgot password?
-                    </button>
-                </div>
-
-                {/* Submit */}
                 <Button
                     type="submit"
-                    disabled={isSubmitting || loginMutation.isPending}
-                    className="h-12 w-full rounded-xl text-base"
+                    className="h-12 w-full rounded-xl text-[15px] font-semibold"
+                    disabled={busy}
                 >
-                    {loginMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {busy ? (
+                        <>
+                            <Loader2 className="animate-spin" aria-hidden="true" />
+                            Signing in…
+                        </>
+                    ) : (
+                        <>
+                            Sign In
+                            <ArrowRight
+                                className="transition-transform duration-(--transition-fast) ease-(--ease-standard) group-hover/button:translate-x-0.5"
+                                aria-hidden="true"
+                            />
+                        </>
                     )}
-
-                    {loginMutation.isPending
-                        ? "Signing In..."
-                        : "Sign In"}
                 </Button>
             </form>
 
-            <div className="mt-10 border-t pt-6">
-                <p className="text-center text-sm text-slate-500">
-                    Secure • Fast • Real-time Collaboration
-                </p>
-            </div>
-        </Card>
+            <p className="mt-6 text-center text-[13px] text-muted-foreground">
+                New to FlowForge?{" "}
+                <button
+                    type="button"
+                    onClick={onSwitchToRegister}
+                    disabled={busy}
+                    className="
+                        font-medium text-auth-link underline-offset-4
+                        transition-colors hover:underline
+                        disabled:pointer-events-none disabled:opacity-50
+                    "
+                >
+                    Create an account
+                </button>
+            </p>
+        </>
     );
 }

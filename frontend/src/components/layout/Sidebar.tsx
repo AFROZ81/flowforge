@@ -1,550 +1,219 @@
-import {
-    FolderKanban,
-    LayoutDashboard,
-    Settings,
-    ChevronRight,
-    ChevronLeft,
-    LogOut,
-    BarChart3,
-} from "lucide-react";
+import { NavLink } from "react-router";
 
+import Logo from "@/components/layout/Logo";
+import { NAV_SECTIONS, type NavItem } from "@/components/layout/navigation";
+import { Avatar } from "@/components/ui/avatar";
 import {
-    NavLink,
-    useNavigate,
-} from "react-router";
-
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAuthStore } from "@/stores/auth.store";
-
+import { cn } from "@/lib/utils";
 
 type SidebarProps = {
-    collapsed: boolean;
-    onToggle: () => void;
+  collapsed: boolean;
+
+  /**
+   * `drawer` is the mobile slide-out: always expanded, and it closes
+   * itself after a navigation so tapping a link dismisses the panel.
+   *
+   * Collapsing is not offered here — a drawer that collapses into itself has
+   * nothing to collapse against. The rail's toggle lives in AppLayout, on the
+   * corner where the rail meets the top bar.
+   */
+  variant?: "fixed" | "drawer";
+  onNavigate?: () => void;
 };
 
-
 /* =========================================================
-   PRIMARY NAVIGATION
+   SINGLE NAV ROW
    ========================================================= */
 
-const primaryNavigation = [
-    {
-        title: "Dashboard",
-        icon: LayoutDashboard,
-        href: "/dashboard",
-        end: true,
-    },
-    {
-        title: "Projects",
-        icon: FolderKanban,
-        href: "/projects",
-        end: false,
-    },
-    {
-        title: "Reports",
-        icon: BarChart3,
-        href: "/reports",
-        end: false,
-    },
-];
+function NavRow({
+  item,
+  collapsed,
+  onNavigate,
+}: {
+  item: NavItem;
+  collapsed: boolean;
+  onNavigate?: () => void;
+}) {
+  const Icon = item.icon;
 
+  const link = (
+    <NavLink
+      to={item.href}
+      end={item.end}
+      onClick={onNavigate}
+      aria-label={collapsed ? item.title : undefined}
+      className={({ isActive }) =>
+        cn(
+          "group/nav relative flex h-10 w-full items-center rounded-lg",
+          "text-sm transition-colors duration-(--transition-fast) outline-none",
+          collapsed ? "justify-center px-0" : "gap-2.5 px-3",
 
-/* =========================================================
-   WORKSPACE NAVIGATION
-   ========================================================= */
+          isActive
+            ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
+            : "font-medium text-sidebar-foreground/65 hover:bg-sidebar-foreground/[0.045] hover:text-sidebar-foreground"
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {/* Accent rail — the fastest possible read of "you are here" */}
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute left-0 w-[3px] rounded-r-full bg-primary transition-[height,opacity] duration-(--transition-normal)",
+              isActive
+                ? "top-1/2 h-5 -translate-y-1/2 opacity-100"
+                : "top-1/2 h-0 -translate-y-1/2 opacity-0"
+            )}
+          />
 
-const workspaceNavigation = [
-    {
-        title: "Settings",
-        icon: Settings,
-        href: "/settings",
-        end: false,
-    },
-];
+          <Icon
+            size={17}
+            strokeWidth={isActive ? 2.15 : 1.8}
+            className={cn(
+              "shrink-0 transition-colors",
+              isActive
+                ? "text-primary"
+                : "text-sidebar-foreground/45 group-hover/nav:text-sidebar-foreground/80"
+            )}
+          />
 
+          {!collapsed && <span className="truncate">{item.title}</span>}
+        </>
+      )}
+    </NavLink>
+  );
+
+  // A collapsed rail has no visible label, so the name must come from somewhere
+  if (!collapsed) return link;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<div className="w-full" />}>{link}</TooltipTrigger>
+      <TooltipContent side="right">{item.title}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 /* =========================================================
    SIDEBAR
    ========================================================= */
 
 export default function Sidebar({
-    collapsed,
-    onToggle,
+  collapsed,
+  variant = "fixed",
+  onNavigate,
 }: SidebarProps) {
+  const isDrawer = variant === "drawer";
+  const showCollapsed = isDrawer ? false : collapsed;
 
-    const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
 
-    const logout =
-        useAuthStore(
-            (state) => state.logout
-        );
+  const fullName = user?.fullName?.trim() || "User";
+  const email = user?.email?.trim() || "";
 
+  return (
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col bg-sidebar",
+        !isDrawer && "border-r border-sidebar-border",
+        isDrawer && "border-r border-border"
+      )}
+    >
+      {/* ==================================================
+          BRAND
+      ================================================== */}
+      <div
+        className={cn(
+          "flex h-[var(--topbar-height)] shrink-0 items-center border-b border-sidebar-border",
+          showCollapsed ? "justify-center px-2" : "px-4"
+        )}
+      >
+        {showCollapsed ? (
+          <Logo variant="mark" size="md" />
+        ) : (
+          <Logo size="md" tagline={isDrawer ? "Enterprise Workspace" : null} />
+        )}
+      </div>
 
-    /* =====================================================
-       LOGOUT
-    ===================================================== */
+      {/* ==================================================
+          NAVIGATION
+      ================================================== */}
+      <nav
+        aria-label="Primary"
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-4"
+      >
+        {NAV_SECTIONS.map((section, sectionIndex) => (
+          <div
+            key={section.label}
+            className={cn(sectionIndex > 0 && "mt-6")}
+          >
+            {showCollapsed ? (
+              /* Keep a visible seam where the label would have been */
+              <div
+                aria-hidden="true"
+                className="mx-3 mb-3 h-px bg-sidebar-border"
+              />
+            ) : (
+              <p className="mb-1.5 px-3 text-[10.5px] font-semibold tracking-[0.1em] text-sidebar-foreground/40 uppercase">
+                {section.label}
+              </p>
+            )}
 
-    const handleLogout = () => {
+            <ul className="space-y-0.5">
+              {section.items.map((item) => (
+                <li key={item.href}>
+                  <NavRow
+                    item={item}
+                    collapsed={showCollapsed}
+                    onNavigate={onNavigate}
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </nav>
 
-        logout();
+      {/* ==================================================
+          FOOTER — account
 
-        navigate(
-            "/login",
-            {
-                replace: true,
-            }
-        );
-    };
-
-
-    return (
-        <aside
-            className={[
-                "relative flex h-screen shrink-0 flex-col",
-                "border-r border-slate-200/80 bg-white shadow-[4px_0_24px_-18px_rgba(15,23,42,0.35)]",
-                "transition-[width] duration-300 ease-in-out",
-                collapsed
-                    ? "w-[72px]"
-                    : "w-64",
-            ].join(" ")}
+          Identity only. Signing out lives in the top bar with the
+          other session controls, not down here among the navigation.
+      ================================================== */}
+      <div className="shrink-0 border-t border-sidebar-border p-3">
+        <div
+          className={cn(
+            "flex items-center gap-2.5 rounded-lg p-1.5",
+            showCollapsed && "justify-center"
+          )}
         >
+          <Avatar name={fullName} size={showCollapsed ? "sm" : "md"} ring />
 
-            {/* =================================================
-                BRAND
-            ================================================= */}
+          {!showCollapsed && (
+            <div className="min-w-0 flex-1">
+              <p
+                className="truncate text-[13px] leading-tight font-semibold text-sidebar-foreground"
+                title={fullName}
+              >
+                {fullName}
+              </p>
 
-            <div
-                className={[
-                    "flex h-[72px] shrink-0 items-center border-b border-slate-100 bg-white/95",
-                    collapsed
-                        ? "justify-center px-2"
-                        : "px-4",
-                ].join(" ")}
-            >
-
-                <div
-                    className={[
-                        "flex min-w-0 items-center",
-                        collapsed
-                            ? "justify-center"
-                            : "gap-3",
-                    ].join(" ")}
-                >
-
-                    {/* Logo */}
-
-                    <div
-                        className="
-                            flex
-                            h-9
-                            w-9
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-xl
-                            bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-600
-                            text-sm
-                            font-bold
-                            text-white
-                            shadow-[0_6px_14px_-6px_rgba(37,99,235,0.75)]
-                        "
-                    >
-                        F
-                    </div>
-
-
-                    {/* Brand text */}
-
-                    <div
-                        className={[
-                            "overflow-hidden transition-all duration-300",
-                            collapsed
-                                ? "w-0 opacity-0"
-                                : "w-[150px] opacity-100",
-                        ].join(" ")}
-                    >
-
-                        <h1
-                            className="
-                                whitespace-nowrap
-                                text-[15px]
-                                font-bold
-                                tracking-tight
-                                text-slate-900
-                            "
-                        >
-                            FlowForge
-                        </h1>
-
-                        <p
-                            className="
-                                whitespace-nowrap
-                                text-[11px]
-                                text-slate-400
-                            "
-                        >
-                            Enterprise Workspace
-                        </p>
-
-                    </div>
-
-                </div>
-
+              <p
+                className="mt-0.5 truncate text-[11px] leading-tight text-sidebar-foreground/50"
+                title={email}
+              >
+                {email || "Signed in"}
+              </p>
             </div>
-
-
-            {/* =================================================
-                COLLAPSE BUTTON
-            ================================================= */}
-
-            <button
-                type="button"
-                onClick={onToggle}
-                aria-label={
-                    collapsed
-                        ? "Expand sidebar"
-                        : "Collapse sidebar"
-                }
-                title={
-                    collapsed
-                        ? "Expand sidebar"
-                        : "Collapse sidebar"
-                }
-                className="
-                    absolute
-                    -right-3
-                    top-[55px]
-                    z-50
-                    flex
-                    h-6
-                    w-6
-                    items-center
-                    justify-center
-                    rounded-full
-                    border
-                    border-slate-200/90
-                    bg-white
-                    text-slate-500
-                    shadow-sm
-                    transition-colors
-                    hover:border-slate-300
-                    hover:bg-slate-50
-                    hover:text-slate-900
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-blue-500/30
-                "
-            >
-
-                {collapsed ? (
-                    <ChevronRight
-                        size={14}
-                        strokeWidth={2}
-                    />
-                ) : (
-                    <ChevronLeft
-                        size={14}
-                        strokeWidth={2}
-                    />
-                )}
-
-            </button>
-
-
-            {/* =================================================
-                NAVIGATION
-            ================================================= */}
-
-            <div
-                className="
-                    min-h-0
-                    flex-1
-                    overflow-x-hidden
-                    overflow-y-auto
-                    px-3
-                    py-6
-                "
-            >
-
-                {/* =================================================
-                    MAIN WORKSPACE
-                ================================================= */}
-
-                <div className="mb-6">
-
-                    {!collapsed && (
-                        <p
-                            className="
-                                mb-2
-                                px-3
-                                text-[10px]
-                                font-semibold
-                                uppercase
-                                tracking-[0.18em]
-                                text-slate-400
-                            "
-                        >
-                            Workspace
-                        </p>
-                    )}
-
-
-                    <nav className="space-y-1">
-
-                        {primaryNavigation.map(
-                            (item) => {
-
-                                const Icon =
-                                    item.icon;
-
-
-                                return (
-                                    <NavLink
-                                        key={item.title}
-                                        to={item.href}
-                                        end={item.end}
-                                        title={
-                                            collapsed
-                                                ? item.title
-                                                : undefined
-                                        }
-                                        className={({
-                                            isActive,
-                                        }) =>
-                                            [
-                                                "group relative flex h-11 w-full items-center rounded-xl",
-                                                "text-sm font-medium transition-colors",
-                                                "outline-none",
-                                                "focus-visible:ring-2 focus-visible:ring-blue-500/30",
-
-                                                collapsed
-                                                    ? "justify-center"
-                                                    : "gap-3 px-3",
-
-                                                isActive
-                                                    ? "bg-blue-50/80 text-blue-700 shadow-sm shadow-blue-100/70"
-                                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
-                                            ].join(" ")
-                                        }
-                                    >
-
-                                        {({
-                                            isActive,
-                                        }) => (
-                                            <>
-
-                                                {isActive && !collapsed && (
-                                                    <span
-                                                        aria-hidden="true"
-                                                        className="absolute left-0 h-6 w-1 rounded-r-full bg-blue-600"
-                                                    />
-                                                )}
-
-                                                <Icon
-                                                    size={18}
-                                                    strokeWidth={
-                                                        isActive
-                                                            ? 2.2
-                                                            : 1.8
-                                                    }
-                                                    className={
-                                                isActive
-                                                    ? "shrink-0 text-blue-600"
-                                                    : "shrink-0 text-slate-400 group-hover:text-slate-600"
-                                                    }
-                                                />
-
-
-                                                {!collapsed && (
-                                                    <span className="truncate">
-                                                        {item.title}
-                                                    </span>
-                                                )}
-
-                                            </>
-                                        )}
-
-                                    </NavLink>
-                                );
-                            }
-                        )}
-
-                    </nav>
-
-                </div>
-
-
-                {/* =================================================
-                    SETTINGS
-                ================================================= */}
-
-                <div>
-
-                    {!collapsed && (
-                                    <p
-                            className="
-                                mb-2
-                                px-3
-                                text-[10px]
-                                font-semibold
-                                uppercase
-                                tracking-[0.18em]
-                                text-slate-400
-                            "
-                        >
-                            Manage
-                        </p>
-                    )}
-
-
-                    <nav className="space-y-1">
-
-                        {workspaceNavigation.map(
-                            (item) => {
-
-                                const Icon =
-                                    item.icon;
-
-
-                                return (
-                                    <NavLink
-                                        key={item.title}
-                                        to={item.href}
-                                        end={item.end}
-                                        title={
-                                            collapsed
-                                                ? item.title
-                                                : undefined
-                                        }
-                                        className={({
-                                            isActive,
-                                        }) =>
-                                            [
-                                                "group relative flex h-11 w-full items-center rounded-xl",
-                                                "text-sm font-medium transition-colors",
-                                                "outline-none",
-                                                "focus-visible:ring-2 focus-visible:ring-blue-500/30",
-
-                                                collapsed
-                                                    ? "justify-center"
-                                                    : "gap-3 px-3",
-
-                                                isActive
-                                                    ? "bg-blue-50/80 text-blue-700 shadow-sm shadow-blue-100/70"
-                                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
-                                            ].join(" ")
-                                        }
-                                    >
-
-                                        {({
-                                            isActive,
-                                        }) => (
-                                            <>
-
-                                                {isActive && !collapsed && (
-                                                    <span
-                                                        aria-hidden="true"
-                                                        className="absolute left-0 h-6 w-1 rounded-r-full bg-blue-600"
-                                                    />
-                                                )}
-
-                                                <Icon
-                                                    size={18}
-                                                    strokeWidth={
-                                                        isActive
-                                                            ? 2.2
-                                                            : 1.8
-                                                    }
-                                                    className={
-                                                        isActive
-                                                            ? "shrink-0 text-blue-600"
-                                                            : "shrink-0 text-slate-400 group-hover:text-slate-600"
-                                                    }
-                                                />
-
-
-                                                {!collapsed && (
-                                                    <span className="truncate">
-                                                        {item.title}
-                                                    </span>
-                                                )}
-
-                                            </>
-                                        )}
-
-                                    </NavLink>
-                                );
-                            }
-                        )}
-
-                    </nav>
-
-                </div>
-
-            </div>
-
-
-            {/* =================================================
-                LOGOUT
-            ================================================= */}
-
-            <div
-                className="
-                    shrink-0
-                    border-t
-                    border-slate-100
-                    bg-slate-50/50
-                    p-3
-                "
-            >
-
-                <button
-                    type="button"
-                    onClick={handleLogout}
-                    title={
-                        collapsed
-                            ? "Logout"
-                            : undefined
-                    }
-                    aria-label="Logout"
-                    className={[
-                        "group flex h-11 w-full items-center rounded-xl",
-                        "text-sm font-medium",
-                        "text-slate-500",
-                        "transition-colors",
-                        "outline-none",
-                        "hover:bg-red-50",
-                        "hover:text-red-600",
-                        "focus-visible:ring-2",
-                        "focus-visible:ring-red-500/30",
-
-                        collapsed
-                            ? "justify-center"
-                            : "gap-3 px-3",
-                    ].join(" ")}
-                >
-
-                    <LogOut
-                        size={18}
-                        strokeWidth={1.8}
-                        className="
-                            shrink-0
-                            text-slate-400
-                            transition-colors
-                            group-hover:text-red-500
-                        "
-                    />
-
-
-                    {!collapsed && (
-                        <span>
-                            Logout
-                        </span>
-                    )}
-
-                </button>
-
-            </div>
-
-        </aside>
-    );
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

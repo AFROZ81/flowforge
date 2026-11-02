@@ -63,68 +63,68 @@ function getActionStyle(
     switch (action) {
         case 7:
             return {
-                dot: "bg-green-500",
+                dot: "bg-success",
                 badge:
-                    "bg-green-50 text-green-700 border-green-200",
+                    "bg-success-subtle text-success-foreground border-success/40",
             };
 
         case 8:
             return {
-                dot: "bg-red-500",
+                dot: "bg-danger",
                 badge:
-                    "bg-red-50 text-red-700 border-red-200",
+                    "bg-danger-subtle text-danger-foreground border-danger/40",
             };
 
         case 9:
             return {
-                dot: "bg-blue-500",
+                dot: "bg-primary",
                 badge:
-                    "bg-blue-50 text-blue-700 border-blue-200",
+                    "bg-primary-subtle text-primary-hover border-primary-muted",
             };
 
         case 10:
             return {
-                dot: "bg-gray-500",
+                dot: "bg-muted-foreground",
                 badge:
-                    "bg-gray-50 text-gray-700 border-gray-200",
+                    "bg-surface-muted text-foreground/90 border-border",
             };
 
         case 11:
             return {
-                dot: "bg-purple-500",
+                dot: "bg-brand-indigo",
                 badge:
-                    "bg-purple-50 text-purple-700 border-purple-200",
+                    "bg-brand-indigo-subtle text-brand-indigo border-brand-indigo/40",
             };
 
         case 4:
         case 5:
         case 6:
             return {
-                dot: "bg-violet-500",
+                dot: "bg-brand-indigo",
                 badge:
-                    "bg-violet-50 text-violet-700 border-violet-200",
+                    "bg-brand-indigo-subtle text-brand-indigo border-brand-indigo/40",
             };
 
         case 3:
             return {
-                dot: "bg-amber-500",
+                dot: "bg-warning",
                 badge:
-                    "bg-amber-50 text-amber-700 border-amber-200",
+                    "bg-warning-subtle text-warning-foreground border-warning/40",
             };
 
         case 2:
             return {
-                dot: "bg-slate-500",
+                dot: "bg-muted-foreground",
                 badge:
-                    "bg-slate-50 text-slate-700 border-slate-200",
+                    "bg-surface-muted text-foreground/90 border-border",
             };
 
         case 1:
         default:
             return {
-                dot: "bg-emerald-500",
+                dot: "bg-success",
                 badge:
-                    "bg-emerald-50 text-emerald-700 border-emerald-200",
+                    "bg-success-subtle text-success-foreground border-success/40",
             };
     }
 }
@@ -187,11 +187,11 @@ export default function WorkItemHistory({
             <div className="
                 rounded-lg
                 border
-                border-red-200
-                bg-red-50
+                border-danger/40
+                bg-danger-subtle
                 p-4
                 text-sm
-                text-red-600
+                text-danger-foreground
             ">
                 Failed to load activity history.
             </div>
@@ -217,6 +217,8 @@ export default function WorkItemHistory({
         <div className="
             max-h-72
             overflow-y-auto
+            overflow-x-clip
+            [overflow-clip-margin:0.5rem]
             pr-2
         ">
             <div className="

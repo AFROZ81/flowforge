@@ -164,59 +164,59 @@ function getActionColor(
 
         case 7:
             return `
-                bg-emerald-50
-                text-emerald-600
+                bg-success-subtle
+                text-success-foreground
             `;
 
         case 8:
             return `
-                bg-red-50
-                text-red-600
+                bg-danger-subtle
+                text-danger-foreground
             `;
 
         case 9:
             return `
-                bg-blue-50
-                text-blue-600
+                bg-primary-subtle
+                text-primary
             `;
 
         case 10:
             return `
-                bg-slate-100
-                text-slate-600
+                bg-surface-sunken
+                text-muted-foreground
             `;
 
         case 11:
             return `
-                bg-purple-50
-                text-purple-600
+                bg-brand-indigo-subtle
+                text-brand-indigo
             `;
 
         case 4:
         case 5:
         case 6:
             return `
-                bg-violet-50
-                text-violet-600
+                bg-brand-indigo-subtle
+                text-brand-indigo
             `;
 
         case 3:
             return `
-                bg-amber-50
-                text-amber-600
+                bg-warning-subtle
+                text-warning-foreground
             `;
 
         case 2:
             return `
-                bg-slate-50
-                text-slate-600
+                bg-surface-muted
+                text-muted-foreground
             `;
 
         case 1:
         default:
             return `
-                bg-emerald-50
-                text-emerald-600
+                bg-success-subtle
+                text-success-foreground
             `;
     }
 }
@@ -633,8 +633,9 @@ export default function RecentActivity({
     return (
         <Card
             className="
-                rounded-3xl
-                p-6
+                h-full
+                rounded-xl
+                shadow-xs
             "
         >
 
@@ -647,6 +648,7 @@ export default function RecentActivity({
                     flex
                     items-center
                     justify-between
+                    gap-3
                 "
             >
 
@@ -654,8 +656,10 @@ export default function RecentActivity({
 
                     <h2
                         className="
-                            text-xl
+                            font-heading text-sm
                             font-semibold
+                            tracking-[-0.01em]
+                            text-foreground
                         "
                     >
                         Recent Activity
@@ -664,12 +668,12 @@ export default function RecentActivity({
 
                     <p
                         className="
-                            mt-1
-                            text-sm
+                            mt-0.5
+                            text-xs
                             text-muted-foreground
                         "
                     >
-                        Latest activity across this project.
+                        Latest changes across this project.
                     </p>
 
                 </div>
@@ -677,10 +681,10 @@ export default function RecentActivity({
 
                 <Activity
                     className="
-                        h-5
-                        w-5
+                        size-4 shrink-0
                         text-muted-foreground
                     "
+                    aria-hidden="true"
                 />
 
             </div>
@@ -778,11 +782,11 @@ export default function RecentActivity({
                             mt-6
                             rounded-xl
                             border
-                            border-red-200
-                            bg-red-50
+                            border-danger/40
+                            bg-danger-subtle
                             p-4
                             text-sm
-                            text-red-600
+                            text-danger-foreground
                         "
                     >
                         Failed to load recent activity.

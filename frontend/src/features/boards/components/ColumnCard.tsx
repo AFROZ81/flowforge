@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 import { toast } from "sonner";
+import { ListPlus, Plus } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { StatusDot } from "@/components/common/indicators";
 
 import CreateWorkItemDialog from "@/features/work-items/components/CreateWorkItemDialog";
 import WorkItemDetailsDialog from "@/features/work-items/components/WorkItemDetailsDialog";
@@ -445,47 +447,37 @@ export default function ColumnCard({
     };
 
     return (
-        <Card className="flex h-[700px] min-h-0 flex-col rounded-2xl">
+        <Card
+            className="
+                flex min-h-[18rem] max-h-[min(44rem,75vh)] flex-col gap-0 rounded-xl p-0
+                shadow-xs
+            "
+        >
 
             {/* =================================
                 HEADER
             ================================== */}
 
-            <div className="border-b p-4">
+            <div className="shrink-0 border-b border-border px-3.5 py-3">
 
-                <div className="
-                    flex
-                    items-center
-                    justify-between
-                ">
+                <div className="flex items-center justify-between gap-3">
 
-                    <h3 className="font-semibold">
-                        {column.name}
+                    <h3 className="flex min-w-0 items-center gap-2 text-[13px] font-semibold tracking-[-0.01em] text-foreground">
+                        <StatusDot status={column.name} />
+                        <span className="truncate">
+                            {column.name}
+                        </span>
                     </h3>
 
-                    <span className="
-                        rounded-full
-                        bg-muted
-                        px-2
-                        py-1
-                        text-xs
-                    ">
-                        {
-                            activeWorkItems.length
-                        }
+                    <span className="shrink-0 rounded-full bg-surface-sunken px-2 py-0.5 text-[11px] font-semibold text-muted-foreground tabular-nums">
+                        {activeWorkItems.length}
                     </span>
 
                 </div>
 
                 {column.description && (
-                    <p className="
-                        mt-2
-                        text-xs
-                        text-muted-foreground
-                    ">
-                        {
-                            column.description
-                        }
+                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                        {column.description}
                     </p>
                 )}
 
@@ -500,7 +492,8 @@ export default function ColumnCard({
                     min-h-0
                     flex-1
                     overflow-y-auto
-                    p-4
+                    overscroll-contain
+                    p-3
                 "
                 onDragOver={
                     handleColumnDragOver
@@ -513,17 +506,19 @@ export default function ColumnCard({
                 {activeWorkItems.length ===
                 0 ? (
                     <div className="
-                        flex
-                        min-h-[220px]
-                        items-center
-                        justify-center
-                        rounded-xl
-                        border
-                        border-dashed
-                        text-sm
-                        text-muted-foreground
+                        flex min-h-[9rem] flex-col items-center justify-center gap-1.5
+                        rounded-xl border border-dashed border-border-strong bg-surface-muted/40
+                        px-4 py-6 text-center
                     ">
-                        No tasks yet.
+                        <ListPlus className="size-5 text-muted-foreground/60" aria-hidden="true" />
+
+                        <p className="text-[13px] font-medium text-muted-foreground">
+                            Nothing here yet
+                        </p>
+
+                        <p className="text-xs text-muted-foreground/80">
+                            Drop a work item in, or add one below.
+                        </p>
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -658,7 +653,7 @@ export default function ColumnCard({
                 ADD TASK
             ================================== */}
 
-            <div className="border-t p-4">
+            <div className="shrink-0 border-t border-border p-3">
 
                 <Button
                     variant="outline"
@@ -669,7 +664,8 @@ export default function ColumnCard({
                         )
                     }
                 >
-                    + Add Task
+                    <Plus />
+                    Add work item
                 </Button>
 
             </div>

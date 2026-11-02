@@ -2,7 +2,7 @@ import { Outlet } from "react-router";
 
 function AuthLayout() {
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-surface-muted">
             <Outlet />
         </div>
     );

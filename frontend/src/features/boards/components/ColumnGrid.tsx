@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Columns3 } from "lucide-react";
+
+import { EmptyState } from "@/components/ui/empty-state";
 import ColumnCard from "./ColumnCard";
 
 type WorkItem = {
@@ -33,9 +36,17 @@ export default function ColumnGrid({
         setLocalColumns,
     ] = useState<Column[]>(columns);
 
-    useEffect(() => {
+    /*
+     * Server data is the source of truth; optimistic moves live on top of
+     * it until the next response lands. Adjusting during render (rather
+     * than in an effect) avoids a second pass over the whole board.
+     */
+    const [lastColumns, setLastColumns] = useState(columns);
+
+    if (lastColumns !== columns) {
+        setLastColumns(columns);
         setLocalColumns(columns);
-    }, [columns]);
+    }
 
     const handleOptimisticMove = (
         workItemId: string,
@@ -119,8 +130,33 @@ export default function ColumnGrid({
         });
     };
 
+    if (localColumns.length === 0) {
+        return (
+            <div className="rounded-xl border border-border bg-card shadow-xs">
+                <EmptyState
+                    icon={Columns3}
+                    title="This board has no columns"
+                    description="Add a column to start organizing work items on this board."
+                    size="sm"
+                    className="py-10"
+                />
+            </div>
+        );
+    }
+
     return (
-        <div className="grid gap-6 xl:grid-cols-5">
+        /*
+         * Flowing columns rather than a fixed five-up grid: boards have a
+         * user-chosen number of columns, and a phone gets one full-width
+         * column per row instead of a sideways scroll.
+         */
+        <div
+            className="
+                grid gap-4
+                grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))]
+                lg:gap-5
+            "
+        >
             {[...localColumns]
                 .sort(
                     (a, b) =>

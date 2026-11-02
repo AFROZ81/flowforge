@@ -21,6 +21,31 @@ import {
 } from "@/components/ui/button";
 
 import {
+    Skeleton,
+    SkeletonPanel,
+} from "@/components/ui/skeleton";
+
+import { ErrorState } from "@/components/ui/error-state";
+
+import {
+    Avatar,
+} from "@/components/ui/avatar";
+
+import {
+    useConfirm,
+} from "@/components/common/confirm";
+
+import {
+    normalizeError,
+} from "@/lib/errors";
+
+import {
+    DueDateChip,
+    WorkItemPriorityBadge,
+    WorkItemStatusBadge,
+} from "@/components/common/indicators";
+
+import {
     Download,
     FileArchive,
     FileImage,
@@ -93,102 +118,10 @@ type Props = {
 
 
 /* =========================================================
-   STATUS HELPERS
+   STATUS / DATE RENDERING
+   Moved to components/common/indicators so this dialog, the
+   board card and any future table can't drift apart.
 ========================================================= */
-
-function getStatusLabel(
-    status: number
-) {
-
-    switch (status) {
-
-        case 1:
-            return "Active";
-
-        case 2:
-            return "Completed";
-
-        case 3:
-            return "Blocked";
-
-        default:
-            return "Unknown";
-    }
-}
-
-
-function getStatusClasses(
-    status: number
-) {
-
-    switch (status) {
-
-        case 1:
-            return `
-                border-blue-200
-                bg-blue-50
-                text-blue-700
-            `;
-
-        case 2:
-            return `
-                border-green-200
-                bg-green-50
-                text-green-700
-            `;
-
-        case 3:
-            return `
-                border-red-200
-                bg-red-50
-                text-red-700
-            `;
-
-        default:
-            return `
-                border-gray-200
-                bg-gray-50
-                text-gray-700
-            `;
-    }
-}
-
-
-/* =========================================================
-   DATE HELPERS
-========================================================= */
-
-function formatDueDate(
-    value?: string | null
-) {
-
-    if (!value) {
-        return null;
-    }
-
-
-    const date =
-        new Date(value);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return null;
-    }
-
-
-    return date.toLocaleDateString(
-        "en-GB",
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        }
-    );
-}
 
 
 /* =========================================================
@@ -348,6 +281,8 @@ export default function WorkItemDetailsDialog({
         data: workItem,
         isLoading,
         isError,
+        error,
+        refetch,
     } =
         useWorkItem(
             workItemId ?? ""
@@ -913,10 +848,13 @@ export default function WorkItemDetailsDialog({
             attachment: Attachment
         ) => {
 
-            const confirmed =
-                window.confirm(
-                    `Delete "${attachment.fileName}"?`
-                );
+            const confirmed = await confirm({
+                title: `Delete “${attachment.fileName}”?`,
+                description:
+                    "The file is removed from this work item for everyone. This can't be undone.",
+                confirmLabel: "Delete file",
+                tone: "destructive",
+            });
 
 
             if (
@@ -948,9 +886,9 @@ export default function WorkItemDetailsDialog({
                 );
 
 
-                toast.success(
-                    "Attachment deleted successfully."
-                );
+                toast.success("Attachment deleted", {
+                    description: attachment.fileName,
+                });
 
             } catch (error) {
 
@@ -959,10 +897,11 @@ export default function WorkItemDetailsDialog({
                     error
                 );
 
+                const { title, description } = normalizeError(error, {
+                    title: "We couldn't delete that file",
+                });
 
-                toast.error(
-                    "Failed to delete attachment."
-                );
+                toast.error(title, { description });
 
             } finally {
 
@@ -975,36 +914,10 @@ export default function WorkItemDetailsDialog({
 
 
     /* =====================================================
-       STATUS / ASSIGNEE
+       ASSIGNEE
     ===================================================== */
 
-    const statusLabel =
-        workItem
-            ? getStatusLabel(
-                Number(
-                    workItem.status
-                )
-              )
-            : "";
-
-
-    const statusClasses =
-        workItem
-            ? getStatusClasses(
-                Number(
-                    workItem.status
-                )
-              )
-            : "";
-
-
-    const dueDate =
-        workItem
-            ? formatDueDate(
-                workItem.dueDate
-              )
-            : null;
-
+    const confirm = useConfirm();
 
     const assignee =
         workItem?.assigneeId
@@ -1039,9 +952,8 @@ export default function WorkItemDetailsDialog({
 
                 <DialogContent
                     className="
-                        max-h-[90vh]
-                        overflow-y-auto
-                        sm:max-w-2xl
+                        max-h-[92dvh] gap-0 px-0 pb-0 sm:max-w-3xl lg:max-w-4xl
+                        sm:px-5 sm:pb-5
                     "
                 >
 
@@ -1087,25 +999,15 @@ export default function WorkItemDetailsDialog({
 
 
                             {workItem && (
-
-                                <span
-                                    className={`
-                                        w-fit
-                                        shrink-0
-                                        rounded-full
-                                        border
-                                        px-2.5
-                                        py-1
-                                        text-xs
-                                        font-medium
-                                        ${statusClasses}
-                                    `}
-                                >
-                                    {
-                                        statusLabel
-                                    }
-                                </span>
-
+                                <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                                    <WorkItemStatusBadge
+                                        status={workItem.status}
+                                    />
+                                    <WorkItemPriorityBadge
+                                        priority={workItem.priority}
+                                        compact
+                                    />
+                                </div>
                             )}
 
                         </div>
@@ -1118,18 +1020,20 @@ export default function WorkItemDetailsDialog({
                     ================================================= */}
 
                     {isLoading && (
+                        <div className="space-y-4 px-4 py-4 sm:px-0" role="status" aria-live="polite">
+                            <span className="sr-only">
+                                Loading work item
+                            </span>
 
-                        <div
-                            className="
-                                py-10
-                                text-center
-                                text-sm
-                                text-muted-foreground
-                            "
-                        >
-                            Loading work item...
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                {Array.from({ length: 4 }).map((_, i) => (
+                                    <Skeleton key={i} className="h-12 rounded-lg" />
+                                ))}
+                            </div>
+
+                            <SkeletonPanel height="h-28" />
+                            <SkeletonPanel height="h-40" />
                         </div>
-
                     )}
 
 
@@ -1138,18 +1042,21 @@ export default function WorkItemDetailsDialog({
                     ================================================= */}
 
                     {isError && (
-
-                        <div
-                            className="
-                                py-10
-                                text-center
-                                text-sm
-                                text-red-500
-                            "
-                        >
-                            Failed to load work item.
-                        </div>
-
+                        <ErrorState
+                            error={error}
+                            title="We couldn't open this work item"
+                            description="It may have been archived or deleted by someone else."
+                            action={
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => void refetch()}
+                                >
+                                    Try again
+                                </Button>
+                            }
+                            className="my-4"
+                        />
                     )}
 
 
@@ -1163,7 +1070,8 @@ export default function WorkItemDetailsDialog({
 
                             <div
                                 className="
-                                    space-y-5
+                                    space-y-5 px-4 pb-5
+                                    sm:px-0 sm:pb-0
                                 "
                             >
 
@@ -1171,11 +1079,11 @@ export default function WorkItemDetailsDialog({
                                     BASIC INFORMATION
                                 ================================================= */}
 
-                                <div
+                                <section
+                                    aria-label="Work item overview"
                                     className="
-                                        rounded-lg
-                                        border
-                                        p-4
+                                        rounded-xl border border-border
+                                        bg-surface-muted/50 p-4
                                     "
                                 >
 
@@ -1184,6 +1092,7 @@ export default function WorkItemDetailsDialog({
                                             grid
                                             gap-4
                                             sm:grid-cols-2
+                                            lg:grid-cols-4
                                         "
                                     >
 
@@ -1201,17 +1110,10 @@ export default function WorkItemDetailsDialog({
                                             </p>
 
 
-                                            <p
-                                                className="
-                                                    mt-1
-                                                    text-sm
-                                                    font-medium
-                                                "
-                                            >
-                                                P
-                                                {
-                                                    workItem.priority
-                                                }
+                                            <p className="mt-1.5">
+                                                <WorkItemPriorityBadge
+                                                    priority={workItem.priority}
+                                                />
                                             </p>
 
                                         </div>
@@ -1231,51 +1133,20 @@ export default function WorkItemDetailsDialog({
                                             </p>
 
 
-                                            <p
-                                                className="
-                                                    mt-1
-                                                    text-sm
-                                                    font-medium
-                                                "
-                                            >
-                                                {
-                                                    dueDate ??
-                                                    "No due date"
-                                                }
-                                            </p>
+                                            <p className="mt-1.5">
+                                                <DueDateChip
+                                                    dueDate={workItem.dueDate}
+                                                    completed={
+                                                        Number(workItem.status) === 2
+                                                    }
+                                                    prefix={null}
+                                                />
 
-                                        </div>
-
-
-                                        {/* DESCRIPTION */}
-
-                                        <div
-                                            className="
-                                                sm:col-span-2
-                                            "
-                                        >
-
-                                            <p
-                                                className="
-                                                    text-xs
-                                                    text-muted-foreground
-                                                "
-                                            >
-                                                Description
-                                            </p>
-
-
-                                            <p
-                                                className="
-                                                    mt-1
-                                                    whitespace-pre-wrap
-                                                    text-sm
-                                                "
-                                            >
-                                                {
-                                                    workItem.description ||
-                                                    "No description."
-                                                }
+                                                {!workItem.dueDate && (
+                                                    <span className="text-sm text-muted-foreground">
+                                                        No due date
+                                                    </span>
+                                                )}
                                             </p>
 
                                         </div>
@@ -1295,34 +1166,32 @@ export default function WorkItemDetailsDialog({
                                             </p>
 
 
-                                            <p
-                                                className="
-                                                    mt-1
-                                                    text-sm
-                                                    font-medium
-                                                "
-                                            >
-                                                {
-                                                    assignee?.fullName ??
-                                                    "Unassigned"
-                                                }
-                                            </p>
+                                            <div className="mt-1.5 flex items-center gap-2">
+                                                {assignee ? (
+                                                    <>
+                                                        <Avatar
+                                                            name={assignee.fullName}
+                                                            size="sm"
+                                                        />
 
+                                                        <span className="min-w-0">
+                                                            <span className="block truncate text-sm font-medium text-foreground">
+                                                                {assignee.fullName}
+                                                            </span>
 
-                                            {assignee?.email && (
-
-                                                <p
-                                                    className="
-                                                        text-xs
-                                                        text-muted-foreground
-                                                    "
-                                                >
-                                                    {
-                                                        assignee.email
-                                                    }
-                                                </p>
-
-                                            )}
+                                                            {assignee.email && (
+                                                                <span className="block truncate text-xs leading-tight text-muted-foreground">
+                                                                    {assignee.email}
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground italic">
+                                                        Unassigned
+                                                    </span>
+                                                )}
+                                            </div>
 
                                         </div>
 
@@ -1341,23 +1210,41 @@ export default function WorkItemDetailsDialog({
                                             </p>
 
 
-                                            <p
-                                                className="
-                                                    mt-1
-                                                    text-sm
-                                                    font-medium
-                                                "
-                                            >
-                                                {
-                                                    statusLabel
-                                                }
+                                            <p className="mt-1.5">
+                                                <WorkItemStatusBadge
+                                                    status={workItem.status}
+                                                />
                                             </p>
 
                                         </div>
 
                                     </div>
 
-                                </div>
+
+                                    {/* DESCRIPTION — full width under the metadata */}
+
+                                    <div className="mt-4 border-t border-border-subtle pt-4">
+
+                                        <p
+                                            className="
+                                                text-xs
+                                                text-muted-foreground
+                                            "
+                                        >
+                                            Description
+                                        </p>
+
+
+                                        <p className="mt-1.5 text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
+                                            {
+                                                workItem.description ||
+                                                "No description yet."
+                                            }
+                                        </p>
+
+                                    </div>
+
+                                </section>
 
 
                                 {/* =================================================
@@ -1390,12 +1277,16 @@ export default function WorkItemDetailsDialog({
 
                                                 <Paperclip
                                                     className="
-                                                        h-4
-                                                        w-4
+                                                        size-4
                                                     "
+                                                    aria-hidden="true"
                                                 />
 
-                                                Attachments
+                                                <span>Attachments</span>
+
+                                                <span className="rounded-full bg-surface-sunken px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground tabular-nums">
+                                                    {attachments.length}
+                                                </span>
 
                                             </div>
 
@@ -2017,16 +1908,16 @@ export default function WorkItemDetailsDialog({
                                     ACTIONS
                                 ================================================= */}
 
+                                {/* Pinned so Complete / Block / Archive stay
+                                    reachable however long the activity runs */}
                                 <div
                                     className="
-                                        flex
-                                        flex-col
-                                        gap-3
-                                        border-t
-                                        pt-4
-                                        sm:flex-row
-                                        sm:items-center
-                                        sm:justify-between
+                                        sticky bottom-0 z-10
+                                        -mx-4 px-4 py-3
+                                        flex flex-col gap-3
+                                        border-t border-border bg-card/95 backdrop-blur-xs
+                                        sm:-mx-5 sm:px-5 sm:pb-0 sm:pt-4
+                                        sm:flex-row sm:items-center sm:justify-between
                                     "
                                 >
 
@@ -2051,9 +1942,9 @@ export default function WorkItemDetailsDialog({
                                                     type="button"
                                                     variant="outline"
                                                     className="
-                                                        border-green-200
-                                                        text-green-700
-                                                        hover:bg-green-50
+                                                        border-success/40
+                                                        text-success-foreground
+                                                        hover:bg-success-subtle
                                                     "
                                                     onClick={
                                                         handleComplete
@@ -2083,9 +1974,9 @@ export default function WorkItemDetailsDialog({
                                                     type="button"
                                                     variant="outline"
                                                     className="
-                                                        border-amber-200
-                                                        text-amber-700
-                                                        hover:bg-amber-50
+                                                        border-warning/40
+                                                        text-warning-foreground
+                                                        hover:bg-warning-subtle
                                                     "
                                                     onClick={
                                                         handleBlock
@@ -2115,9 +2006,9 @@ export default function WorkItemDetailsDialog({
                                                     type="button"
                                                     variant="outline"
                                                     className="
-                                                        border-blue-200
-                                                        text-blue-700
-                                                        hover:bg-blue-50
+                                                        border-primary-muted
+                                                        text-primary-hover
+                                                        hover:bg-primary-subtle
                                                     "
                                                     onClick={
                                                         handleActivate

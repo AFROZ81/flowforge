@@ -23,6 +23,14 @@ import {
 } from "@/components/ui/input";
 
 import {
+    useConfirm,
+} from "@/components/common/confirm";
+
+import {
+    normalizeError,
+} from "@/lib/errors";
+
+import {
     getUpcomingReminders,
     updateReminder,
     deleteReminder,
@@ -233,6 +241,8 @@ export default function ReminderSection({
     dueDate,
     disabled = false,
 }: Props) {
+
+    const confirm = useConfirm();
 
     const [
         reminder,
@@ -587,10 +597,13 @@ export default function ReminderSection({
     const handleDelete =
         async () => {
 
-            const confirmed =
-                window.confirm(
-                    "Remove the reminder from this work item?"
-                );
+            const confirmed = await confirm({
+                title: "Remove this reminder?",
+                description:
+                    "The work item stays; only its reminder date is cleared.",
+                confirmLabel: "Remove reminder",
+                tone: "destructive",
+            });
 
 
             if (
@@ -640,10 +653,11 @@ export default function ReminderSection({
                     deleteError
                 );
 
+                const { title, description } = normalizeError(deleteError, {
+                    title: "We couldn't remove that reminder",
+                });
 
-                toast.error(
-                    "Failed to remove reminder."
-                );
+                toast.error(title, { description });
 
             } finally {
 
@@ -763,11 +777,11 @@ export default function ReminderSection({
                         className="
                             rounded-lg
                             border
-                            border-red-200
-                            bg-red-50
+                            border-danger/40
+                            bg-danger-subtle
                             p-4
                             text-sm
-                            text-red-700
+                            text-danger-foreground
                         "
                     >
                         Unable to load the current reminder.

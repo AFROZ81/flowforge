@@ -3,11 +3,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -15,6 +18,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FormField } from "@/components/ui/form-field";
+import { NativeSelect } from "@/components/ui/native-select";
+import { normalizeError } from "@/lib/errors";
 
 import {
     createWorkItemSchema,
@@ -29,6 +35,14 @@ type Props = {
     columnId: string;
     boardId: string;
 };
+
+/** Mirrors WorkItemPriority on the server. */
+const PRIORITIES = [
+    { value: 1, label: "Low" },
+    { value: 2, label: "Medium" },
+    { value: 3, label: "High" },
+    { value: 4, label: "Critical" },
+];
 
 export default function CreateWorkItemDialog({
     open,
@@ -45,7 +59,7 @@ export default function CreateWorkItemDialog({
         handleSubmit,
         reset,
         setValue,
-        formState: { errors },
+        formState: { errors, isSubmitting },
     } = useForm<CreateWorkItemForm>({
         resolver: zodResolver(createWorkItemSchema),
         defaultValues: {
@@ -61,6 +75,8 @@ export default function CreateWorkItemDialog({
         setValue("columnId", columnId);
     }, [columnId, setValue]);
 
+    const busy = mutation.isPending || isSubmitting;
+
     const onSubmit = async (values: CreateWorkItemForm) => {
         try {
             await mutation.mutateAsync({
@@ -71,129 +87,137 @@ export default function CreateWorkItemDialog({
                 dueDate: values.dueDate || undefined,
             });
 
-            toast.success("Task created successfully");
+            toast.success("Work item created", {
+                description: values.title,
+            });
 
             await queryClient.invalidateQueries({
                 queryKey: ["board-details", boardId],
             });
 
             reset();
-
             onOpenChange(false);
-        } catch {
-            toast.error("Failed to create task");
+        } catch (error) {
+            const { title, description } = normalizeError(error, {
+                title: "We couldn't create that work item",
+                description: "Check the title and try again.",
+            });
+
+            toast.error(title, { description });
         }
     };
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={onOpenChange}
-        >
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg">
-
                 <DialogHeader>
-                    <DialogTitle>Create Task</DialogTitle>
+                    <DialogTitle>New work item</DialogTitle>
 
                     <DialogDescription>
-                        Create a new work item.
+                        It lands at the top of this column.
                     </DialogDescription>
                 </DialogHeader>
 
                 <form
                     onSubmit={handleSubmit(onSubmit)}
-                    className="space-y-5"
+                    className="flex min-h-0 flex-1 flex-col"
                 >
-
-                    <div>
-
-                        <label className="mb-2 block text-sm font-medium">
-                            Title
-                        </label>
-
-                        <Input
-                            {...register("title")}
-                        />
-
-                        {errors.title && (
-                            <p className="mt-1 text-sm text-red-500">
-                                {errors.title.message}
-                            </p>
-                        )}
-
-                    </div>
-
-                    <div>
-
-                        <label className="mb-2 block text-sm font-medium">
-                            Description
-                        </label>
-
-                        <Textarea
-                            rows={4}
-                            {...register("description")}
-                        />
-
-                    </div>
-
-                    <div>
-
-                        <label className="mb-2 block text-sm font-medium">
-                            Priority
-                        </label>
-
-                        <select
-                            className="w-full rounded-md border px-3 py-2"
-                            {...register("priority", {
-                                valueAsNumber: true,
-                            })}
+                    <DialogBody className="-mx-4 space-y-5 px-4 sm:mx-0 sm:px-0">
+                        <FormField
+                            label="Title"
+                            htmlFor="work-item-title"
+                            required
+                            error={errors.title?.message}
                         >
-                            <option value={1}>Low</option>
-                            <option value={2}>Medium</option>
-                            <option value={3}>High</option>
-                            <option value={4}>Critical</option>
-                        </select>
+                            {(aria) => (
+                                <Input
+                                    {...aria}
+                                    placeholder="Short, specific summary"
+                                    maxLength={200}
+                                    autoComplete="off"
+                                    disabled={busy}
+                                    {...register("title")}
+                                />
+                            )}
+                        </FormField>
 
-                    </div>
+                        <FormField
+                            label="Description"
+                            htmlFor="work-item-description"
+                            optional
+                            hint="Context worth keeping after the conversation ends."
+                            error={errors.description?.message}
+                        >
+                            {(aria) => (
+                                <Textarea
+                                    {...aria}
+                                    rows={4}
+                                    maxLength={2000}
+                                    placeholder="What needs to happen?"
+                                    disabled={busy}
+                                    {...register("description")}
+                                />
+                            )}
+                        </FormField>
 
-                    <div>
+                        <div className="grid gap-5 sm:grid-cols-2">
+                            <FormField
+                                label="Priority"
+                                htmlFor="work-item-priority"
+                            >
+                                {(aria) => (
+                                    <NativeSelect
+                                        {...aria}
+                                        disabled={busy}
+                                        {...register("priority", {
+                                            valueAsNumber: true,
+                                        })}
+                                    >
+                                        {PRIORITIES.map((priority) => (
+                                            <option
+                                                key={priority.value}
+                                                value={priority.value}
+                                            >
+                                                {priority.label}
+                                            </option>
+                                        ))}
+                                    </NativeSelect>
+                                )}
+                            </FormField>
 
-                        <label className="mb-2 block text-sm font-medium">
-                            Due Date
-                        </label>
+                            <FormField
+                                label="Due date"
+                                htmlFor="work-item-due-date"
+                                optional
+                            >
+                                {(aria) => (
+                                    <Input
+                                        {...aria}
+                                        type="date"
+                                        disabled={busy}
+                                        {...register("dueDate")}
+                                    />
+                                )}
+                            </FormField>
+                        </div>
+                    </DialogBody>
 
-                        <Input
-                            type="date"
-                            {...register("dueDate")}
-                        />
-
-                    </div>
-
-                    <div className="flex justify-end gap-2">
-
+                    <DialogFooter>
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() =>
-                                onOpenChange(false)
-                            }
+                            onClick={() => onOpenChange(false)}
+                            disabled={busy}
                         >
                             Cancel
                         </Button>
 
-                        <Button
-                            type="submit"
-                            disabled={mutation.isPending}
-                        >
-                            {mutation.isPending
-                                ? "Creating..."
-                                : "Create Task"}
+                        <Button type="submit" disabled={busy}>
+                            {busy && <Loader2 className="animate-spin" />}
+                            {busy ? "Creating…" : "Create work item"}
                         </Button>
-
-                    </div>
-
+                    </DialogFooter>
                 </form>
-
             </DialogContent>
         </Dialog>
     );

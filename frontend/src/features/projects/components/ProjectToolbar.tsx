@@ -1,43 +1,52 @@
-import { Search, Plus } from "lucide-react";
+import { Search, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type Props = {
     search: string;
     onSearch: (value: string) => void;
-    onCreate: () => void;
 };
 
-export default function ProjectToolbar({
-    search,
-    onSearch,
-    onCreate,
-}: Props) {
+/**
+ * Filtering only. The page's single "New Project" action lives in the
+ * PageHeader — having one here too meant two identical buttons stacked on
+ * a phone and sitting side by side on a desktop.
+ */
+export default function ProjectToolbar({ search, onSearch }: Props) {
     return (
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="relative w-full sm:max-w-xs">
+            <Search
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+            />
 
-            <div className="relative w-full md:max-w-sm">
+            <label htmlFor="project-search" className="sr-only">
+                Search projects
+            </label>
 
-                <Search
-                    size={18}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
+            <Input
+                id="project-search"
+                type="search"
+                value={search}
+                placeholder="Search by name, key or description"
+                onChange={(e) => onSearch(e.target.value)}
+                className="pr-9 pl-9"
+            />
 
-                <Input
-                    value={search}
-                    placeholder="Search projects..."
-                    onChange={(e) => onSearch(e.target.value)}
-                    className="pl-10"
-                />
-
-            </div>
-
-            <Button onClick={onCreate}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Project
-            </Button>
-
+            {search && (
+                <button
+                    type="button"
+                    onClick={() => onSearch("")}
+                    aria-label="Clear search"
+                    className="
+                        absolute top-1/2 right-1.5 flex size-7 -translate-y-1/2
+                        items-center justify-center rounded-md text-muted-foreground
+                        transition-colors hover:bg-surface-sunken hover:text-foreground
+                    "
+                >
+                    <X className="size-3.5" />
+                </button>
+            )}
         </div>
     );
 }

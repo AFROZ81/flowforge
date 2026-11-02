@@ -1,4 +1,5 @@
 using FlowForge.Application.Features.Organizations.CreateOrganization;
+using FlowForge.Application.Features.Organizations.GetOrganizations;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Organizations;
 using FlowForge.Domain.Entities;
@@ -50,5 +51,25 @@ public sealed class OrganizationService : IOrganizationService
             Name = organization.Name,
             Slug = organization.Slug
         };
+    }
+
+    public async Task<List<OrganizationOption>> GetOptionsAsync(CancellationToken cancellationToken = default)
+    {
+        /*
+         * Ordered by name because the result feeds a choice list, not a feed.
+         * Archived and soft-deleted workspaces are excluded: offering them
+         * here would let signup put a brand new account somewhere inactive.
+         */
+        return await _context.Organizations
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted && x.IsActive)
+            .OrderBy(x => x.Name)
+            .Select(x => new OrganizationOption
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Slug = x.Slug
+            })
+            .ToListAsync(cancellationToken);
     }
 }

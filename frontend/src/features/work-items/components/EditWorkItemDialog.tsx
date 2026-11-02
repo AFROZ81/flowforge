@@ -3,6 +3,10 @@ import {
 } from "react";
 
 import {
+    Loader2,
+} from "lucide-react";
+
+import {
     useForm,
 } from "react-hook-form";
 
@@ -12,8 +16,10 @@ import {
 
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -29,6 +35,26 @@ import {
 import {
     Textarea,
 } from "@/components/ui/textarea";
+
+import {
+    FormField,
+} from "@/components/ui/form-field";
+
+import {
+    NativeSelect,
+} from "@/components/ui/native-select";
+
+import {
+    Skeleton,
+} from "@/components/ui/skeleton";
+
+import {
+    ErrorState,
+} from "@/components/ui/error-state";
+
+import {
+    normalizeError,
+} from "@/lib/errors";
 
 import {
     useEditWorkItem,
@@ -120,6 +146,15 @@ function formatDateForInput(
 
     return `${year}-${month}-${day}`;
 }
+
+
+/** Mirrors WorkItemPriority on the server. */
+const PRIORITIES = [
+    { value: 1, label: "Low" },
+    { value: 2, label: "Medium" },
+    { value: 3, label: "High" },
+    { value: 4, label: "Critical" },
+];
 
 
 export default function EditWorkItemDialog({
@@ -439,13 +474,11 @@ export default function EditWorkItemDialog({
                 }
 
 
-                toast.success(
-                    "Work Item updated successfully."
-                );
+                toast.success("Work item updated", {
+                    description: title,
+                });
 
-                onOpenChange(
-                    false
-                );
+                onOpenChange(false);
 
             } catch (error) {
 
@@ -454,9 +487,12 @@ export default function EditWorkItemDialog({
                     error
                 );
 
-                toast.error(
-                    "Failed to update Work Item."
-                );
+                const { title: heading, description } = normalizeError(error, {
+                    title: "We couldn't save those changes",
+                    description: "Nothing was lost — try again.",
+                });
+
+                toast.error(heading, { description });
             }
         };
 
@@ -477,20 +513,18 @@ export default function EditWorkItemDialog({
 
             <DialogContent
                 className="
-                    max-h-[90vh]
-                    overflow-y-auto
-                    sm:max-w-xl
+                    max-h-[92dvh] gap-0 sm:max-w-xl
                 "
             >
 
                 <DialogHeader>
 
                     <DialogTitle>
-                        Edit Work Item
+                        Edit work item
                     </DialogTitle>
 
                     <DialogDescription>
-                        Update the work item details.
+                        Only what you change is sent.
                     </DialogDescription>
 
                 </DialogHeader>
@@ -504,155 +538,98 @@ export default function EditWorkItemDialog({
                                 onSubmit
                             )
                         }
-                        className="
-                            space-y-5
-                        "
+                        className="flex min-h-0 flex-1 flex-col"
                     >
+
+                        <DialogBody className="-mx-4 space-y-5 px-4 sm:mx-0 sm:px-0">
 
                         {/* =================================
                             TITLE
                         ================================== */}
 
-                        <div>
-
-                            <label
-                                className="
-                                    mb-1.5
-                                    block
-                                    text-sm
-                                    font-medium
-                                "
-                            >
-                                Title
-                            </label>
-
-                            <Input
-                                {...register(
-                                    "title"
-                                )}
-                                disabled={
-                                    isSaving
-                                }
-                            />
-
-                            {errors.title && (
-
-                                <p
-                                    className="
-                                        mt-1
-                                        text-xs
-                                        text-red-500
-                                    "
-                                >
-                                    {
-                                        errors
-                                            .title
-                                            .message
-                                    }
-                                </p>
-
+                        <FormField
+                            label="Title"
+                            htmlFor="work-item-edit-title"
+                            required
+                            error={errors.title?.message}
+                        >
+                            {(aria) => (
+                                <Input
+                                    {...aria}
+                                    maxLength={200}
+                                    {...register("title")}
+                                    disabled={isSaving}
+                                />
                             )}
-
-                        </div>
+                        </FormField>
 
 
                         {/* =================================
                             DESCRIPTION
                         ================================== */}
 
-                        <div>
-
-                            <label
-                                className="
-                                    mb-1.5
-                                    block
-                                    text-sm
-                                    font-medium
-                                "
-                            >
-                                Description
-                            </label>
-
-                            <Textarea
-                                rows={4}
-                                {...register(
-                                    "description"
-                                )}
-                                disabled={
-                                    isSaving
-                                }
-                            />
-
-                        </div>
+                        <FormField
+                            label="Description"
+                            htmlFor="work-item-edit-description"
+                            optional
+                        >
+                            {(aria) => (
+                                <Textarea
+                                    {...aria}
+                                    rows={4}
+                                    maxLength={2000}
+                                    {...register("description")}
+                                    disabled={isSaving}
+                                />
+                            )}
+                        </FormField>
 
 
                         {/* =================================
-                            PRIORITY
+                            PRIORITY + DUE DATE
                         ================================== */}
 
-                        <div>
+                        <div className="grid gap-5 sm:grid-cols-2">
 
-                            <label
-                                className="
-                                    mb-1.5
-                                    block
-                                    text-sm
-                                    font-medium
-                                "
+                            <FormField
+                                label="Priority"
+                                htmlFor="work-item-edit-priority"
                             >
-                                Priority
-                            </label>
-
-                            <select
-                                className="
-                                    w-full
-                                    rounded-md
-                                    border
-                                    bg-background
-                                    px-3
-                                    py-2
-                                    text-sm
-                                "
-                                {...register(
-                                    "priority",
-                                    {
-                                        valueAsNumber:
-                                            true,
-                                    }
+                                {(aria) => (
+                                    <NativeSelect
+                                        {...aria}
+                                        {...register("priority", {
+                                            valueAsNumber: true,
+                                        })}
+                                        disabled={isSaving}
+                                    >
+                                        {PRIORITIES.map((priority) => (
+                                            <option
+                                                key={priority.value}
+                                                value={priority.value}
+                                            >
+                                                {priority.label}
+                                            </option>
+                                        ))}
+                                    </NativeSelect>
                                 )}
-                                disabled={
-                                    isSaving
-                                }
+                            </FormField>
+
+
+                            <FormField
+                                label="Due date"
+                                htmlFor="work-item-edit-due-date"
+                                optional
                             >
-
-                                {Array.from(
-                                    {
-                                        length: 4,
-                                    },
-                                    (
-                                        _,
-                                        index
-                                    ) => (
-
-                                        <option
-                                            key={
-                                                index +
-                                                1
-                                            }
-                                            value={
-                                                index +
-                                                1
-                                            }
-                                        >
-                                            P
-                                            {index +
-                                                1}
-                                        </option>
-
-                                    )
+                                {(aria) => (
+                                    <Input
+                                        {...aria}
+                                        type="date"
+                                        {...register("dueDate")}
+                                        disabled={isSaving}
+                                    />
                                 )}
-
-                            </select>
+                            </FormField>
 
                         </div>
 
@@ -661,163 +638,59 @@ export default function EditWorkItemDialog({
                             ASSIGNEE
                         ================================== */}
 
-                        <div>
+                        <FormField
+                            label="Assignee"
+                            htmlFor="work-item-edit-assignee"
+                        >
+                            {(aria) =>
+                                usersLoading ? (
+                                    <Skeleton className="h-9 w-full rounded-lg" />
+                                ) : usersError ? (
+                                    <ErrorState
+                                        error={usersError}
+                                        title="Member list unavailable"
+                                        description="You can still save the other fields."
+                                    />
+                                ) : (
+                                    <NativeSelect
+                                        {...aria}
+                                        {...register("assigneeId")}
+                                        disabled={isSaving}
+                                    >
+                                        <option value="">
+                                            Unassigned
+                                        </option>
 
-                            <label
-                                className="
-                                    mb-1.5
-                                    block
-                                    text-sm
-                                    font-medium
-                                "
-                            >
-                                Assignee
-                            </label>
-
-
-                            {usersLoading ? (
-
-                                <div
-                                    className="
-                                        rounded-md
-                                        border
-                                        px-3
-                                        py-2
-                                        text-sm
-                                        text-muted-foreground
-                                    "
-                                >
-                                    Loading members...
-                                </div>
-
-                            ) : usersError ? (
-
-                                <div
-                                    className="
-                                        rounded-md
-                                        border
-                                        border-red-200
-                                        px-3
-                                        py-2
-                                        text-sm
-                                        text-red-500
-                                    "
-                                >
-                                    Failed to load members.
-                                </div>
-
-                            ) : (
-
-                                <select
-                                    className="
-                                        w-full
-                                        rounded-md
-                                        border
-                                        bg-background
-                                        px-3
-                                        py-2
-                                        text-sm
-                                    "
-                                    {...register(
-                                        "assigneeId"
-                                    )}
-                                    disabled={
-                                        isSaving
-                                    }
-                                >
-
-                                    <option value="">
-                                        Unassigned
-                                    </option>
-
-
-                                    {users.map(
-                                        user => (
-
+                                        {users.map((user) => (
                                             <option
-                                                key={
-                                                    user.id
-                                                }
-                                                value={
-                                                    user.id
-                                                }
+                                                key={user.id}
+                                                value={user.id}
                                             >
-
-                                                {
-                                                    user.fullName
-                                                }
-
+                                                {user.fullName}
                                                 {user.email
                                                     ? ` (${user.email})`
                                                     : ""}
-
                                             </option>
+                                        ))}
+                                    </NativeSelect>
+                                )
+                            }
+                        </FormField>
 
-                                        )
-                                    )}
-
-                                </select>
-
-                            )}
-
-                        </div>
-
-
-                        {/* =================================
-                            DUE DATE
-                        ================================== */}
-
-                        <div>
-
-                            <label
-                                className="
-                                    mb-1.5
-                                    block
-                                    text-sm
-                                    font-medium
-                                "
-                            >
-                                Due Date
-                            </label>
-
-                            <Input
-                                type="date"
-                                {...register(
-                                    "dueDate"
-                                )}
-                                disabled={
-                                    isSaving
-                                }
-                            />
-
-                        </div>
+                        </DialogBody>
 
 
                         {/* =================================
                             ACTIONS
                         ================================== */}
 
-                        <div
-                            className="
-                                flex
-                                justify-end
-                                gap-2
-                                border-t
-                                pt-4
-                            "
-                        >
+                        <DialogFooter>
 
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() =>
-                                    onOpenChange(
-                                        false
-                                    )
-                                }
-                                disabled={
-                                    isSaving
-                                }
+                                onClick={() => onOpenChange(false)}
+                                disabled={isSaving}
                             >
                                 Cancel
                             </Button>
@@ -828,17 +701,16 @@ export default function EditWorkItemDialog({
                                 disabled={
                                     isSaving ||
                                     usersLoading ||
-                                    usersError
+                                    !!usersError
                                 }
                             >
-
-                                {isSaving
-                                    ? "Saving..."
-                                    : "Save Changes"}
-
+                                {isSaving && (
+                                    <Loader2 className="animate-spin" />
+                                )}
+                                {isSaving ? "Saving…" : "Save changes"}
                             </Button>
 
-                        </div>
+                        </DialogFooter>
 
                     </form>
 

@@ -1,490 +1,162 @@
-import {
-    useMemo,
-    useState,
-} from "react";
+import { Users, Wifi, WifiOff } from "lucide-react";
 
 import {
-    Users,
-    Wifi,
-    WifiOff,
-} from "lucide-react";
+    Popover,
+    PopoverContent,
+    PopoverDescription,
+    PopoverTitle,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarGroup } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
-import {
-    usePresenceContext,
-} from "../context/PresenceContext";
+import { usePresenceContext } from "../context/PresenceContext";
 
-
+/**
+ * Who else is looking at this board, and whether the live connection is up.
+ *
+ * Third of three copies of the initials helper and the hand-rolled
+ * click-away popover; both are now shared.
+ */
 export default function BoardPresence() {
+    const { boardViewers, isBoardConnected } = usePresenceContext();
 
-    const {
-        boardViewers,
-        isBoardConnected,
-    } = usePresenceContext();
+    const viewerCount = boardViewers.length;
 
-
-    const [
-        open,
-        setOpen,
-    ] = useState(false);
-
-
-    const visibleUsers =
-        boardViewers.slice(
-            0,
-            4
-        );
-
-
-    const remainingCount =
-        Math.max(
-            0,
-            boardViewers.length -
-                visibleUsers.length
-        );
-
-
-    const initials =
-        (
-            name: string
-        ) => {
-
-            const parts =
-                name
-                    .trim()
-                    .split(/\s+/)
-                    .filter(Boolean);
-
-
-            if (
-                parts.length ===
-                0
-            ) {
-                return "?";
-            }
-
-
-            if (
-                parts.length ===
-                1
-            ) {
-                return parts[0]
-                    .slice(0, 1)
-                    .toUpperCase();
-            }
-
-
-            return (
-                parts[0]
-                    .slice(0, 1) +
-                parts[
-                    parts.length - 1
-                ].slice(0, 1)
-            ).toUpperCase();
-        };
-
-
-    const userSummary =
-        useMemo(
-            () =>
-                boardViewers
-                    .map(
-                        user =>
-                            user.userName
-                    )
-                    .join(
-                        ", "
-                    ),
-            [boardViewers]
-        );
-
+    const summary =
+        viewerCount === 0
+            ? "No one else on this board"
+            : viewerCount === 1
+              ? "1 viewer"
+              : `${viewerCount} viewers`;
 
     return (
-        <div className="relative">
-
-            <button
-                type="button"
-                onClick={() =>
-                    setOpen(
-                        current =>
-                            !current
-                    )
-                }
-                className="
-                    flex
-                    items-center
-                    gap-2
-                    rounded-xl
-                    border
-                    bg-white
-                    px-2.5
-                    py-1.5
-                    shadow-sm
-                    transition
-                    hover:bg-gray-50
-                "
-                title={
-                    boardViewers.length >
-                    0
-                        ? userSummary
-                        : "No other users on this board"
+        <Popover>
+            <PopoverTrigger
+                aria-label={`People on this board — ${summary}`}
+                render={
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 gap-2 rounded-full bg-card pl-1.5 shadow-xs"
+                    />
                 }
             >
-
-                {/* Connection indicator */}
-
+                {/* Live-connection state — a dot alone would be missed */}
                 <span
-                    className={`
-                        flex
-                        h-7
-                        w-7
-                        items-center
-                        justify-center
-                        rounded-full
-                        ${
-                            isBoardConnected
-                                ? "bg-emerald-50 text-emerald-600"
-                                : "bg-gray-100 text-gray-400"
-                        }
-                    `}
-                >
-
-                    {isBoardConnected ? (
-                        <Wifi className="h-3.5 w-3.5" />
-                    ) : (
-                        <WifiOff className="h-3.5 w-3.5" />
+                    aria-hidden="true"
+                    className={cn(
+                        "flex size-7 shrink-0 items-center justify-center rounded-full",
+                        isBoardConnected
+                            ? "bg-success-subtle text-success-foreground"
+                            : "bg-surface-sunken text-muted-foreground"
                     )}
-
+                >
+                    {isBoardConnected ? (
+                        <Wifi className="size-3.5" />
+                    ) : (
+                        <WifiOff className="size-3.5" />
+                    )}
                 </span>
 
+                {viewerCount > 0 ? (
+                    <AvatarGroup
+                        people={boardViewers.map((user) => ({
+                            id: user.userId,
+                            name: user.userName,
+                        }))}
+                        max={4}
+                        size="sm"
+                    />
+                ) : (
+                    <Users className="size-4 text-muted-foreground" />
+                )}
 
-                {/* Avatars */}
+                <span className="hidden pr-1 text-xs font-medium text-muted-foreground tabular-nums sm:inline">
+                    {summary}
+                </span>
+            </PopoverTrigger>
 
-                {boardViewers.length >
-                0 ? (
+            <PopoverContent className="flex w-[min(20rem,calc(100vw-1.5rem))] flex-col p-0">
+                <div className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-3">
+                    <div className="min-w-0">
+                        <PopoverTitle>People on this board</PopoverTitle>
 
-                    <div className="flex items-center">
-
-                        {visibleUsers.map(
-                            (
-                                user,
-                                index
-                            ) => (
-
-                                <div
-                                    key={
-                                        user.userId
-                                    }
-                                    className="
-                                        relative
-                                        -ml-1.5
-                                        first:ml-0
-                                        flex
-                                        h-7
-                                        w-7
-                                        items-center
-                                        justify-center
-                                        rounded-full
-                                        border-2
-                                        border-white
-                                        bg-slate-100
-                                        text-[10px]
-                                        font-semibold
-                                        text-slate-700
-                                    "
-                                    style={{
-                                        zIndex:
-                                            visibleUsers.length -
-                                            index,
-                                    }}
-                                    title={
-                                        user.userName
-                                    }
-                                >
-
-                                    {initials(
-                                        user.userName
-                                    )}
-
-                                    <span
-                                        className="
-                                            absolute
-                                            bottom-[-1px]
-                                            right-[-1px]
-                                            h-2
-                                            w-2
-                                            rounded-full
-                                            border
-                                            border-white
-                                            bg-emerald-500
-                                        "
-                                    />
-
-                                </div>
-
-                            )
-                        )}
-
+                        <PopoverDescription className="mt-0.5">
+                            Currently viewing this board
+                        </PopoverDescription>
                     </div>
 
-                ) : (
-
-                    <Users className="
-                        h-4
-                        w-4
-                        text-gray-400
-                    " />
-
-                )}
-
-
-                {/* Count */}
-
-                <span className="
-                    hidden
-                    text-xs
-                    font-medium
-                    text-gray-600
-                    sm:inline
-                ">
-
-                    {boardViewers.length ===
-                    0
-                        ? "No viewers"
-                        : boardViewers.length ===
-                          1
-                        ? "1 viewer"
-                        : `${boardViewers.length} viewers`}
-
-                </span>
-
-
-                {remainingCount >
-                    0 && (
-                    <span className="
-                        rounded-full
-                        bg-gray-100
-                        px-1.5
-                        py-0.5
-                        text-[10px]
-                        font-medium
-                        text-gray-600
-                    ">
-                        +{remainingCount}
+                    <span
+                        className={cn(
+                            "flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold",
+                            isBoardConnected
+                                ? "bg-success-subtle text-success-foreground"
+                                : "bg-surface-sunken text-muted-foreground"
+                        )}
+                    >
+                        <span
+                            aria-hidden="true"
+                            className={cn(
+                                "size-1.5 rounded-full",
+                                isBoardConnected ? "bg-success" : "bg-border-strong"
+                            )}
+                        />
+                        {isBoardConnected ? "Live" : "Offline"}
                     </span>
-                )}
+                </div>
 
-            </button>
+                {viewerCount === 0 ? (
+                    <div className="flex flex-col items-center px-6 py-8 text-center">
+                        <span
+                            aria-hidden="true"
+                            className="flex size-10 items-center justify-center rounded-full bg-surface-sunken text-muted-foreground"
+                        >
+                            <Users className="size-5" />
+                        </span>
 
-
-            {/* =================================================
-               DROPDOWN
-               ================================================= */}
-
-            {open && (
-
-                <>
-
-                    <button
-                        type="button"
-                        aria-label="Close viewers"
-                        className="
-                            fixed
-                            inset-0
-                            z-40
-                            cursor-default
-                        "
-                        onClick={() =>
-                            setOpen(
-                                false
-                            )
-                        }
-                    />
-
-                    <div className="
-                        absolute
-                        right-0
-                        top-full
-                        z-50
-                        mt-2
-                        w-72
-                        overflow-hidden
-                        rounded-xl
-                        border
-                        bg-white
-                        shadow-lg
-                    ">
-
-                        <div className="
-                            border-b
-                            px-4
-                            py-3
-                        ">
-
-                            <div className="
-                                flex
-                                items-center
-                                justify-between
-                            ">
-
-                                <div>
-
-                                    <p className="
-                                        text-sm
-                                        font-semibold
-                                        text-gray-900
-                                    ">
-                                        People on this board
-                                    </p>
-
-                                    <p className="
-                                        mt-0.5
-                                        text-xs
-                                        text-gray-500
-                                    ">
-                                        Currently viewing this board
-                                    </p>
-
-                                </div>
-
-
-                                <span
-                                    className={`
-                                        h-2
-                                        w-2
-                                        rounded-full
-                                        ${
-                                            isBoardConnected
-                                                ? "bg-emerald-500"
-                                                : "bg-gray-300"
-                                        }
-                                    `}
+                        <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">
+                            You&rsquo;re the only person viewing this board.
+                        </p>
+                    </div>
+                ) : (
+                    <ul className="max-h-[min(18rem,45dvh)] overflow-y-auto py-1">
+                        {boardViewers.map((user) => (
+                            <li
+                                key={user.userId}
+                                className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-surface-muted"
+                            >
+                                <Avatar
+                                    name={user.userName}
+                                    size="sm"
+                                    decorative
+                                    indicator={
+                                        <span className="size-2 rounded-full bg-success ring-2 ring-popover">
+                                            <span className="sr-only">
+                                                Viewing this board
+                                            </span>
+                                        </span>
+                                    }
                                 />
 
-                            </div>
+                                <div className="min-w-0">
+                                    <p
+                                        className="truncate text-sm font-medium text-foreground"
+                                        title={user.userName}
+                                    >
+                                        {user.userName}
+                                    </p>
 
-                        </div>
-
-
-                        {boardViewers.length ===
-                        0 ? (
-
-                            <div className="
-                                px-4
-                                py-8
-                                text-center
-                            ">
-
-                                <Users className="
-                                    mx-auto
-                                    h-5
-                                    w-5
-                                    text-gray-300
-                                " />
-
-                                <p className="
-                                    mt-2
-                                    text-xs
-                                    text-gray-500
-                                ">
-                                    You're the only person
-                                    viewing this board.
-                                </p>
-
-                            </div>
-
-                        ) : (
-
-                            <div className="
-                                max-h-72
-                                overflow-y-auto
-                                py-1
-                            ">
-
-                                {boardViewers.map(
-                                    user => (
-
-                                        <div
-                                            key={
-                                                user.userId
-                                            }
-                                            className="
-                                                flex
-                                                items-center
-                                                gap-3
-                                                px-4
-                                                py-2.5
-                                                hover:bg-gray-50
-                                            "
-                                        >
-
-                                            <div className="
-                                                relative
-                                                flex
-                                                h-8
-                                                w-8
-                                                shrink-0
-                                                items-center
-                                                justify-center
-                                                rounded-full
-                                                bg-slate-100
-                                                text-xs
-                                                font-semibold
-                                                text-slate-700
-                                            ">
-
-                                                {initials(
-                                                    user.userName
-                                                )}
-
-                                                <span className="
-                                                    absolute
-                                                    bottom-0
-                                                    right-0
-                                                    h-2
-                                                    w-2
-                                                    rounded-full
-                                                    border
-                                                    border-white
-                                                    bg-emerald-500
-                                                " />
-
-                                            </div>
-
-
-                                            <div className="
-                                                min-w-0
-                                            ">
-
-                                                <p className="
-                                                    truncate
-                                                    text-sm
-                                                    font-medium
-                                                    text-gray-900
-                                                ">
-                                                    {user.userName}
-                                                </p>
-
-                                                <p className="
-                                                    text-xs
-                                                    text-emerald-600
-                                                ">
-                                                    Viewing this board
-                                                </p>
-
-                                            </div>
-
-                                        </div>
-                                    )
-                                )}
-
-                            </div>
-                        )}
-
-                    </div>
-
-                </>
-            )}
-
-        </div>
+                                    <p className="text-[11px] text-success-foreground">
+                                        Viewing this board
+                                    </p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </PopoverContent>
+        </Popover>
     );
 }

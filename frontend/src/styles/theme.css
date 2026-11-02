@@ -1,37 +1,328 @@
+/* =========================================================
+   FLOWFORGE DESIGN TOKENS
+   Single source of truth for the visual system.
+
+   Light theme is the primary product surface: a cool, layered
+   enterprise SaaS palette — navy/indigo actions on a blue-gray
+   canvas with white surfaces. Dark theme is the same scale
+   re-weighted, not a separate design.
+   ========================================================= */
+
 :root {
-    /* Brand */
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
+    /* ---------- Brand ---------- */
+    --primary: oklch(0.42 0.19 264);
+    --primary-hover: oklch(0.36 0.19 264);
+    --primary-active: oklch(0.31 0.17 264);
+    --primary-foreground: oklch(0.985 0.005 250);
+    --primary-subtle: oklch(0.955 0.021 258);
+    --primary-muted: oklch(0.87 0.055 260);
 
-    /* Backgrounds */
-    --background: #f8fafc;
-    --surface: #ffffff;
+    --accent-indigo: oklch(0.50 0.20 278);
+    --accent-indigo-subtle: oklch(0.958 0.02 278);
 
-    /* Text */
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
+    /* ---------- Canvas layers ---------- */
+    /* Body is a cool blue-gray, cards float on white. */
+    --background: oklch(0.975 0.006 247);
+    --background-elevated: oklch(0.99 0.003 247);
 
-    /* Borders */
-    --border: #e2e8f0;
+    --surface: oklch(1 0 0);
+    --surface-muted: oklch(0.968 0.007 247);
+    --surface-sunken: oklch(0.952 0.01 247);
+    --surface-foreground: oklch(0.21 0.025 258);
 
-    /* Status */
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
+    /* ---------- Text ---------- */
+    --foreground: oklch(0.24 0.03 258);
+    --text-primary: oklch(0.21 0.028 258);
+    --text-secondary: oklch(0.505 0.028 252);
+    --text-tertiary: oklch(0.63 0.022 250);
+    --text-inverse: oklch(0.98 0.004 247);
 
-    /* Radius */
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 24px;
+    /* ---------- Lines ---------- */
+    --border: oklch(0.912 0.008 247);
+    --border-subtle: oklch(0.945 0.005 247);
+    --border-strong: oklch(0.862 0.012 247);
+    --input: oklch(0.912 0.008 247);
+    --ring: oklch(0.42 0.19 264);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(15,23,42,.05);
-    --shadow-md: 0 8px 24px rgba(15,23,42,.08);
-    --shadow-lg: 0 20px 40px rgba(15,23,42,.12);
+    /* ---------- Status ---------- */
+    --success: oklch(0.62 0.13 158);
+    --success-subtle: oklch(0.958 0.028 158);
+    --success-foreground: oklch(0.42 0.11 158);
 
-    /* Motion */
-    --transition-fast: 150ms ease;
-    --transition-normal: 200ms ease;
-    --transition-slow: 250ms ease;
+    --warning: oklch(0.72 0.15 76);
+    --warning-subtle: oklch(0.965 0.033 86);
+    --warning-foreground: oklch(0.49 0.12 70);
+
+    --danger: oklch(0.58 0.20 22);
+    --danger-subtle: oklch(0.962 0.023 22);
+    --danger-foreground: oklch(0.46 0.18 22);
+
+    --info: oklch(0.60 0.16 244);
+    --info-subtle: oklch(0.96 0.022 244);
+    --info-foreground: oklch(0.44 0.14 244);
+
+    /* ---------- shadcn slot aliases ---------- */
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.21 0.028 258);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.21 0.028 258);
+    --secondary: oklch(0.968 0.007 247);
+    --secondary-foreground: oklch(0.28 0.025 258);
+    --muted: oklch(0.968 0.007 247);
+    --muted-foreground: oklch(0.505 0.028 252);
+    --accent: oklch(0.955 0.021 258);
+    --accent-foreground: oklch(0.30 0.06 264);
+    --destructive: oklch(0.58 0.20 22);
+
+    /* ---------- Charts / data viz ---------- */
+    --chart-1: oklch(0.50 0.19 264);
+    --chart-2: oklch(0.60 0.16 244);
+    --chart-3: oklch(0.62 0.13 158);
+    --chart-4: oklch(0.72 0.15 76);
+    --chart-5: oklch(0.55 0.18 22);
+
+    /* ---------- Sidebar ---------- */
+    --sidebar: oklch(0.992 0.004 250);
+    --sidebar-foreground: oklch(0.24 0.03 258);
+    --sidebar-primary: oklch(0.42 0.19 264);
+    --sidebar-primary-foreground: oklch(0.985 0.005 250);
+    --sidebar-accent: oklch(0.955 0.021 258);
+    --sidebar-accent-foreground: oklch(0.36 0.14 264);
+    --sidebar-border: oklch(0.92 0.008 247);
+    --sidebar-ring: oklch(0.42 0.19 264);
+
+    /* ---------- Radius ---------- */
+    --radius: 0.6875rem;
+    --radius-xs: 0.375rem;
+    --radius-sm: 0.5rem;
+    --radius-md: 0.625rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.25rem;
+
+    /* ---------- Elevation ----------
+       Depth is carried by tinted, low-opacity shadows — never
+       by heavy blurs or high contrast borders. */
+    --shadow-xs: 0 1px 1px 0 oklch(0.21 0.028 258 / 0.04);
+    --shadow-sm:
+        0 1px 2px 0 oklch(0.21 0.028 258 / 0.05),
+        0 1px 3px 0 oklch(0.21 0.028 258 / 0.03);
+    --shadow-md:
+        0 2px 4px -1px oklch(0.21 0.028 258 / 0.06),
+        0 6px 16px -4px oklch(0.21 0.028 258 / 0.08);
+    --shadow-lg:
+        0 4px 8px -2px oklch(0.21 0.028 258 / 0.06),
+        0 16px 32px -8px oklch(0.21 0.028 258 / 0.12);
+    --shadow-xl:
+        0 8px 16px -6px oklch(0.21 0.028 258 / 0.08),
+        0 28px 56px -16px oklch(0.21 0.028 258 / 0.18);
+    --shadow-focus: 0 0 0 3px oklch(0.42 0.19 264 / 0.18);
+
+    /* ---------- Motion ---------- */
+    --transition-fast: 130ms cubic-bezier(0.32, 0.72, 0, 1);
+    --transition-normal: 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    --transition-slow: 280ms cubic-bezier(0.32, 0.72, 0, 1);
+
+    /* ---------- Shell metrics ---------- */
+    --sidebar-width-expanded: 17rem;
+    --sidebar-width-collapsed: 4.5rem;
+    --topbar-height: 4rem;
+}
+
+
+/* =========================================================
+   DARK THEME — same scale, re-weighted
+   ========================================================= */
+
+.dark {
+    --primary: oklch(0.68 0.155 258);
+    --primary-hover: oklch(0.74 0.15 258);
+    --primary-active: oklch(0.62 0.15 258);
+    --primary-foreground: oklch(0.17 0.03 262);
+    --primary-subtle: oklch(0.29 0.05 262);
+    --primary-muted: oklch(0.42 0.11 262);
+
+    --accent-indigo: oklch(0.70 0.16 278);
+    --accent-indigo-subtle: oklch(0.29 0.05 278);
+
+    --background: oklch(0.185 0.014 254);
+    --background-elevated: oklch(0.215 0.014 254);
+
+    --surface: oklch(0.225 0.015 256);
+    --surface-muted: oklch(0.26 0.015 256);
+    --surface-sunken: oklch(0.17 0.012 254);
+    --surface-foreground: oklch(0.96 0.006 248);
+
+    --foreground: oklch(0.95 0.007 248);
+    --text-primary: oklch(0.96 0.006 248);
+    --text-secondary: oklch(0.72 0.018 250);
+    --text-tertiary: oklch(0.60 0.018 250);
+    --text-inverse: oklch(0.18 0.015 254);
+
+    --border: oklch(0.32 0.014 254);
+    --border-subtle: oklch(0.27 0.012 254);
+    --border-strong: oklch(0.40 0.016 254);
+    --input: oklch(0.32 0.014 254);
+    --ring: oklch(0.68 0.155 258);
+
+    --success: oklch(0.72 0.14 158);
+    --success-subtle: oklch(0.29 0.05 158);
+    --success-foreground: oklch(0.85 0.10 158);
+
+    --warning: oklch(0.78 0.14 80);
+    --warning-subtle: oklch(0.30 0.05 82);
+    --warning-foreground: oklch(0.88 0.10 84);
+
+    --danger: oklch(0.66 0.19 24);
+    --danger-subtle: oklch(0.30 0.06 24);
+    --danger-foreground: oklch(0.85 0.11 24);
+
+    --info: oklch(0.72 0.13 244);
+    --info-subtle: oklch(0.29 0.05 244);
+    --info-foreground: oklch(0.86 0.09 244);
+
+    --card: oklch(0.225 0.015 256);
+    --card-foreground: oklch(0.95 0.007 248);
+    --popover: oklch(0.24 0.015 256);
+    --popover-foreground: oklch(0.95 0.007 248);
+    --secondary: oklch(0.28 0.014 256);
+    --secondary-foreground: oklch(0.95 0.007 248);
+    --muted: oklch(0.28 0.014 256);
+    --muted-foreground: oklch(0.72 0.018 250);
+    --accent: oklch(0.32 0.03 260);
+    --accent-foreground: oklch(0.94 0.02 258);
+    --destructive: oklch(0.66 0.19 24);
+
+    --chart-1: oklch(0.68 0.155 258);
+    --chart-2: oklch(0.72 0.13 244);
+    --chart-3: oklch(0.72 0.14 158);
+    --chart-4: oklch(0.78 0.14 80);
+    --chart-5: oklch(0.66 0.19 24);
+
+    --sidebar: oklch(0.205 0.014 254);
+    --sidebar-foreground: oklch(0.95 0.007 248);
+    --sidebar-primary: oklch(0.68 0.155 258);
+    --sidebar-primary-foreground: oklch(0.17 0.03 262);
+    --sidebar-accent: oklch(0.30 0.04 260);
+    --sidebar-accent-foreground: oklch(0.94 0.02 258);
+    --sidebar-border: oklch(0.30 0.013 254);
+    --sidebar-ring: oklch(0.68 0.155 258);
+
+    --shadow-xs: 0 1px 1px 0 oklch(0 0 0 / 0.25);
+    --shadow-sm:
+        0 1px 2px 0 oklch(0 0 0 / 0.3),
+        0 1px 3px 0 oklch(0 0 0 / 0.2);
+    --shadow-md:
+        0 2px 4px -1px oklch(0 0 0 / 0.3),
+        0 6px 16px -4px oklch(0 0 0 / 0.35);
+    --shadow-lg:
+        0 4px 8px -2px oklch(0 0 0 / 0.3),
+        0 16px 32px -8px oklch(0 0 0 / 0.45);
+    --shadow-xl:
+        0 8px 16px -6px oklch(0 0 0 / 0.35),
+        0 28px 56px -16px oklch(0 0 0 / 0.55);
+    --shadow-focus: 0 0 0 3px oklch(0.68 0.155 258 / 0.3);
+}
+
+
+/* =========================================================
+   AUTH SCENE
+
+   The sign-in page is a fixed dusk composition: it must look
+   identical whatever the app theme is, so none of these values
+   are re-weighted in `.dark`.
+   ========================================================= */
+
+:root {
+    /* ---------- Sky ----------
+       Only the fallback behind the photograph: it gives the page a dusk
+       gradient to show while the image decodes, instead of black. */
+    --auth-night: oklch(0.165 0.045 268);
+    --auth-dusk: oklch(0.255 0.062 266);
+    --auth-haze: oklch(0.375 0.072 258);
+
+    /* ---------- Shade ----------
+       The scrim tone. It deepens the left of the frame where the panel sits
+       and leaves the lit side of the photograph alone. */
+    --auth-shade: oklch(0.085 0.026 268);
+
+    /* ---------- Ink + surfaces ---------- */
+    --auth-ink: oklch(0.985 0.006 250);
+    --auth-ink-muted: oklch(0.86 0.018 258);
+    --auth-panel: oklch(0.235 0.032 268 / 0.52);
+    --auth-panel-line: oklch(0.98 0.006 250 / 0.14);
+    --auth-field: oklch(0.155 0.03 268 / 0.55);
+    --auth-field-line: oklch(0.98 0.006 250 / 0.16);
+    --auth-hover: oklch(0.98 0.006 250 / 0.08);
+
+    /* ---------- Action ----------
+       L 0.51 keeps white label text at roughly 6:1 on the fill. */
+    --auth-action: oklch(0.51 0.205 265);
+    --auth-action-hover: oklch(0.565 0.2 265);
+    --auth-action-active: oklch(0.465 0.2 265);
+    --auth-action-ring: oklch(0.74 0.15 258);
+
+    /*
+     * Links and mode switches on the panel. --auth-action is right for a
+     * filled button and wrong as text: at L 0.51 it only reaches ~2.5:1
+     * against the panel, so interactive text uses this lighter azure.
+     */
+    --auth-link: oklch(0.79 0.12 246);
+
+    /* ---------- Alert, as seen on a dark ground ---------- */
+    --auth-alert: oklch(0.78 0.15 22);
+    --auth-alert-foreground: oklch(0.84 0.11 18);
+}
+
+
+/* =========================================================
+   TOKEN ISLAND
+
+   Everything below `.auth-scene` resolves --foreground, --card,
+   --primary … to the scene values, so the shared primitives
+   (Card, Input, Button, FormField) render correctly on the dark
+   ground without a duplicated style rule and without leaking into
+   the rest of the application.
+   ========================================================= */
+
+.auth-scene {
+    /* Native carets, form controls and scrollbars on a dark ground */
+    color-scheme: dark;
+
+    --background: var(--auth-night);
+    --foreground: var(--auth-ink);
+
+    --card: var(--auth-panel);
+    --card-foreground: var(--auth-ink);
+    --popover: var(--auth-panel);
+    --popover-foreground: var(--auth-ink);
+
+    --border: var(--auth-panel-line);
+    --border-subtle: oklch(0.98 0.006 250 / 0.09);
+    --border-strong: oklch(0.98 0.006 250 / 0.26);
+    --input: var(--auth-field-line);
+    --ring: var(--auth-action-ring);
+
+    --muted: var(--auth-hover);
+    --muted-foreground: var(--auth-ink-muted);
+    --secondary: var(--auth-hover);
+    --secondary-foreground: var(--auth-ink);
+
+    --surface-muted: var(--auth-hover);
+    --surface-sunken: var(--auth-hover);
+
+    --primary: var(--auth-action);
+    --primary-hover: var(--auth-action-hover);
+    --primary-active: var(--auth-action-active);
+    --primary-foreground: var(--auth-ink);
+
+    --danger: var(--auth-alert);
+    --danger-foreground: var(--auth-alert-foreground);
+    --destructive: var(--auth-alert);
+
+    --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.3);
+    --shadow-sm: 0 2px 6px -1px oklch(0 0 0 / 0.35);
+    --shadow-xl:
+        0 12px 24px -12px oklch(0 0 0 / 0.55),
+        0 40px 80px -32px oklch(0 0 0 / 0.6);
 }

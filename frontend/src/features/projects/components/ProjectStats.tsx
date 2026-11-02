@@ -263,120 +263,86 @@ export default function ProjectStats({
     ]);
 
 
-    const completedDisplay =
-        loading
-            ? "..."
-            : error
-                ? "—"
-                : stats.completed;
-
-
-    const tasksDisplay =
-        loading
-            ? "..."
-            : error
-                ? "—"
-                : stats.tasks;
-
-
-    const boardsDisplay =
-        loading
-            ? "..."
-            : error
-                ? "—"
-                : stats.boards;
-
-
     /*
-     * Project membership currently uses
-     * organization membership because the
-     * backend project model does not expose
-     * project-specific members in the supplied
-     * API contract.
+     * A dash is a *result*. While loading, show the tile's skeleton shape
+     * instead of "..." so the row doesn't jump when numbers arrive.
      */
 
-    const membersDisplay =
-        usersLoading
-            ? "..."
-            : users.length;
+    const display = (value: number) =>
+        loading ? "\u00A0" : error ? "\u2014" : value;
 
+    /*
+     * Project membership reads from organization membership because the
+     * backend project model doesn't expose project-scoped members in the
+     * supplied API contract.
+     */
+    const membersDisplay = usersLoading ? "\u00A0" : users.length;
 
     return (
-        <div
-            className="
-                grid
-                gap-6
-                md:grid-cols-2
-                xl:grid-cols-4
-            "
-        >
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
             {/* ==========================================
                 BOARDS
             =========================================== */}
 
-            <StatCard
-                title="Boards"
-                value={
-                    boardsDisplay
-                }
-                subtitle="Boards"
-                icon={
-                    LayoutDashboard
-                }
-                color="indigo"
-            />
+            <div className={loading ? "animate-pulse" : undefined}>
+                <StatCard
+                    title="Boards"
+                    value={display(stats.boards)}
+                    subtitle="Active on this project"
+                    icon={LayoutDashboard}
+                    color="indigo"
+                />
+            </div>
 
 
             {/* ==========================================
                 TASKS
             =========================================== */}
 
-            <StatCard
-                title="Tasks"
-                value={
-                    tasksDisplay
-                }
-                subtitle="Work Items"
-                icon={
-                    ClipboardList
-                }
-                color="amber"
-            />
+            <div className={loading ? "animate-pulse" : undefined}>
+                <StatCard
+                    title="Work Items"
+                    value={display(stats.tasks)}
+                    subtitle="Excluding archived"
+                    icon={ClipboardList}
+                    color="amber"
+                />
+            </div>
 
 
             {/* ==========================================
                 COMPLETED
             =========================================== */}
 
-            <StatCard
-                title="Completed"
-                value={
-                    completedDisplay
-                }
-                subtitle="Completed"
-                icon={
-                    CheckCircle2
-                }
-                color="emerald"
-            />
+            <div className={loading ? "animate-pulse" : undefined}>
+                <StatCard
+                    title="Completed"
+                    value={display(stats.completed)}
+                    subtitle={
+                        stats.tasks > 0 && !loading && !error
+                            ? `${Math.round((stats.completed / stats.tasks) * 100)}% of all work`
+                            : "Finished work items"
+                    }
+                    icon={CheckCircle2}
+                    color="emerald"
+                />
+            </div>
 
 
             {/* ==========================================
                 MEMBERS
             =========================================== */}
 
-            <StatCard
-                title="Members"
-                value={
-                    membersDisplay
-                }
-                subtitle="Workspace Members"
-                icon={
-                    Users
-                }
-                color="purple"
-            />
+            <div className={loading || usersLoading ? "animate-pulse" : undefined}>
+                <StatCard
+                    title="Members"
+                    value={membersDisplay}
+                    subtitle="In this workspace"
+                    icon={Users}
+                    color="purple"
+                />
+            </div>
 
         </div>
     );

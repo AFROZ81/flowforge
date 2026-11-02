@@ -1,41 +1,33 @@
+import { useId } from "react";
 import {
     Bell,
     CheckCheck,
-    Loader2,
     RefreshCw,
 } from "lucide-react";
 
 import NotificationItem from "./NotificationItem";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+    PopoverContent,
+    PopoverDescription,
+    PopoverTitle,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
-import type {
-    Notification,
-} from "../types/notification";
+import type { Notification } from "../types/notification";
 
 
 type Props = {
     notifications: Notification[];
-
     unreadCount: number;
-
     isLoading: boolean;
-
     isRefreshing: boolean;
-
     onRefresh: () => void;
-
-    onRead: (
-        notificationId: string
-    ) => void;
-
-    onUnread: (
-        notificationId: string
-    ) => void;
-
+    onRead: (notificationId: string) => void;
+    onUnread: (notificationId: string) => void;
     onReadAll: () => void;
-
-    onDelete: (
-        notificationId: string
-    ) => void;
+    onDelete: (notificationId: string) => void;
 };
 
 
@@ -51,330 +43,152 @@ export default function NotificationDropdown({
     onDelete,
 }: Props) {
 
+    const titleId = useId();
+
     return (
-        <div
-            className="
-                absolute
-                right-0
-                top-full
-                z-50
-                mt-2
-                w-[380px]
-                max-w-[calc(100vw-24px)]
-                overflow-hidden
-                rounded-xl
-                border
-                bg-background
-                shadow-xl
-            "
+        <PopoverContent
+            id={titleId}
+            className="w-[min(23rem,calc(100vw-1.5rem))] flex flex-col p-0"
         >
+            {/* The popover needs an accessible name; the visible heading is it */}
+            <PopoverTitle className="sr-only">
+                Notifications
+            </PopoverTitle>
 
-            {/* Header */}
+            <PopoverDescription className="sr-only">
+                {unreadCount > 0
+                    ? `${unreadCount} unread`
+                    : "All read"}
+            </PopoverDescription>
 
-            <div
-                className="
-                    flex
-                    items-center
-                    justify-between
-                    border-b
-                    px-4
-                    py-3
-                "
-            >
+            {/* ================= header ================= */}
+            <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
 
-                <div>
+                <div className="min-w-0">
 
-                    <div
-                        className="
-                            flex
-                            items-center
-                            gap-2
-                        "
-                    >
+                    <div className="flex items-center gap-2">
 
                         <Bell
-                            className="
-                                h-4
-                                w-4
-                            "
+                            className="size-4 shrink-0 text-muted-foreground"
+                            aria-hidden="true"
                         />
 
-                        <h3
-                            className="
-                                text-sm
-                                font-semibold
-                            "
-                        >
+                        <h3 className="truncate text-sm font-semibold text-foreground">
                             Notifications
                         </h3>
 
-
                         {unreadCount > 0 && (
-                            <span
-                                className="
-                                    rounded-full
-                                    bg-blue-100
-                                    px-2
-                                    py-0.5
-                                    text-[10px]
-                                    font-semibold
-                                    text-blue-700
-                                "
-                            >
-                                {unreadCount}
-                                {" "}
-                                unread
+                            <span className="shrink-0 rounded-full bg-primary-subtle px-2 py-0.5 text-[11px] font-semibold text-primary tabular-nums">
+                                {unreadCount} unread
                             </span>
                         )}
 
                     </div>
 
-
-                    <p
-                        className="
-                            mt-0.5
-                            text-[11px]
-                            text-muted-foreground
-                        "
-                    >
-                        Stay updated with your workspace
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        Activity across your workspace
                     </p>
 
                 </div>
 
+                <div className="flex shrink-0 items-center gap-1">
 
-                <div
-                    className="
-                        flex
-                        items-center
-                        gap-1
-                    "
-                >
+                    {unreadCount > 0 && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            onClick={onReadAll}
+                        >
+                            <CheckCheck />
+                            Mark all read
+                        </Button>
+                    )}
 
-                    <button
+                    <Button
                         type="button"
+                        variant="ghost"
+                        size="icon-sm"
                         title="Refresh"
+                        aria-label="Refresh notifications"
                         disabled={isRefreshing}
-                        className="
-                            rounded-md
-                            p-1.5
-                            text-muted-foreground
-                            hover:bg-muted
-                            hover:text-foreground
-                            disabled:opacity-50
-                        "
                         onClick={onRefresh}
                     >
                         <RefreshCw
-                            className={[
-                                "h-4 w-4",
-                                isRefreshing
-                                    ? "animate-spin"
-                                    : "",
-                            ].join(" ")}
+                            className={cn(isRefreshing && "animate-spin")}
                         />
-                    </button>
-
-
-                    {unreadCount > 0 && (
-                        <button
-                            type="button"
-                            className="
-                                inline-flex
-                                items-center
-                                gap-1
-                                rounded-md
-                                px-2
-                                py-1.5
-                                text-[11px]
-                                font-medium
-                                text-muted-foreground
-                                hover:bg-muted
-                                hover:text-foreground
-                            "
-                            onClick={onReadAll}
-                        >
-                            <CheckCheck
-                                className="
-                                    h-3.5
-                                    w-3.5
-                                "
-                            />
-
-                            Mark all read
-                        </button>
-                    )}
+                    </Button>
 
                 </div>
 
             </div>
 
 
-            {/* Content */}
-
+            {/* ================= list ================= */}
             <div
-                className="
-                    max-h-[430px]
-                    overflow-y-auto
-                "
+                className="max-h-[min(28rem,65dvh)] overflow-y-auto overscroll-contain"
+                aria-busy={isLoading}
             >
 
-                {/* Loading */}
-
                 {isLoading && (
-                    <div
-                        className="
-                            flex
-                            min-h-[180px]
-                            flex-col
-                            items-center
-                            justify-center
-                            gap-2
-                            text-sm
-                            text-muted-foreground
-                        "
-                    >
-                        <Loader2
-                            className="
-                                h-5
-                                w-5
-                                animate-spin
-                            "
-                        />
+                    <ul>
+                        {Array.from({ length: 4 }).map((_, index) => (
+                            <li
+                                key={index}
+                                className="flex gap-3 border-b border-border-subtle px-3.5 py-3 last:border-b-0"
+                            >
+                                <span className="w-1.5 shrink-0" />
 
-                        Loading notifications...
+                                <Skeleton className="size-8 rounded-full" />
+
+                                <div className="min-w-0 flex-1 space-y-2">
+                                    <Skeleton className="h-3.5 w-3/5" />
+                                    <Skeleton className="h-3 w-4/5 opacity-70" />
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+
+
+                {!isLoading && notifications.length === 0 && (
+                    <div className="flex min-h-[13rem] flex-col items-center justify-center px-6 text-center">
+
+                        <span
+                            aria-hidden="true"
+                            className="mb-3 flex size-11 items-center justify-center rounded-full bg-surface-sunken text-muted-foreground"
+                        >
+                            <Bell className="size-5" />
+                        </span>
+
+                        <p className="text-sm font-medium text-foreground">
+                            You&rsquo;re all caught up
+                        </p>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            New activity on your work items will appear here.
+                        </p>
+
                     </div>
                 )}
 
 
-                {/* Empty */}
-
-                {!isLoading &&
-                    notifications.length ===
-                        0 && (
-                        <div
-                            className="
-                                flex
-                                min-h-[220px]
-                                flex-col
-                                items-center
-                                justify-center
-                                px-6
-                                text-center
-                            "
-                        >
-
-                            <div
-                                className="
-                                    mb-3
-                                    flex
-                                    h-11
-                                    w-11
-                                    items-center
-                                    justify-center
-                                    rounded-full
-                                    bg-muted
-                                "
-                            >
-                                <Bell
-                                    className="
-                                        h-5
-                                        w-5
-                                        text-muted-foreground
-                                    "
-                                />
-                            </div>
-
-
-                            <p
-                                className="
-                                    text-sm
-                                    font-medium
-                                "
-                            >
-                                You're all caught up
-                            </p>
-
-
-                            <p
-                                className="
-                                    mt-1
-                                    text-xs
-                                    text-muted-foreground
-                                "
-                            >
-                                No notifications to show.
-                            </p>
-
-                        </div>
-                    )}
-
-
-                {/* Notifications */}
-
-                {!isLoading &&
-                    notifications.length >
-                        0 && (
-                        <div>
-
-                            {notifications.map(
-                                notification => (
-                                    <NotificationItem
-                                        key={
-                                            notification.id
-                                        }
-                                        notification={
-                                            notification
-                                        }
-                                        onRead={
-                                            onRead
-                                        }
-                                        onUnread={
-                                            onUnread
-                                        }
-                                        onDelete={
-                                            onDelete
-                                        }
-                                    />
-                                )
-                            )}
-
-                        </div>
-                    )}
+                {!isLoading && notifications.length > 0 && (
+                    <ul>
+                        {notifications.map((notification) => (
+                            <NotificationItem
+                                key={notification.id}
+                                notification={notification}
+                                onRead={onRead}
+                                onUnread={onUnread}
+                                onDelete={onDelete}
+                            />
+                        ))}
+                    </ul>
+                )}
 
             </div>
 
-
-            {/* Footer */}
-
-            {!isLoading &&
-                notifications.length >
-                    0 && (
-                    <div
-                        className="
-                            border-t
-                            px-4
-                            py-2
-                            text-center
-                        "
-                    >
-                        <button
-                            type="button"
-                            className="
-                                text-xs
-                                font-medium
-                                text-muted-foreground
-                                hover:text-foreground
-                            "
-                            onClick={
-                                onRefresh
-                            }
-                        >
-                            Refresh notifications
-                        </button>
-                    </div>
-                )}
-
-        </div>
+        </PopoverContent>
     );
 }
