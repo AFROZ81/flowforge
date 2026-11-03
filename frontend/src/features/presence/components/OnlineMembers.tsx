@@ -48,6 +48,18 @@ export default function OnlineMembers() {
                     }))}
                     max={3}
                     size="sm"
+                    /*
+                     * Every person in this stack is online by definition, so the
+                     * dot belongs here on the control itself — it is what tells you
+                     * the bar is live before you open it. The trigger's aria-label
+                     * already states the count, so the dot is decoration.
+                     */
+                    indicator={
+                        <span
+                            aria-hidden="true"
+                            className="size-2 rounded-full bg-success ring-2 ring-card"
+                        />
+                    }
                 />
 
                 <span className="hidden text-xs font-medium tabular-nums sm:inline">
@@ -86,18 +98,13 @@ export default function OnlineMembers() {
                             key={user.userId}
                             className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-surface-muted"
                         >
+                            {/* No dot on these avatars: the stack in the bar carries
+                                the live indicator, and the row already spells out
+                                "Online" in text below the name. */}
                             <Avatar
                                 name={user.fullName}
                                 size="md"
                                 decorative
-                                indicator={
-                                    <span
-                                        title="Online"
-                                        className="flex size-2.5 rounded-full bg-success ring-2 ring-popover"
-                                    >
-                                        <span className="sr-only">Online</span>
-                                    </span>
-                                }
                             />
 
                             <div className="min-w-0 flex-1">

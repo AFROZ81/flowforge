@@ -4,7 +4,13 @@
 @import "@fontsource-variable/geist";
 @import "./styles/theme.css";
 
-@custom-variant dark (&:is(.dark *));
+/*
+ * The dark variant is a FAMILY hook, not an identity one: it answers "is this
+ * a dark surface scheme?", which is true of both dark and onyx. Theme identity
+ * is carried by data-theme and read only by the token layer — components never
+ * switch on a theme id.
+ */
+@custom-variant dark (&:is(.dark *, .onyx *));
 
 /* =========================================================
    TOKEN → UTILITY MAPPING

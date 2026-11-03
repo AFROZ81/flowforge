@@ -1,132 +1,90 @@
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useState,
-} from "react";
-
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 import {
-    BriefcaseBusiness,
-    CheckCircle2,
-    ChevronRight,
+    paramsWith,
+    parseParam,
+    searchWith,
+} from "@/lib/query-params";
+import {
     CircleAlert,
     Download,
-    FileBarChart2,
     Loader2,
     RefreshCw,
     Search,
-    Tags,
-    TrendingUp,
-    Users,
+    X,
 } from "lucide-react";
 
-import { reportsService } from "../api/reports.service";
+import {
+    reportsService,
+    type AssigneeSummary,
+    type LabelUsage,
+    type ProductivityPoint,
+    type ProjectSummary,
+    type WorkItemSummary,
+} from "../api/reports.service";
 
+import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { EmptyStateCard } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import PillNav from "@/components/ui/pill-nav";
+import { SectionHeader } from "@/components/ui/section-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableFooter,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import AppLayout from "@/layouts/AppLayout";
 
-import "./reports.css";
-
-type ReportKey =
+type ReportId =
     | "work-items"
     | "projects"
     | "assignees"
     | "labels"
     | "productivity";
 
-interface WorkItemSummary {
-    total: number;
-    active: number;
-    blocked: number;
-    completed: number;
-    archived: number;
-    assigned: number;
-    unassigned: number;
-    overdue: number;
+/**
+ * One line of names. An icon-per-entry list is what made an earlier version
+ * look like a second sidebar.
+ */
+interface ReportEntry {
+    id: ReportId;
+    label: string;
 }
 
-interface ProjectSummary {
-    projectId: string;
-    projectName: string;
-    total: number;
-    active: number;
-    completed: number;
-    blocked: number;
-    completionPercentage: number;
-}
-
-interface AssigneeSummary {
-    userId: string;
-    fullName: string;
-    email: string;
-    assigned: number;
-    active: number;
-    completed: number;
-    blocked: number;
-    overdue: number;
-}
-
-interface LabelUsage {
-    labelId: string;
-    name: string;
-    color: string;
-    usageCount: number;
-}
-
-interface ProductivityPoint {
-    date: string;
-    created: number;
-    completed: number;
-}
-
-interface ReportDefinition {
-    key: ReportKey;
-    title: string;
-    description: string;
-    category: string;
-    icon: React.ReactNode;
-}
-
-const REPORTS: ReportDefinition[] = [
-    {
-        key: "work-items",
-        title: "Work Items",
-        description: "Operational workload, ownership, delivery status and overdue work.",
-        category: "WORK MANAGEMENT",
-        icon: <BriefcaseBusiness size={18} />,
-    },
-    {
-        key: "projects",
-        title: "Projects",
-        description:
-            "Compare project workload, delivery progress and completion.",
-        category: "WORK MANAGEMENT",
-        icon: <FileBarChart2 size={18} />,
-    },
-    {
-        key: "assignees",
-        title: "Team Performance",
-        description:
-            "Understand workload distribution and individual delivery.",
-        category: "TEAM",
-        icon: <Users size={18} />,
-    },
-    {
-        key: "labels",
-        title: "Label Usage",
-        description:
-            "Understand how labels are being used across the workspace.",
-        category: "ORGANIZATION",
-        icon: <Tags size={18} />,
-    },
-    {
-        key: "productivity",
-        title: "Productivity",
-        description:
-            "Compare work created and completed over a selected period.",
-        category: "TRENDS",
-        icon: <TrendingUp size={18} />,
-    },
+const REPORTS: readonly ReportEntry[] = [
+    { id: "work-items", label: "Work items" },
+    { id: "projects", label: "Projects" },
+    { id: "assignees", label: "Team" },
+    { id: "labels", label: "Labels" },
+    { id: "productivity", label: "Productivity" },
 ];
+
+const PERIODS = [7, 14, 30, 60, 90];
+
+const DEFAULT_REPORT: ReportId = "work-items";
+const DEFAULT_PERIOD = 30;
+
+const REPORT_LABEL = Object.fromEntries(
+    REPORTS.map((report) => [report.id, report.label])
+) as Record<ReportId, string>;
+
+/* Both view parameters live in the URL, so neither is trusted before it parses. */
+const REPORT_IDS = REPORTS.map((entry) => entry.id);
+
+function parsePeriod(value: string | null): number {
+    const parsed = Number(value);
+
+    return PERIODS.includes(parsed) ? parsed : DEFAULT_PERIOD;
+}
 
 function formatNumber(value: number): string {
     return new Intl.NumberFormat("en-IN").format(
@@ -135,1847 +93,1098 @@ function formatNumber(value: number): string {
 }
 
 function formatPercentage(value: number): string {
-    if (!Number.isFinite(value)) {
-        return "0%";
-    }
-
-    return `${Number(value.toFixed(1))}%`;
+    return Number.isFinite(value) ? `${Number(value.toFixed(1))}%` : "0%";
 }
 
 function formatDate(value: string): string {
-    if (!value) {
-        return "—";
-    }
-
     const date = new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
-        return value;
-    }
-
-    return date.toLocaleDateString(undefined, {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
+    return Number.isNaN(date.getTime())
+        ? value
+        : date.toLocaleDateString(undefined, {
+              day: "2-digit",
+              month: "short",
+          });
 }
 
-function getInitials(name: string): string {
-    const value = name.trim();
-
-    if (!value) {
-        return "?";
-    }
-
-    const parts = value.split(/\s+/);
-
-    if (parts.length === 1) {
-        return parts[0].slice(0, 2).toUpperCase();
-    }
-
-    return (
-        parts[0][0] +
-        parts[parts.length - 1][0]
-    ).toUpperCase();
+function ofTotal(value: number, total: number): number {
+    return total > 0 ? (value / total) * 100 : 0;
 }
 
-function EmptyReport({
-    title,
-    message,
-}: {
-    title: string;
-    message: string;
-}) {
-    return (
-        <div className="reports-empty-state">
-            <div className="reports-empty-icon">
-                <FileBarChart2 size={22} />
-            </div>
+/* -------------------------------------------------------------------------- */
+/* Building blocks                                                            */
+/* -------------------------------------------------------------------------- */
 
-            <div>
-                <strong>{title}</strong>
-                <p>{message}</p>
-            </div>
-        </div>
-    );
-}
+type FigureTone = "default" | "danger" | "success";
 
-function ProgressBar({
-    value,
-}: {
-    value: number;
-}) {
-    const percentage = Math.min(
-        100,
-        Math.max(
-            0,
-            Number.isFinite(value) ? value : 0
-        )
-    );
-
-    return (
-        <div className="reports-progress">
-            <div
-                className="reports-progress-fill"
-                style={{
-                    width: `${percentage}%`,
-                }}
-            />
-        </div>
-    );
-}
-
-function SectionHeading({
-    title,
-    description,
-}: {
-    title: string;
-    description?: string;
-}) {
-    return (
-        <div className="reports-section-heading">
-            <div>
-                <h2>{title}</h2>
-
-                {description && (
-                    <p>{description}</p>
-                )}
-            </div>
-        </div>
-    );
-}
-
-function MetricRow({
-    label,
-    value,
-    total,
-    description,
-}: {
+interface Figure {
     label: string;
-    value: number;
-    total: number;
-    description: string;
-}) {
-    const percentage =
-        total > 0
-            ? (value / total) * 100
-            : 0;
+    value: string;
+    tone?: FigureTone;
+}
 
+/**
+ * One bordered surface with hairline separators instead of four detached cards.
+ * The floor is 8.5rem so a phone gets two figures across instead of a tall
+ * single column of five stacked cards.
+ */
+function FigureGrid({ figures }: { figures: Figure[] }) {
     return (
-        <tr>
-            <td>
-                <div className="reports-metric-label">
-                    <strong>{label}</strong>
-
-                    <span>
-                        {description}
-                    </span>
-                </div>
-            </td>
-
-            <td className="reports-number-cell">
-                {formatNumber(value)}
-            </td>
-
-            <td>
-                <div className="reports-share">
-                    <div className="reports-share-top">
-                        {formatPercentage(
-                            percentage
-                        )}
+        <div className="grid gap-px overflow-hidden rounded-xl border bg-border [grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr))]">
+            {figures.map((figure) => (
+                <div key={figure.label} className="bg-card px-3.5 py-3 sm:px-4">
+                    <div className="text-xs text-muted-foreground">
+                        {figure.label}
                     </div>
-
-                    <ProgressBar
-                        value={percentage}
-                    />
+                    <div
+                        className={cn(
+                            "mt-0.5 text-xl font-semibold tabular-nums text-foreground",
+                            figure.tone === "danger" && "text-destructive",
+                            figure.tone === "success" && "text-success"
+                        )}
+                    >
+                        {figure.value}
+                    </div>
                 </div>
-            </td>
-        </tr>
+            ))}
+        </div>
     );
 }
 
-const WorkItemsReport: React.FC<{
-    data: WorkItemSummary | null;
-}> = ({ data }) => {
-    if (!data) {
-        return (
-            <EmptyReport
-                title="No work-item data"
-                message="There is no work-item information available for this workspace."
-            />
-        );
-    }
+function ReportSection({
+    number,
+    title,
+    note,
+    children,
+}: {
+    number: number;
+    title: string;
+    note?: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <section className="overflow-hidden rounded-xl border bg-card">
+            <div className="border-b px-4 py-3">
+                <SectionHeader
+                    title={
+                        <>
+                            <span className="mr-2 tabular-nums text-muted-foreground">
+                                {number}.
+                            </span>
+                            {title}
+                        </>
+                    }
+                    description={note}
+                />
+            </div>
+            {children}
+        </section>
+    );
+}
 
-    const completionRate =
-        data.total > 0
-            ? (data.completed / data.total) * 100
-            : 0;
-
-    const assignmentRate =
-        data.total > 0
-            ? (data.assigned / data.total) * 100
-            : 0;
-
-    const attentionRequired =
-        data.blocked +
-        data.overdue +
-        data.unassigned;
+/** Bar plus its percentage, so a column can be read at a glance and exactly. */
+function Share({ value, total }: { value: number; total: number }) {
+    const percentage = ofTotal(value, total);
 
     return (
-        <div className="reports-report-body">
-            <div className="reports-report-intro">
-                <div>
-                    <span className="reports-overline">
-                        OPERATIONAL ANALYSIS
-                    </span>
-
-                    <h3>
-                        Workload and delivery overview
-                    </h3>
-
-                    <p>
-                        Review how work is distributed,
-                        completed and currently at risk.
-                    </p>
-                </div>
-
-                <div className="reports-highlight">
-                    <span>
-                        Completion rate
-                    </span>
-
-                    <strong>
-                        {formatPercentage(
-                            completionRate
-                        )}
-                    </strong>
-                </div>
+        <div className="flex min-w-28 items-center gap-2">
+            <div className="h-1.5 flex-1 rounded-full bg-surface-sunken">
+                <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${Math.min(100, percentage)}%` }}
+                />
             </div>
-
-            <div className="reports-analysis-grid">
-                <div className="reports-analysis-item">
-                    <span>Total workload</span>
-
-                    <strong>
-                        {formatNumber(data.total)}
-                    </strong>
-
-                    <small>
-                        All work items
-                    </small>
-                </div>
-
-                <div className="reports-analysis-item">
-                    <span>Assigned</span>
-
-                    <strong>
-                        {formatNumber(data.assigned)}
-                    </strong>
-
-                    <small>
-                        {formatPercentage(
-                            assignmentRate
-                        )}{" "}
-                        have an owner
-                    </small>
-                </div>
-
-                <div className="reports-analysis-item">
-                    <span>Completed</span>
-
-                    <strong>
-                        {formatNumber(data.completed)}
-                    </strong>
-
-                    <small>
-                        Successfully delivered
-                    </small>
-                </div>
-
-                <div className="reports-analysis-item reports-analysis-warning">
-                    <span>
-                        Attention required
-                    </span>
-
-                    <strong>
-                        {formatNumber(
-                            attentionRequired
-                        )}
-                    </strong>
-
-                    <small>
-                        Blocked, overdue or unassigned
-                    </small>
-                </div>
-            </div>
-
-            <SectionHeading
-                title="Workload composition"
-                description="Distribution of work items by operational state."
-            />
-
-            <div className="reports-table-container">
-                <table className="reports-table">
-                    <thead>
-                        <tr>
-                            <th>Metric</th>
-                            <th>Count</th>
-                            <th>Share</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <MetricRow
-                            label="Assigned"
-                            value={data.assigned}
-                            total={data.total}
-                            description="Work currently owned by a member."
-                        />
-
-                        <MetricRow
-                            label="Unassigned"
-                            value={data.unassigned}
-                            total={data.total}
-                            description="Work that still requires an owner."
-                        />
-
-                        <MetricRow
-                            label="Active"
-                            value={data.active}
-                            total={data.total}
-                            description="Currently active work."
-                        />
-
-                        <MetricRow
-                            label="Completed"
-                            value={data.completed}
-                            total={data.total}
-                            description="Successfully completed work."
-                        />
-
-                        <MetricRow
-                            label="Blocked"
-                            value={data.blocked}
-                            total={data.total}
-                            description="Work currently blocked."
-                        />
-
-                        <MetricRow
-                            label="Overdue"
-                            value={data.overdue}
-                            total={data.total}
-                            description="Work beyond its due date."
-                        />
-
-                        <MetricRow
-                            label="Archived"
-                            value={data.archived}
-                            total={data.total}
-                            description="Archived work items."
-                        />
-                    </tbody>
-                </table>
-            </div>
+            <span className="w-11 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                {formatPercentage(percentage)}
+            </span>
         </div>
     );
-};
+}
 
-const ProjectsReport: React.FC<{
-    data: ProjectSummary[];
-}> = ({ data }) => {
-    if (!data.length) {
-        return (
-            <EmptyReport
-                title="No projects found"
-                message="There are no project records matching the current search."
-            />
-        );
-    }
+const NUMERIC_HEAD = "text-right";
+const NUMERIC_CELL = "text-right tabular-nums";
+
+/* -------------------------------------------------------------------------- */
+/* Reports                                                                    */
+/* -------------------------------------------------------------------------- */
+
+function WorkItemsReport({ data }: { data: WorkItemSummary }) {
+    const measures: { label: string; value: number }[] = [
+        { label: "Assigned", value: data.assigned },
+        { label: "Unassigned", value: data.unassigned },
+        { label: "Active", value: data.active },
+        { label: "Completed", value: data.completed },
+        { label: "Blocked", value: data.blocked },
+        { label: "Overdue", value: data.overdue },
+        { label: "Archived", value: data.archived },
+    ];
 
     return (
-        <div className="reports-report-body">
-            <div className="reports-report-intro">
-                <div>
-                    <span className="reports-overline">
-                        PROJECT DELIVERY
-                    </span>
+        <>
+            <FigureGrid
+                figures={[
+                    { label: "Work items", value: formatNumber(data.total) },
+                    {
+                        label: "Completion",
+                        value: formatPercentage(ofTotal(data.completed, data.total)),
+                        tone: "success",
+                    },
+                    {
+                        label: "Blocked",
+                        value: formatNumber(data.blocked),
+                        tone: data.blocked > 0 ? "danger" : "default",
+                    },
+                    {
+                        label: "Overdue",
+                        value: formatNumber(data.overdue),
+                        tone: data.overdue > 0 ? "danger" : "default",
+                    },
+                    {
+                        label: "Unassigned",
+                        value: formatNumber(data.unassigned),
+                        tone: data.unassigned > 0 ? "danger" : "default",
+                    },
+                ]}
+            />
 
-                    <h3>
-                        Project performance
-                    </h3>
+            <ReportSection
+                number={1}
+                title="Measures"
+                note="Counts are not mutually exclusive; share is of all work items"
+            >
+                <Table className="min-w-[26rem]">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Measure</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Count</TableHead>
+                            <TableHead>Share</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {measures.map((measure) => (
+                            <TableRow key={measure.label}>
+                                <TableCell className="font-medium">
+                                    {measure.label}
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {formatNumber(measure.value)}
+                                </TableCell>
+                                <TableCell>
+                                    <Share
+                                        value={measure.value}
+                                        total={data.total}
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                    <TableFooter>
+                        <TableRow>
+                            <TableCell>Total work items</TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(data.total)}
+                            </TableCell>
+                            <TableCell />
+                        </TableRow>
+                    </TableFooter>
+                </Table>
+            </ReportSection>
+        </>
+    );
+}
 
-                    <p>
-                        Compare workload and completion
-                        across projects.
-                    </p>
-                </div>
+function ProjectsReport({ data }: { data: ProjectSummary[] }) {
+    const totals = data.reduce(
+        (accumulator, project) => ({
+            total: accumulator.total + project.total,
+            active: accumulator.active + project.active,
+            completed: accumulator.completed + project.completed,
+            blocked: accumulator.blocked + project.blocked,
+        }),
+        { total: 0, active: 0, completed: 0, blocked: 0 }
+    );
 
-                <div className="reports-inline-count">
-                    <strong>
-                        {formatNumber(data.length)}
-                    </strong>
+    return (
+        <>
+            <FigureGrid
+                figures={[
+                    { label: "Projects", value: formatNumber(data.length) },
+                    { label: "Work items", value: formatNumber(totals.total) },
+                    {
+                        label: "Completed",
+                        value: formatNumber(totals.completed),
+                        tone: "success",
+                    },
+                    {
+                        label: "Blocked",
+                        value: formatNumber(totals.blocked),
+                        tone: totals.blocked > 0 ? "danger" : "default",
+                    },
+                ]}
+            />
 
-                    <span>
-                        projects
-                    </span>
-                </div>
-            </div>
-
-            <div className="reports-table-container">
-                <table className="reports-table reports-wide-table">
-                    <thead>
-                        <tr>
-                            <th>Project</th>
-                            <th>Workload</th>
-                            <th>Active</th>
-                            <th>Completed</th>
-                            <th>Blocked</th>
-                            <th>Completion</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
+            <ReportSection number={1} title="Project delivery">
+                <Table className="min-w-[40rem]">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Project</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Items</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Active</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Completed</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Blocked</TableHead>
+                            <TableHead>Completion</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {data.map((project) => (
-                            <tr
-                                key={
-                                    project.projectId
-                                }
-                            >
-                                <td>
-                                    <div className="reports-project-name">
-                                        <div className="reports-project-icon">
-                                            <FileBarChart2
-                                                size={15}
-                                            />
-                                        </div>
-
-                                        <strong>
-                                            {
-                                                project.projectName
-                                            }
-                                        </strong>
-                                    </div>
-                                </td>
-
-                                <td>
-                                    <strong>
-                                        {formatNumber(
-                                            project.total
-                                        )}
-                                    </strong>
-                                </td>
-
-                                <td>
-                                    {formatNumber(
-                                        project.active
+                            <TableRow key={project.projectId}>
+                                <TableCell className="max-w-64 truncate font-medium">
+                                    {project.projectName}
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {formatNumber(project.total)}
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {formatNumber(project.active)}
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {formatNumber(project.completed)}
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {project.blocked > 0 ? (
+                                        <span className="text-destructive">
+                                            {formatNumber(project.blocked)}
+                                        </span>
+                                    ) : (
+                                        "0"
                                     )}
-                                </td>
-
-                                <td>
-                                    <span className="reports-success-text">
-                                        {formatNumber(
-                                            project.completed
-                                        )}
-                                    </span>
-                                </td>
-
-                                <td>
-                                    <span
-                                        className={
-                                            project.blocked >
-                                            0
-                                                ? "reports-danger-text"
-                                                : ""
-                                        }
-                                    >
-                                        {formatNumber(
-                                            project.blocked
-                                        )}
-                                    </span>
-                                </td>
-
-                                <td>
-                                    <div className="reports-project-completion">
-                                        <div>
-                                            <strong>
-                                                {formatPercentage(
-                                                    project.completionPercentage
-                                                )}
-                                            </strong>
-                                        </div>
-
-                                        <ProgressBar
-                                            value={
-                                                project.completionPercentage
-                                            }
-                                        />
-                                    </div>
-                                </td>
-                            </tr>
+                                </TableCell>
+                                <TableCell>
+                                    <Share
+                                        value={project.completed}
+                                        total={project.total}
+                                    />
+                                </TableCell>
+                            </TableRow>
                         ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                    </TableBody>
+                    <TableFooter>
+                        <TableRow>
+                            <TableCell>Total</TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.total)}
+                            </TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.active)}
+                            </TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.completed)}
+                            </TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.blocked)}
+                            </TableCell>
+                            <TableCell>
+                                <Share
+                                    value={totals.completed}
+                                    total={totals.total}
+                                />
+                            </TableCell>
+                        </TableRow>
+                    </TableFooter>
+                </Table>
+            </ReportSection>
+        </>
     );
-};
+}
 
-const AssigneesReport: React.FC<{
-    data: AssigneeSummary[];
-}> = ({ data }) => {
-    if (!data.length) {
-        return (
-            <EmptyReport
-                title="No team data"
-                message="There are no assignee records matching the current search."
-            />
-        );
-    }
+function TeamReport({ data }: { data: AssigneeSummary[] }) {
+    const totals = data.reduce(
+        (accumulator, member) => ({
+            assigned: accumulator.assigned + member.assigned,
+            active: accumulator.active + member.active,
+            completed: accumulator.completed + member.completed,
+            blocked: accumulator.blocked + member.blocked,
+            overdue: accumulator.overdue + member.overdue,
+        }),
+        { assigned: 0, active: 0, completed: 0, blocked: 0, overdue: 0 }
+    );
 
     return (
-        <div className="reports-report-body">
-            <div className="reports-report-intro">
-                <div>
-                    <span className="reports-overline">
-                        TEAM ANALYSIS
-                    </span>
-
-                    <h3>
-                        Team performance
-                    </h3>
-
-                    <p>
-                        Understand workload ownership
-                        and delivery across members.
-                    </p>
-                </div>
-
-                <div className="reports-inline-count">
-                    <strong>
-                        {formatNumber(data.length)}
-                    </strong>
-
-                    <span>
-                        members
-                    </span>
-                </div>
-            </div>
-
-            <div className="reports-table-container">
-                <table className="reports-table reports-wide-table">
-                    <thead>
-                        <tr>
-                            <th>Member</th>
-                            <th>Assigned</th>
-                            <th>Active</th>
-                            <th>Completed</th>
-                            <th>Blocked</th>
-                            <th>Overdue</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {data.map((member) => (
-                            <tr
-                                key={
-                                    member.userId
-                                }
-                            >
-                                <td>
-                                    <div className="reports-member">
-                                        <div className="reports-avatar">
-                                            {getInitials(
-                                                member.fullName
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <strong>
-                                                {
-                                                    member.fullName
-                                                }
-                                            </strong>
-
-                                            <span>
-                                                {
-                                                    member.email
-                                                }
-                                            </span>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <td>
-                                    <strong>
-                                        {formatNumber(
-                                            member.assigned
-                                        )}
-                                    </strong>
-                                </td>
-
-                                <td>
-                                    {formatNumber(
-                                        member.active
-                                    )}
-                                </td>
-
-                                <td>
-                                    <span className="reports-success-text">
-                                        {formatNumber(
-                                            member.completed
-                                        )}
-                                    </span>
-                                </td>
-
-                                <td>
-                                    <span
-                                        className={
-                                            member.blocked >
-                                            0
-                                                ? "reports-danger-text"
-                                                : ""
-                                        }
-                                    >
-                                        {formatNumber(
-                                            member.blocked
-                                        )}
-                                    </span>
-                                </td>
-
-                                <td>
-                                    <span
-                                        className={
-                                            member.overdue >
-                                            0
-                                                ? "reports-danger-text"
-                                                : ""
-                                        }
-                                    >
-                                        {formatNumber(
-                                            member.overdue
-                                        )}
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
-
-const LabelsReport: React.FC<{
-    data: LabelUsage[];
-}> = ({ data }) => {
-    if (!data.length) {
-        return (
-            <EmptyReport
-                title="No label data"
-                message="There are no labels matching the current search."
+        <>
+            <FigureGrid
+                figures={[
+                    { label: "Members with work", value: formatNumber(data.length) },
+                    { label: "Assigned", value: formatNumber(totals.assigned) },
+                    {
+                        label: "Completed",
+                        value: formatNumber(totals.completed),
+                        tone: "success",
+                    },
+                    {
+                        label: "Overdue",
+                        value: formatNumber(totals.overdue),
+                        tone: totals.overdue > 0 ? "danger" : "default",
+                    },
+                ]}
             />
-        );
-    }
 
-    const maxUsage = Math.max(
-        ...data.map(
-            (item) => item.usageCount
-        ),
-        1
+            <ReportSection number={1} title="Workload by member">
+                <Table className="min-w-[44rem]">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Member</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Assigned</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Active</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Completed</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Blocked</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Overdue</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {data.map((member) => (
+                            <TableRow key={member.userId}>
+                                <TableCell>
+                                    <div className="flex min-w-0 items-center gap-2.5">
+                                        <Avatar name={member.fullName} size="sm" />
+                                        <span className="min-w-0">
+                                            <span className="block truncate font-medium">
+                                                {member.fullName}
+                                            </span>
+                                            <span className="block truncate text-xs text-muted-foreground">
+                                                {member.email}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {formatNumber(member.assigned)}
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {formatNumber(member.active)}
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {formatNumber(member.completed)}
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {member.blocked > 0 ? (
+                                        <span className="text-destructive">
+                                            {formatNumber(member.blocked)}
+                                        </span>
+                                    ) : (
+                                        "0"
+                                    )}
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {member.overdue > 0 ? (
+                                        <span className="text-destructive">
+                                            {formatNumber(member.overdue)}
+                                        </span>
+                                    ) : (
+                                        "0"
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                    <TableFooter>
+                        <TableRow>
+                            <TableCell>Total</TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.assigned)}
+                            </TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.active)}
+                            </TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.completed)}
+                            </TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.blocked)}
+                            </TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.overdue)}
+                            </TableCell>
+                        </TableRow>
+                    </TableFooter>
+                </Table>
+            </ReportSection>
+        </>
     );
+}
 
-    const totalUsage = data.reduce(
-        (sum, item) =>
-            sum + item.usageCount,
+function LabelsReport({ data }: { data: LabelUsage[] }) {
+    const totalUses = data.reduce(
+        (accumulator, label) => accumulator + label.usageCount,
         0
     );
 
     return (
-        <div className="reports-report-body">
-            <div className="reports-report-intro">
-                <div>
-                    <span className="reports-overline">
-                        CLASSIFICATION
-                    </span>
+        <>
+            <FigureGrid
+                figures={[
+                    { label: "Labels in use", value: formatNumber(data.length) },
+                    { label: "Total uses", value: formatNumber(totalUses) },
+                    {
+                        label: "Most used",
+                        value:
+                            data.length > 0
+                                ? `${data[0].name} (${formatNumber(data[0].usageCount)})`
+                                : "—",
+                    },
+                ]}
+            />
 
-                    <h3>
-                        Label usage
-                    </h3>
+            <ReportSection number={1} title="Label usage">
+                <Table className="min-w-[24rem]">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Label</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Uses</TableHead>
+                            <TableHead>Share</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {data.map((label) => (
+                            <TableRow key={label.labelId}>
+                                <TableCell>
+                                    <div className="flex min-w-0 items-center gap-2">
+                                        <span
+                                            className="size-2.5 shrink-0 rounded-full ring-1 ring-inset ring-foreground/20"
+                                            style={{
+                                                background:
+                                                    label.color || undefined,
+                                            }}
+                                        />
+                                        <span className="truncate font-medium">
+                                            {label.name}
+                                        </span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className={NUMERIC_CELL}>
+                                    {formatNumber(label.usageCount)}
+                                </TableCell>
+                                <TableCell>
+                                    <Share
+                                        value={label.usageCount}
+                                        total={totalUses}
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                    <TableFooter>
+                        <TableRow>
+                            <TableCell>Total uses</TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totalUses)}
+                            </TableCell>
+                            <TableCell />
+                        </TableRow>
+                    </TableFooter>
+                </Table>
+            </ReportSection>
+        </>
+    );
+}
 
-                    <p>
-                        Understand which labels are
-                        actively used across the workspace.
-                    </p>
-                </div>
+function ProductivityReport({ data }: { data: ProductivityPoint[] }) {
+    const totals = data.reduce(
+        (accumulator, point) => ({
+            created: accumulator.created + point.created,
+            completed: accumulator.completed + point.completed,
+        }),
+        { created: 0, completed: 0 }
+    );
 
-                <div className="reports-inline-count">
-                    <strong>
-                        {formatNumber(
-                            totalUsage
-                        )}
-                    </strong>
+    const peak = data.reduce(
+        (maximum, point) =>
+            Math.max(maximum, point.created, point.completed),
+        0
+    );
 
-                    <span>
-                        total uses
-                    </span>
-                </div>
+    const net = totals.completed - totals.created;
+
+    return (
+        <>
+            <FigureGrid
+                figures={[
+                    { label: "Days reported", value: formatNumber(data.length) },
+                    { label: "Created", value: formatNumber(totals.created) },
+                    {
+                        label: "Completed",
+                        value: formatNumber(totals.completed),
+                        tone: "success",
+                    },
+                    {
+                        label: "Net",
+                        value: `${net > 0 ? "+" : ""}${formatNumber(net)}`,
+                        tone: net > 0 ? "success" : net < 0 ? "danger" : "default",
+                    },
+                ]}
+            />
+
+            <ReportSection
+                number={1}
+                title="Daily activity"
+                note="Bars are scaled to the busiest day"
+            >
+                <Table className="min-w-[28rem]">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Created</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Completed</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>Net</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {data.map((point) => {
+                            const dayNet = point.completed - point.created;
+
+                            return (
+                                <TableRow key={point.date}>
+                                    <TableCell className="whitespace-nowrap font-medium tabular-nums">
+                                        {formatDate(point.date)}
+                                    </TableCell>
+                                    <TableCell className={NUMERIC_CELL}>
+                                        <Scaled
+                                            value={point.created}
+                                            peak={peak}
+                                        />
+                                    </TableCell>
+                                    <TableCell className={NUMERIC_CELL}>
+                                        <Scaled
+                                            value={point.completed}
+                                            peak={peak}
+                                            emphasis
+                                        />
+                                    </TableCell>
+                                    <TableCell
+                                        className={cn(
+                                            NUMERIC_CELL,
+                                            dayNet > 0 && "text-success",
+                                            dayNet < 0 && "text-destructive"
+                                        )}
+                                    >
+                                        {dayNet > 0 ? "+" : ""}
+                                        {formatNumber(dayNet)}
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                    <TableFooter>
+                        <TableRow>
+                            <TableCell>Total</TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.created)}
+                            </TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {formatNumber(totals.completed)}
+                            </TableCell>
+                            <TableCell className={NUMERIC_CELL}>
+                                {net > 0 ? "+" : ""}
+                                {formatNumber(net)}
+                            </TableCell>
+                        </TableRow>
+                    </TableFooter>
+                </Table>
+            </ReportSection>
+        </>
+    );
+}
+
+/** A number with a bar behind it, sized against the series peak rather than 100%. */
+function Scaled({
+    value,
+    peak,
+    emphasis = false,
+}: {
+    value: number;
+    peak: number;
+    emphasis?: boolean;
+}) {
+    return (
+        <div className="flex items-center justify-end gap-2">
+            <div className="h-1.5 w-16 rounded-full bg-surface-sunken">
+                <div
+                    className={cn(
+                        "h-full rounded-full",
+                        emphasis ? "bg-success" : "bg-primary/60"
+                    )}
+                    style={{
+                        width: `${peak > 0 ? Math.min(100, (value / peak) * 100) : 0}%`,
+                    }}
+                />
             </div>
+            <span className="w-8 text-right tabular-nums">
+                {formatNumber(value)}
+            </span>
+        </div>
+    );
+}
 
-            <div className="reports-label-list">
-                {data.map((label) => {
-                    const percentage =
-                        totalUsage > 0
-                            ? (label.usageCount /
-                                  totalUsage) *
-                              100
-                            : 0;
+/* -------------------------------------------------------------------------- */
+/* Page                                                                       */
+/* -------------------------------------------------------------------------- */
 
-                    const width =
-                        (label.usageCount /
-                            maxUsage) *
-                        100;
+type ListRow = ProjectSummary | AssigneeSummary | LabelUsage;
+
+/** Discriminated by shape: the three list reports have disjoint key fields. */
+function searchableText(row: ListRow): string {
+    if ("projectName" in row) {
+        return row.projectName.toLowerCase();
+    }
+
+    if ("fullName" in row) {
+        return `${row.fullName} ${row.email}`.toLowerCase();
+    }
+
+    return row.name.toLowerCase();
+}
+
+function loadReportData(
+    report: ReportId,
+    days: number
+): Promise<
+    | WorkItemSummary
+    | ProjectSummary[]
+    | AssigneeSummary[]
+    | LabelUsage[]
+    | ProductivityPoint[]
+> {
+    switch (report) {
+        case "work-items":
+            return reportsService.getWorkItemSummary();
+        case "projects":
+            return reportsService.getProjectSummary();
+        case "assignees":
+            return reportsService.getAssigneeSummary();
+        case "labels":
+            return reportsService.getLabelUsage();
+        case "productivity":
+            return reportsService.getProductivityTrends(days);
+    }
+}
+
+/** Shared by the query and the hover prefetch so their keys can never drift apart. */
+function reportQueryOptions(report: ReportId, days: number) {
+    return {
+        queryKey: ["reports", report, days] as const,
+        queryFn: () => loadReportData(report, days),
+    };
+}
+
+const ReportsPage = () => {
+    const [params, setParams] = useSearchParams();
+    const queryClient = useQueryClient();
+
+    /*
+     * Which report is open, and over what period, live in the URL rather than in
+     * component state: a refresh keeps the view, the back button walks through the
+     * reports you have looked at, and the address bar can be pasted into chat.
+     */
+    const {
+        value: report,
+        invalid: unknownReport,
+    } = parseParam<ReportId>(
+        params.get("report"),
+        REPORT_IDS,
+        DEFAULT_REPORT
+    );
+    const days = parsePeriod(params.get("days"));
+
+    const [exporting, setExporting] = useState(false);
+    const [exportError, setExportError] = useState<string | null>(null);
+    const [search, setSearch] = useState("");
+
+    /*
+     * A filter typed for one report must not follow you into the next. Adjusting
+     * during render rather than in an effect is the pattern AppLayout already
+     * uses for the same problem: the reset commits in the pass that changes.
+     */
+    const [lastReport, setLastReport] = useState(report);
+
+    if (lastReport !== report) {
+        setLastReport(report);
+        setSearch("");
+    }
+
+    const setPeriod = useCallback(
+        (period: number) => {
+            /*
+             * Dropping the parameter at its default keeps the URL short.
+             * Replacing rather than pushing: stepping through ranges should not
+             * become five history entries to back out of.
+             */
+            setParams(
+                (current) =>
+                    paramsWith(current, {
+                        days: period === DEFAULT_PERIOD ? null : String(period),
+                    }),
+                { replace: true }
+            );
+        },
+        [setParams]
+    );
+
+    /**
+     * Hovering or focusing a catalog entry warms that report's cache, so the
+     * click paints from memory instead of showing a skeleton first.
+     */
+    const prefetchReport = useCallback(
+        (id: ReportId) => {
+            void queryClient.prefetchQuery(reportQueryOptions(id, days));
+        },
+        [queryClient, days]
+    );
+
+    /*
+     * A shared link naming a report we do not have falls back to the default
+     * view above; this also cleans the address bar so it does not claim to be a
+     * report the page is not showing. Only fires when the parameter is bogus.
+     */
+    useEffect(() => {
+        if (!unknownReport) {
+            return;
+        }
+
+        setParams((current) => paramsWith(current, { report: null }), {
+            replace: true,
+        });
+    }, [unknownReport, setParams]);
+
+    /*
+     * One report is on screen at a time, so one query keyed by its parameters
+     * replaces the old stack of per-report states plus a fetch effect. Switching
+     * reports changes the key, which clears data and shows the skeleton rather
+     * than painting the previous report under a new title.
+     */
+    const {
+        data,
+        isPending,
+        isFetching,
+        error: loadError,
+        dataUpdatedAt,
+        refetch,
+    } = useQuery(reportQueryOptions(report, days));
+
+    const handleExport = useCallback(async () => {
+        setExporting(true);
+        setExportError(null);
+
+        try {
+            await reportsService.exportWorkItems();
+        } catch (cause) {
+            console.error("Reports: export failed", cause);
+            setExportError(
+                "The export could not be prepared. Please try again."
+            );
+        } finally {
+            setExporting(false);
+        }
+    }, []);
+
+    const query = search.trim().toLowerCase();
+    const filterable =
+        report === "projects" || report === "assignees" || report === "labels";
+
+    const listRows = useMemo(() => {
+        if (!filterable) {
+            return [] as ListRow[];
+        }
+
+        const source = (data ?? []) as ListRow[];
+
+        return query
+            ? source.filter((row) => searchableText(row).includes(query))
+            : source;
+    }, [data, filterable, query]);
+
+    const rows = filterable
+        ? listRows
+        : ((data ?? []) as ProductivityPoint[]);
+
+    const rowCount =
+        report === "work-items"
+            ? ((data as WorkItemSummary | undefined)?.total ?? 0)
+            : rows.length;
+
+    const error = loadError
+        ? "The report could not be loaded. Please try again."
+        : exportError;
+
+    const body = () => {
+        if (report === "work-items") {
+            return data ? (
+                <WorkItemsReport data={data as WorkItemSummary} />
+            ) : (
+                <NoData label="work-item" />
+            );
+        }
+
+        if (rows.length === 0) {
+            return (
+                <NoData
+                    label={REPORT_LABEL[report].toLowerCase()}
+                    filtered={filterable && query.length > 0}
+                />
+            );
+        }
+
+        switch (report) {
+            case "projects":
+                return <ProjectsReport data={rows as ProjectSummary[]} />;
+            case "assignees":
+                return <TeamReport data={rows as AssigneeSummary[]} />;
+            case "labels":
+                return <LabelsReport data={rows as LabelUsage[]} />;
+            default:
+                return <ProductivityReport data={rows as ProductivityPoint[]} />;
+        }
+    };
+
+    const metadata = [
+        "Scope: entire workspace",
+        report === "productivity" ? `Last ${days} days` : "All time",
+        dataUpdatedAt > 0
+            ? `Prepared ${new Date(dataUpdatedAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+              })}`
+            : null,
+    ]
+        .filter(Boolean)
+        .join("  ·  ");
+
+    return (
+        <AppLayout>
+            <PageHeader
+                title="Reports"
+                actions={
+                    <>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            onClick={() => void refetch()}
+                            disabled={isFetching}
+                        >
+                            {isFetching ? (
+                                <Loader2 className="animate-spin" />
+                            ) : (
+                                <RefreshCw />
+                            )}
+                            Refresh
+                        </Button>
+                        {/* The backend exposes a single export, so name its report. */}
+                        <Button
+                            type="button"
+                            size="lg"
+                            onClick={() => void handleExport()}
+                            disabled={exporting}
+                        >
+                            {exporting ? (
+                                <Loader2 className="animate-spin" />
+                            ) : (
+                                <Download />
+                            )}
+                            Export work items (.xlsx)
+                        </Button>
+                    </>
+                }
+                toolbar={
+                    <PillNav
+                        ariaLabel="Reports"
+                        active={report}
+                        onPrefetch={prefetchReport}
+                        items={REPORTS.map((entry) => ({
+                            id: entry.id,
+                            label: entry.label,
+                            // Defaults stay out of the address bar: /reports is the usual URL.
+                            href: searchWith(params, {
+                                report:
+                                    entry.id === DEFAULT_REPORT
+                                        ? null
+                                        : entry.id,
+                            }),
+                        }))}
+                    />
+                }
+            />
+
+            {/*
+             * One column, full width. The report views belong to this page, so
+             * they run across the top of the document rather than down a second
+             * rail beside the application sidebar.
+             */}
+            <div className="flex min-w-0 flex-col gap-4">
+                {error ? (
+                    <div
+                        role="alert"
+                        className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+                    >
+                        <CircleAlert className="size-4 shrink-0" />
+                        <span className="min-w-0 flex-1">{error}</span>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void refetch()}
+                        >
+                            Retry
+                        </Button>
+                    </div>
+                ) : null}
+
+                {/* The open report: its name and parameters, above its sections. */}
+                <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+                    <div className="min-w-0">
+                        <h2 className="text-lg font-semibold text-foreground">
+                            {REPORT_LABEL[report]}
+                        </h2>
+                        <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                            {metadata}
+                            {isPending ? null : `  ·  ${formatNumber(rowCount)} rows`}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        {report === "productivity" ? (
+                            <PeriodFilter days={days} onSelect={setPeriod} />
+                        ) : null}
+
+                        {filterable ? (
+                            <div className="relative min-w-0 flex-1 sm:flex-none">
+                                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    value={search}
+                                    onChange={(event) =>
+                                        setSearch(event.target.value)
+                                    }
+                                    placeholder={`Filter ${REPORT_LABEL[report].toLowerCase()}`}
+                                    aria-label={`Filter ${REPORT_LABEL[report]}`}
+                                    className="h-8 w-full pl-8 pr-8 sm:w-56"
+                                />
+                                {search ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearch("")}
+                                        aria-label="Clear filter"
+                                        className="absolute top-1/2 right-2 grid size-5 -translate-y-1/2 place-items-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                    >
+                                        <X className="size-3.5" />
+                                    </button>
+                                ) : null}
+                            </div>
+                        ) : null}
+                    </div>
+                </div>
+
+                {isPending ? <Loading /> : body()}
+            </div>
+        </AppLayout>
+    );
+};
+
+/* -------------------------------------------------------------------------- */
+/* View controls                                                              */
+/* -------------------------------------------------------------------------- */
+
+/** Segmented rather than a select: the whole range choice is visible in one glance. */
+function PeriodFilter({
+    days,
+    onSelect,
+}: {
+    days: number;
+    onSelect: (days: number) => void;
+}) {
+    return (
+        <div className="flex items-center gap-2">
+            <span
+                id="reports-period"
+                className="text-xs font-medium text-muted-foreground"
+            >
+                Period
+            </span>
+            <div
+                role="group"
+                aria-labelledby="reports-period"
+                className="flex items-center gap-0.5 rounded-lg border bg-card p-0.5"
+            >
+                {PERIODS.map((period) => {
+                    const selected = period === days;
 
                     return (
-                        <div
-                            key={label.labelId}
-                            className="reports-label-row"
+                        <button
+                            key={period}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => onSelect(period)}
+                            className={cn(
+                                "h-7 rounded-md px-2.5 text-xs font-medium tabular-nums",
+                                "outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40",
+                                selected
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-muted-foreground hover:bg-surface-muted hover:text-foreground"
+                            )}
                         >
-                            <div className="reports-label-name">
-                                <span
-                                    className="reports-label-dot"
-                                    style={{
-                                        background:
-                                            label.color ||
-                                            "#94a3b8",
-                                    }}
-                                />
-
-                                <strong>
-                                    {label.name}
-                                </strong>
-                            </div>
-
-                            <div className="reports-label-bar">
-                                <div className="reports-label-track">
-                                    <div
-                                        className="reports-label-fill"
-                                        style={{
-                                            width: `${width}%`,
-                                            background:
-                                                label.color ||
-                                                "#64748b",
-                                        }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="reports-label-count">
-                                <strong>
-                                    {formatNumber(
-                                        label.usageCount
-                                    )}
-                                </strong>
-
-                                <span>
-                                    {formatPercentage(
-                                        percentage
-                                    )}
-                                </span>
-                            </div>
-                        </div>
+                            {period}d
+                        </button>
                     );
                 })}
             </div>
         </div>
     );
-};
+}
 
-const ProductivityReport: React.FC<{
-    data: ProductivityPoint[];
-    days: number;
-    onDaysChange: (
-        value: number
-    ) => void;
-}> = ({
-    data,
-    days,
-    onDaysChange,
-}) => {
-    const maxValue = Math.max(
-        ...data.flatMap((item) => [
-            item.created,
-            item.completed,
-        ]),
-        1
-    );
-
-    const totalCreated = data.reduce(
-        (sum, item) =>
-            sum + item.created,
-        0
-    );
-
-    const totalCompleted = data.reduce(
-        (sum, item) =>
-            sum + item.completed,
-        0
-    );
-
-    const netChange =
-        totalCreated -
-        totalCompleted;
-
+function Loading() {
     return (
-        <div className="reports-report-body">
-            <div className="reports-report-intro">
-                <div>
-                    <span className="reports-overline">
-                        DELIVERY TREND
-                    </span>
-
-                    <h3>
-                        Productivity over time
-                    </h3>
-
-                    <p>
-                        Compare work creation against
-                        completed work.
-                    </p>
-                </div>
-
-                <select
-                    className="reports-period-select"
-                    value={days}
-                    onChange={(event) =>
-                        onDaysChange(
-                            Number(
-                                event.target.value
-                            )
-                        )
-                    }
-                >
-                    <option value={7}>
-                        Last 7 days
-                    </option>
-
-                    <option value={14}>
-                        Last 14 days
-                    </option>
-
-                    <option value={30}>
-                        Last 30 days
-                    </option>
-
-                    <option value={60}>
-                        Last 60 days
-                    </option>
-
-                    <option value={90}>
-                        Last 90 days
-                    </option>
-                </select>
+        <div
+            role="status"
+            aria-label="Loading report"
+            className="flex flex-col gap-4"
+        >
+            <div className="grid gap-px overflow-hidden rounded-xl border bg-border [grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr))]">
+                {[0, 1, 2, 3].map((index) => (
+                    <div key={index} className="bg-card px-4 py-3">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="mt-2 h-6 w-14" />
+                    </div>
+                ))}
             </div>
-
-            {!data.length ? (
-                <EmptyReport
-                    title="No productivity data"
-                    message="There is no productivity activity for the selected period."
-                />
-            ) : (
-                <>
-                    <div className="reports-trend-summary">
-                        <div>
-                            <span>
-                                Created
-                            </span>
-
-                            <strong>
-                                {formatNumber(
-                                    totalCreated
-                                )}
-                            </strong>
-                        </div>
-
-                        <div>
-                            <span>
-                                Completed
-                            </span>
-
-                            <strong className="reports-success-text">
-                                {formatNumber(
-                                    totalCompleted
-                                )}
-                            </strong>
-                        </div>
-
-                        <div>
-                            <span>
-                                Net change
-                            </span>
-
-                            <strong
-                                className={
-                                    netChange >
-                                    0
-                                        ? "reports-warning-text"
-                                        : netChange <
-                                            0
-                                        ? "reports-success-text"
-                                        : ""
-                                }
-                            >
-                                {netChange > 0
-                                    ? "+"
-                                    : ""}
-                                {formatNumber(
-                                    netChange
-                                )}
-                            </strong>
-                        </div>
-                    </div>
-
-                    <div className="reports-trend">
-                        <div className="reports-trend-header">
-                            <span>
-                                Daily activity
-                            </span>
-
-                            <div className="reports-legend">
-                                <span>
-                                    <i className="reports-legend-created" />
-                                    Created
-                                </span>
-
-                                <span>
-                                    <i className="reports-legend-completed" />
-                                    Completed
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="reports-trend-list">
-                            {data.map(
-                                (item) => {
-                                    const createdWidth =
-                                        (item.created /
-                                            maxValue) *
-                                        100;
-
-                                    const completedWidth =
-                                        (item.completed /
-                                            maxValue) *
-                                        100;
-
-                                    return (
-                                        <div
-                                            className="reports-trend-row"
-                                            key={
-                                                item.date
-                                            }
-                                        >
-                                            <div className="reports-trend-date">
-                                                {formatDate(
-                                                    item.date
-                                                )}
-                                            </div>
-
-                                            <div className="reports-trend-bars">
-                                                <div className="reports-trend-line">
-                                                    <div
-                                                        className="reports-trend-created-bar"
-                                                        style={{
-                                                            width: `${Math.max(
-                                                                item.created >
-                                                                    0
-                                                                    ? 2
-                                                                    : 0,
-                                                                createdWidth
-                                                            )}%`,
-                                                        }}
-                                                    />
-                                                </div>
-
-                                                <div className="reports-trend-line">
-                                                    <div
-                                                        className="reports-trend-completed-bar"
-                                                        style={{
-                                                            width: `${Math.max(
-                                                                item.completed >
-                                                                    0
-                                                                    ? 2
-                                                                    : 0,
-                                                                completedWidth
-                                                            )}%`,
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="reports-trend-values">
-                                                <span>
-                                                    {formatNumber(
-                                                        item.created
-                                                    )}
-                                                </span>
-
-                                                <span>
-                                                    {formatNumber(
-                                                        item.completed
-                                                    )}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                }
-                            )}
-                        </div>
-                    </div>
-                </>
-            )}
-        </div>
-    );
-};
-
-const ReportsPage: React.FC = () => {
-    const [
-        selectedReport,
-        setSelectedReport,
-    ] = useState<ReportKey>(
-        "work-items"
-    );
-
-    const [
-        workItemSummary,
-        setWorkItemSummary,
-    ] = useState<WorkItemSummary | null>(
-        null
-    );
-
-    const [
-        projectSummary,
-        setProjectSummary,
-    ] = useState<ProjectSummary[]>(
-        []
-    );
-
-    const [
-        assigneeSummary,
-        setAssigneeSummary,
-    ] = useState<AssigneeSummary[]>(
-        []
-    );
-
-    const [
-        labelUsage,
-        setLabelUsage,
-    ] = useState<LabelUsage[]>(
-        []
-    );
-
-    const [
-        productivity,
-        setProductivity,
-    ] = useState<ProductivityPoint[]>(
-        []
-    );
-
-    const [
-        days,
-        setDays,
-    ] = useState(7);
-
-    const [
-        loading,
-        setLoading,
-    ] = useState(false);
-
-    const [
-        exporting,
-        setExporting,
-    ] = useState(false);
-
-    const [
-        error,
-        setError,
-    ] = useState<string | null>(
-        null
-    );
-
-    const [
-        search,
-        setSearch,
-    ] = useState("");
-
-    const [
-        lastRefreshed,
-        setLastRefreshed,
-    ] = useState<Date | null>(
-        null
-    );
-
-    const activeReport =
-        useMemo(
-            () =>
-                REPORTS.find(
-                    (report) =>
-                        report.key ===
-                        selectedReport
-                ) ??
-                REPORTS[0],
-            [selectedReport]
-        );
-
-    const loadReport =
-        useCallback(
-            async () => {
-                setLoading(true);
-                setError(null);
-
-                try {
-                    switch (
-                        selectedReport
-                    ) {
-                        case "work-items": {
-                            const response =
-                                await reportsService.getWorkItemSummary();
-
-                            setWorkItemSummary(
-                                response
-                            );
-
-                            break;
-                        }
-
-                        case "projects": {
-                            const response =
-                                await reportsService.getProjectSummary();
-
-                            setProjectSummary(
-                                response
-                            );
-
-                            break;
-                        }
-
-                        case "assignees": {
-                            const response =
-                                await reportsService.getAssigneeSummary();
-
-                            setAssigneeSummary(
-                                response
-                            );
-
-                            break;
-                        }
-
-                        case "labels": {
-                            const response =
-                                await reportsService.getLabelUsage();
-
-                            setLabelUsage(
-                                response
-                            );
-
-                            break;
-                        }
-
-                        case "productivity": {
-                            const response =
-                                await reportsService.getProductivityTrends(
-                                    days
-                                );
-
-                            setProductivity(
-                                response
-                            );
-
-                            break;
-                        }
-                    }
-
-                    setLastRefreshed(
-                        new Date()
-                    );
-                } catch (err) {
-                    console.error(
-                        "Reports: failed to load report",
-                        err
-                    );
-
-                    setError(
-                        "Unable to load this report right now. Please try again."
-                    );
-                } finally {
-                    setLoading(false);
-                }
-            },
-            [
-                selectedReport,
-                days,
-            ]
-        );
-
-    useEffect(() => {
-        void loadReport();
-    }, [loadReport]);
-
-    const handleExport =
-        async () => {
-            setExporting(true);
-            setError(null);
-
-            try {
-                await reportsService.exportWorkItems();
-            } catch (err) {
-                console.error(
-                    "Reports: export failed",
-                    err
-                );
-
-                setError(
-                    "Unable to export the work-items report."
-                );
-            } finally {
-                setExporting(false);
-            }
-        };
-
-    const filteredProjects =
-        useMemo(() => {
-            const query =
-                search
-                    .trim()
-                    .toLowerCase();
-
-            if (!query) {
-                return projectSummary;
-            }
-
-            return projectSummary.filter(
-                (project) =>
-                    project.projectName
-                        .toLowerCase()
-                        .includes(query)
-            );
-        }, [
-            projectSummary,
-            search,
-        ]);
-
-    const filteredAssignees =
-        useMemo(() => {
-            const query =
-                search
-                    .trim()
-                    .toLowerCase();
-
-            if (!query) {
-                return assigneeSummary;
-            }
-
-            return assigneeSummary.filter(
-                (member) =>
-                    member.fullName
-                        .toLowerCase()
-                        .includes(query) ||
-                    member.email
-                        .toLowerCase()
-                        .includes(query)
-            );
-        }, [
-            assigneeSummary,
-            search,
-        ]);
-
-    const filteredLabels =
-        useMemo(() => {
-            const query =
-                search
-                    .trim()
-                    .toLowerCase();
-
-            if (!query) {
-                return labelUsage;
-            }
-
-            return labelUsage.filter(
-                (label) =>
-                    label.name
-                        .toLowerCase()
-                        .includes(query)
-            );
-        }, [
-            labelUsage,
-            search,
-        ]);
-
-    const showSearch =
-        selectedReport ===
-            "projects" ||
-        selectedReport ===
-            "assignees" ||
-        selectedReport ===
-            "labels";
-
-    const resultCount =
-        selectedReport ===
-            "projects"
-            ? filteredProjects.length
-            : selectedReport ===
-                "assignees"
-            ? filteredAssignees.length
-            : selectedReport ===
-                "labels"
-            ? filteredLabels.length
-            : selectedReport ===
-                "productivity"
-            ? productivity.length
-            : workItemSummary?.total ??
-              0;
-
-    const resultLabel =
-        selectedReport ===
-            "projects"
-            ? "projects"
-            : selectedReport ===
-                "assignees"
-            ? "members"
-            : selectedReport ===
-                "labels"
-            ? "labels"
-            : selectedReport ===
-                "productivity"
-            ? "data points"
-            : "work items";
-
-    const hasActiveSearch =
-        search.trim().length > 0;
-
-    const hasActiveFilter =
-        hasActiveSearch ||
-        (selectedReport ===
-            "productivity" &&
-            days !== 7);
-
-    return (
-        <AppLayout>
-
-        <div className="reports-page">
-            <header className="reports-header">
-                <div>
-                    <div className="reports-eyebrow">
-                        <FileBarChart2
-                            size={14}
-                        />
-
-                        REPORTING
-                    </div>
-
-                    <h1>
-                        Reports &amp; Insights
-                    </h1>
-
-                    <p>
-                        Analyze workload, delivery,
-                        team performance and
-                        productivity across your
-                        workspace.
-                    </p>
+            <div className="overflow-hidden rounded-xl border bg-card">
+                <div className="border-b px-4 py-3">
+                    <Skeleton className="h-4 w-40" />
                 </div>
-
-                <div className="reports-header-actions">
-                    <button
-                        type="button"
-                        className="reports-button reports-button-secondary"
-                        onClick={() =>
-                            void loadReport()
-                        }
-                        disabled={loading}
+                {Array.from({ length: 6 }).map((_, index) => (
+                    <div
+                        key={index}
+                        className="flex items-center gap-4 border-b px-4 py-3 last:border-b-0"
                     >
-                        {loading ? (
-                            <Loader2
-                                size={15}
-                                className="reports-spin"
-                            />
-                        ) : (
-                            <RefreshCw
-                                size={15}
-                            />
-                        )}
-
-                        Refresh
-                    </button>
-
-                    <button
-                        type="button"
-                        className="reports-button reports-button-primary"
-                        onClick={() =>
-                            void handleExport()
-                        }
-                        disabled={exporting}
-                    >
-                        {exporting ? (
-                            <Loader2
-                                size={15}
-                                className="reports-spin"
-                            />
-                        ) : (
-                            <Download
-                                size={15}
-                            />
-                        )}
-
-                        {exporting
-                            ? "Preparing..."
-                            : "Export Work Items"}
-                    </button>
-                </div>
-            </header>
-
-            {error && (
-                <div className="reports-error" role="alert">
-                    <CircleAlert size={16} />
-
-                    <span>
-                        {error}
-                    </span>
-
-                    <button
-                        type="button"
-                        onClick={() =>
-                            void loadReport()
-                        }
-                    >
-                        Retry
-                    </button>
-                </div>
-            )}
-
-            <div className="reports-layout">
-                <aside className="reports-sidebar">
-                    <div className="reports-sidebar-heading">
-                        <div>
-                            <span>
-                                REPORT LIBRARY
-                            </span>
-
-                            <strong>
-                                {REPORTS.length} reports
-                            </strong>
-                        </div>
+                        <Skeleton className="h-4 w-2/5" />
+                        <Skeleton className="h-4 flex-1 opacity-70" />
+                        <Skeleton className="h-4 w-10" />
                     </div>
-
-                    <div className="reports-library">
-                        {Array.from(
-                            new Set(
-                                REPORTS.map(
-                                    (report) =>
-                                        report.category
-                                )
-                            )
-                        ).map(
-                            (category) => (
-                                <div
-                                    className="reports-category"
-                                    key={category}
-                                >
-                                    <div className="reports-category-title">
-                                        {category}
-                                    </div>
-
-                                    {REPORTS.filter(
-                                        (report) =>
-                                            report.category ===
-                                            category
-                                    ).map(
-                                        (
-                                            report
-                                        ) => {
-                                            const active =
-                                                report.key ===
-                                                selectedReport;
-
-                                            return (
-                                                <button
-                                                    type="button"
-                                                    key={
-                                                        report.key
-                                                    }
-                                                    className={`reports-library-item ${
-                                                        active
-                                                            ? "reports-library-item-active"
-                                                            : ""
-                                                    }`}
-                                                    aria-current={
-                                                        active
-                                                            ? "true"
-                                                            : undefined
-                                                    }
-                                                    onClick={() => {
-                                                        setSelectedReport(
-                                                            report.key
-                                                        );
-
-                                                        setSearch(
-                                                            ""
-                                                        );
-
-                                                        setError(
-                                                            null
-                                                        );
-                                                    }}
-                                                >
-                                                    <span className="reports-library-icon">
-                                                        {
-                                                            report.icon
-                                                        }
-                                                    </span>
-
-                                                    <span className="reports-library-content">
-                                                        <strong>
-                                                            {
-                                                                report.title
-                                                            }
-                                                        </strong>
-
-                                                        <small>
-                                                            {
-                                                                report.description
-                                                            }
-                                                        </small>
-                                                    </span>
-
-                                                    <ChevronRight
-                                                        size={14}
-                                                        className="reports-library-arrow"
-                                                    />
-                                                </button>
-                                            );
-                                        }
-                                    )}
-                                </div>
-                            )
-                        )}
-                    </div>
-
-                    <div className="reports-sidebar-footer">
-                        <div>
-                            <CheckCircle2
-                                size={14}
-                            />
-
-                            <span>
-                                Live workspace data
-                            </span>
-                        </div>
-
-                        <small>
-                            Refresh reports whenever
-                            you need the latest
-                            information.
-                        </small>
-                    </div>
-                </aside>
-
-                <section className="reports-workspace" aria-label={`${activeReport.title} report`}>
-                    <div className="reports-workspace-header">
-                        <div className="reports-workspace-title">
-                            <div className="reports-workspace-icon">
-                                {
-                                    activeReport.icon
-                                }
-                            </div>
-
-                            <div>
-                                <span>
-                                    {
-                                        activeReport.category
-                                    }
-                                </span>
-
-                                <h2>
-                                    {
-                                        activeReport.title
-                                    }
-                                </h2>
-
-                                <p>
-                                    {
-                                        activeReport.description
-                                    }
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="reports-workspace-tools">
-                            {showSearch && (
-                                <div className="reports-search">
-                                    <label
-                                        htmlFor="reports-search-input"
-                                        className="sr-only"
-                                    >
-                                        {selectedReport ===
-                                        "projects"
-                                            ? "Search projects"
-                                            : selectedReport ===
-                                              "assignees"
-                                            ? "Search members"
-                                            : "Search labels"}
-                                    </label>
-
-                                    <Search
-                                        size={15}
-                                        aria-hidden="true"
-                                    />
-
-                                    <input
-                                        id="reports-search-input"
-                                        value={
-                                            search
-                                        }
-                                        onChange={(
-                                            event
-                                        ) =>
-                                            setSearch(
-                                                event
-                                                    .target
-                                                    .value
-                                            )
-                                        }
-                                        placeholder={
-                                            selectedReport ===
-                                            "projects"
-                                                ? "Search projects..."
-                                                : selectedReport ===
-                                                    "assignees"
-                                                ? "Search members..."
-                                                : "Search labels..."
-                                        }
-                                    />
-
-                                    {search && (
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setSearch(
-                                                    ""
-                                                )
-                                            }
-                                            aria-label="Clear search"
-                                        >
-                                            ×
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-
-                            {selectedReport ===
-                                "productivity" && (
-                                <>
-                                    <label
-                                        htmlFor="reports-period"
-                                        className="sr-only"
-                                    >
-                                        Date range
-                                    </label>
-
-                                    <select
-                                        id="reports-period"
-                                        className="reports-period-select"
-                                        value={days}
-                                        onChange={(
-                                            event
-                                        ) =>
-                                            setDays(
-                                                Number(
-                                                    event
-                                                        .target
-                                                        .value
-                                                )
-                                            )
-                                        }
-                                    >
-                                    <option value={7}>
-                                        7 days
-                                    </option>
-
-                                    <option value={14}>
-                                        14 days
-                                    </option>
-
-                                    <option value={30}>
-                                        30 days
-                                    </option>
-
-                                    <option value={60}>
-                                        60 days
-                                    </option>
-
-                                    <option value={90}>
-                                        90 days
-                                    </option>
-                                    </select>
-                                </>
-                            )}
-
-                            {hasActiveFilter && (
-                                <button
-                                    type="button"
-                                    className="reports-clear-button"
-                                    onClick={() => {
-                                        setSearch(
-                                            ""
-                                        );
-                                        setDays(
-                                            7
-                                        );
-                                    }}
-                                >
-                                    Clear
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="reports-context">
-                        <div className="reports-context-left">
-                            <span>
-                                {selectedReport ===
-                                "productivity"
-                                    ? `Last ${days} days`
-                                    : "Current workspace data"}
-                            </span>
-
-                            {hasActiveSearch && (
-                                <span className="reports-context-filter">
-                                    Search: "{search}"
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="reports-context-right">
-                            <span>
-                                {formatNumber(
-                                    resultCount
-                                )}{" "}
-                                {resultLabel}
-                            </span>
-
-                            {lastRefreshed && (
-                                <>
-                                    <span className="reports-context-separator">
-                                        •
-                                    </span>
-
-                                    <span>
-                                        Updated{" "}
-                                        {lastRefreshed.toLocaleTimeString(
-                                            [],
-                                            {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            }
-                                        )}
-                                    </span>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="reports-workspace-divider" />
-
-                    {loading ? (
-                        /* Skeleton rather than a spinner: the table shape
-         * stays put, so nothing jumps when the data lands.
-         */
-                        <div
-                            className="reports-report-body"
-                            role="status"
-                            aria-live="polite"
-                        >
-                            <span className="sr-only">
-                                Preparing {activeReport.title} report
-                            </span>
-
-                            <div className="reports-analysis-grid">
-                                {Array.from({ length: 4 }).map((_, i) => (
-                                    <div className="reports-analysis-item" key={i}>
-                                        <span className="reports-skeleton-line w-20" />
-                                        <strong className="reports-skeleton-block" />
-                                        <small className="reports-skeleton-line w-24" />
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="reports-table-container">
-                                <div className="reports-skeleton-header" />
-                                {Array.from({ length: 6 }).map((_, i) => (
-                                    <div className="reports-skeleton-row" key={i}>
-                                        <span className="reports-skeleton-line w-2/5" />
-                                        <span className="reports-skeleton-line flex-1 opacity-70" />
-                                        <span className="reports-skeleton-line w-16" />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            {selectedReport ===
-                                "work-items" && (
-                                <WorkItemsReport
-                                    data={
-                                        workItemSummary
-                                    }
-                                />
-                            )}
-
-                            {selectedReport ===
-                                "projects" && (
-                                <ProjectsReport
-                                    data={
-                                        filteredProjects
-                                    }
-                                />
-                            )}
-
-                            {selectedReport ===
-                                "assignees" && (
-                                <AssigneesReport
-                                    data={
-                                        filteredAssignees
-                                    }
-                                />
-                            )}
-
-                            {selectedReport ===
-                                "labels" && (
-                                <LabelsReport
-                                    data={
-                                        filteredLabels
-                                    }
-                                />
-                            )}
-
-                            {selectedReport ===
-                                "productivity" && (
-                                <ProductivityReport
-                                    data={
-                                        productivity
-                                    }
-                                    days={days}
-                                    onDaysChange={
-                                        setDays
-                                    }
-                                />
-                            )}
-                        </>
-                    )}
-                </section>
+                ))}
             </div>
         </div>
-
-        </AppLayout>
     );
-};
+}
+
+function NoData({ label, filtered }: { label: string; filtered?: boolean }) {
+    return (
+        <EmptyStateCard
+            icon={CircleAlert}
+            size="sm"
+            title={filtered ? "No matching rows" : "Nothing to report"}
+            description={
+                filtered
+                    ? `No ${label} rows match the current filter.`
+                    : `There is no ${label} data in this workspace yet.`
+            }
+        />
+    );
+}
 
 export default ReportsPage;

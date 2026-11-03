@@ -6,8 +6,14 @@
     <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="FlowForge — enterprise project management for teams that build software together." />
-    <meta name="theme-color" content="#f6f8fc" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#2a2f3a" media="(prefers-color-scheme: dark)" />
+    <!--
+      Set at runtime from the active theme's --background token (see
+      providers/AppProvider.tsx), so it can never disagree with the palette.
+      This value is only the first-paint placeholder for a browser that runs
+      no script — a <meta> cannot reference a CSS variable, which is the one
+      legitimate place a literal colour survives.
+    -->
+    <meta name="theme-color" content="#f5f7fa" />
     <title>FlowForge</title>
   </head>
   <body>

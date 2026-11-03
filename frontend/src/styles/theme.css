@@ -2,96 +2,188 @@
    FLOWFORGE DESIGN TOKENS
    Single source of truth for the visual system.
 
-   Light theme is the primary product surface: a cool, layered
-   enterprise SaaS palette — navy/indigo actions on a blue-gray
-   canvas with white surfaces. Dark theme is the same scale
-   re-weighted, not a separate design.
+   A theme here is a *surface scheme*, not a tint. Four ship:
+   light, parchment, dark, onyx — and they differ on more than
+   hue: neutral temperature (cool / warm / neutral), how far the
+   ink ramp is allowed to fade, and how heavy the lines have to
+   be to stay legible on that surface.
+
+   Rules that keep this maintainable:
+     - Light is the default. It has no override block, so no
+       colour is defined in two places.
+     - Borders are never hand-picked. They are mixed from the
+       theme's own ink over its own surface, so a line is
+       structurally incapable of matching what it sits on.
+     - The shadcn and sidebar slots are aliases of the
+       primitives, declared once. Because every value here ends
+       up on <html>, an override recomputes the aliases and the
+       derived lines automatically.
+     - Components must use these semantic names. A raw palette
+       class or hex will not theme.
+   ========================================================= */
+
+
+/* =========================================================
+   LIGHT — the default surface scheme
+   Cool neutral canvas, white paper, petrol-teal action.
    ========================================================= */
 
 :root {
-    /* ---------- Brand ---------- */
-    --primary: oklch(0.42 0.19 264);
-    --primary-hover: oklch(0.36 0.19 264);
-    --primary-active: oklch(0.31 0.17 264);
-    --primary-foreground: oklch(0.985 0.005 250);
-    --primary-subtle: oklch(0.955 0.021 258);
-    --primary-muted: oklch(0.87 0.055 260);
+    /* Native controls, scrollbars and form fields follow the scheme */
+    color-scheme: light;
 
-    --accent-indigo: oklch(0.50 0.20 278);
-    --accent-indigo-subtle: oklch(0.958 0.02 278);
-
-    /* ---------- Canvas layers ---------- */
-    /* Body is a cool blue-gray, cards float on white. */
-    --background: oklch(0.975 0.006 247);
-    --background-elevated: oklch(0.99 0.003 247);
+    /* ---------- Canvas + surfaces ---------- */
+    --background: oklch(0.977 0.005 247);
+    --background-elevated: oklch(0.993 0.003 247);
 
     --surface: oklch(1 0 0);
-    --surface-muted: oklch(0.968 0.007 247);
-    --surface-sunken: oklch(0.952 0.01 247);
-    --surface-foreground: oklch(0.21 0.025 258);
+    --surface-muted: oklch(0.966 0.007 247);
+    --surface-sunken: oklch(0.944 0.01 247);
+    --surface-foreground: oklch(0.215 0.028 258);
 
-    /* ---------- Text ---------- */
-    --foreground: oklch(0.24 0.03 258);
-    --text-primary: oklch(0.21 0.028 258);
+    /* ---------- Ink ramp ----------
+       Four steps. How far this ramp is allowed to fade is itself a
+       theme axis: light and parchment may fade, onyx may not. */
+    --foreground: oklch(0.245 0.03 258);
+    --text-primary: oklch(0.215 0.028 258);
     --text-secondary: oklch(0.505 0.028 252);
-    --text-tertiary: oklch(0.63 0.022 250);
+    --text-tertiary: oklch(0.615 0.022 250);
     --text-inverse: oklch(0.98 0.004 247);
 
-    /* ---------- Lines ---------- */
-    --border: oklch(0.912 0.008 247);
-    --border-subtle: oklch(0.945 0.005 247);
-    --border-strong: oklch(0.862 0.012 247);
-    --input: oklch(0.912 0.008 247);
-    --ring: oklch(0.42 0.19 264);
+    /* ---------- Accent ---------- */
+    --primary: oklch(0.515 0.09 183);
+    --primary-hover: oklch(0.455 0.09 183);
+    --primary-active: oklch(0.405 0.085 183);
+    --primary-foreground: oklch(0.985 0.008 180);
+    --primary-subtle: oklch(0.955 0.02 183);
+    --primary-muted: oklch(0.8 0.05 183);
 
-    /* ---------- Status ---------- */
-    --success: oklch(0.62 0.13 158);
-    --success-subtle: oklch(0.958 0.028 158);
+    /* Secondary accent — per theme, deliberately: it is UI accent (history
+       dots, stat tiles, the hero wash), not the brand. The logo is a raster
+       mark and stays constant on its own. */
+    --accent-indigo: oklch(0.55 0.12 195);
+    --accent-indigo-subtle: oklch(0.955 0.02 195);
+
+    /* ---------- Status ----------
+       Explicit per theme, never derived: auto-mixing a wash out of
+       the accent would flatten the one signal that must stay sharp. */
+    --success: oklch(0.6 0.13 158);
+    --success-subtle: oklch(0.955 0.028 158);
     --success-foreground: oklch(0.42 0.11 158);
 
-    --warning: oklch(0.72 0.15 76);
-    --warning-subtle: oklch(0.965 0.033 86);
-    --warning-foreground: oklch(0.49 0.12 70);
+    --warning: oklch(0.7 0.15 76);
+    --warning-subtle: oklch(0.962 0.033 86);
+    --warning-foreground: oklch(0.48 0.12 70);
 
-    --danger: oklch(0.58 0.20 22);
-    --danger-subtle: oklch(0.962 0.023 22);
+    --danger: oklch(0.57 0.2 22);
+    --danger-subtle: oklch(0.96 0.023 22);
     --danger-foreground: oklch(0.46 0.18 22);
 
-    --info: oklch(0.60 0.16 244);
-    --info-subtle: oklch(0.96 0.022 244);
-    --info-foreground: oklch(0.44 0.14 244);
+    --info: oklch(0.58 0.14 240);
+    --info-subtle: oklch(0.958 0.02 240);
+    --info-foreground: oklch(0.44 0.13 240);
 
-    /* ---------- shadcn slot aliases ---------- */
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.21 0.028 258);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.21 0.028 258);
-    --secondary: oklch(0.968 0.007 247);
-    --secondary-foreground: oklch(0.28 0.025 258);
-    --muted: oklch(0.968 0.007 247);
-    --muted-foreground: oklch(0.505 0.028 252);
-    --accent: oklch(0.955 0.021 258);
-    --accent-foreground: oklch(0.30 0.06 264);
-    --destructive: oklch(0.58 0.20 22);
+    /* ---------- Line strengths ----------
+       Three numbers carry all border legibility in the app.
+       A separator only has to be discernible; the line used as an
+       input's *only* edge must clear WCAG 3:1 for non-text contrast,
+       so it takes a much larger share of ink. */
+    --line-hairline-strength: 11%;
+    --line-strength: 17%;
+    /* 48% is the point where an input's sole edge clears WCAG 3:1 against
+       the *darkest* thing it can sit on in this scheme (surface-sunken),
+       which is the worst case, not the card. */
+    --line-strong-strength: 48%;
 
-    /* ---------- Charts / data viz ---------- */
-    --chart-1: oklch(0.50 0.19 264);
-    --chart-2: oklch(0.60 0.16 244);
-    --chart-3: oklch(0.62 0.13 158);
-    --chart-4: oklch(0.72 0.15 76);
-    --chart-5: oklch(0.55 0.18 22);
+    /* ---------- Elevation ----------
+       Shadows are tinted with the theme's own ink so they never read
+       as a gray smudge on a coloured surface. */
+    --shadow-ink: var(--foreground);
+
+    /* ---------- Data viz ---------- */
+    --chart-1: oklch(0.515 0.09 183);
+    --chart-2: oklch(0.6 0.14 240);
+    --chart-3: oklch(0.6 0.13 158);
+    --chart-4: oklch(0.7 0.15 76);
+    --chart-5: oklch(0.57 0.2 22);
+}
+
+
+/* =========================================================
+   DERIVED LINES + ALIASES
+   Declared once, against primitives — every theme recomputes
+   them simply by changing its ink, surfaces and strengths.
+   ========================================================= */
+
+:root {
+    --border-subtle: color-mix(
+        in oklab,
+        var(--foreground) var(--line-hairline-strength),
+        var(--surface-muted)
+    );
+    --border: color-mix(
+        in oklab,
+        var(--foreground) var(--line-strength),
+        var(--surface-muted)
+    );
+    --border-strong: color-mix(
+        in oklab,
+        var(--foreground) var(--line-strong-strength),
+        var(--surface-muted)
+    );
+
+    /* An input's sole edge is a boundary, not a separator */
+    --input: var(--border-strong);
+    --ring: var(--primary);
+
+    /* ---------- shadcn slots ---------- */
+    --card: var(--surface);
+    --card-foreground: var(--text-primary);
+    --popover: var(--surface);
+    --popover-foreground: var(--text-primary);
+    --secondary: var(--surface-muted);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--surface-muted);
+    --muted-foreground: var(--text-secondary);
+    --accent: var(--primary-subtle);
+    --accent-foreground: var(--primary-hover);
+    --destructive: var(--danger);
 
     /* ---------- Sidebar ---------- */
-    --sidebar: oklch(0.992 0.004 250);
-    --sidebar-foreground: oklch(0.24 0.03 258);
-    --sidebar-primary: oklch(0.42 0.19 264);
-    --sidebar-primary-foreground: oklch(0.985 0.005 250);
-    --sidebar-accent: oklch(0.955 0.021 258);
-    --sidebar-accent-foreground: oklch(0.36 0.14 264);
-    --sidebar-border: oklch(0.92 0.008 247);
-    --sidebar-ring: oklch(0.42 0.19 264);
+    --sidebar: var(--surface);
+    --sidebar-foreground: var(--text-primary);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: var(--primary-subtle);
+    --sidebar-accent-foreground: var(--primary-hover);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
 
-    /* ---------- Radius ---------- */
+    /* ---------- Elevation ---------- */
+    --shadow-xs: 0 1px 1px 0 color-mix(in srgb, var(--shadow-ink) 4%, transparent);
+    --shadow-sm:
+        0 1px 2px 0 color-mix(in srgb, var(--shadow-ink) 6%, transparent),
+        0 1px 3px 0 color-mix(in srgb, var(--shadow-ink) 4%, transparent);
+    --shadow-md:
+        0 2px 4px -1px color-mix(in srgb, var(--shadow-ink) 6%, transparent),
+        0 6px 16px -4px color-mix(in srgb, var(--shadow-ink) 8%, transparent);
+    --shadow-lg:
+        0 4px 8px -2px color-mix(in srgb, var(--shadow-ink) 6%, transparent),
+        0 16px 32px -8px color-mix(in srgb, var(--shadow-ink) 12%, transparent);
+    --shadow-xl:
+        0 8px 16px -6px color-mix(in srgb, var(--shadow-ink) 8%, transparent),
+        0 28px 56px -16px color-mix(in srgb, var(--shadow-ink) 18%, transparent);
+    --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+
+/* =========================================================
+   RADIUS / MOTION / SHELL METRICS
+   Not theme axes — the shape and the timing stay the same so
+   switching a theme never moves anything.
+   ========================================================= */
+
+:root {
     --radius: 0.6875rem;
     --radius-xs: 0.375rem;
     --radius-sm: 0.5rem;
@@ -100,137 +192,238 @@
     --radius-xl: 1rem;
     --radius-2xl: 1.25rem;
 
-    /* ---------- Elevation ----------
-       Depth is carried by tinted, low-opacity shadows — never
-       by heavy blurs or high contrast borders. */
-    --shadow-xs: 0 1px 1px 0 oklch(0.21 0.028 258 / 0.04);
-    --shadow-sm:
-        0 1px 2px 0 oklch(0.21 0.028 258 / 0.05),
-        0 1px 3px 0 oklch(0.21 0.028 258 / 0.03);
-    --shadow-md:
-        0 2px 4px -1px oklch(0.21 0.028 258 / 0.06),
-        0 6px 16px -4px oklch(0.21 0.028 258 / 0.08);
-    --shadow-lg:
-        0 4px 8px -2px oklch(0.21 0.028 258 / 0.06),
-        0 16px 32px -8px oklch(0.21 0.028 258 / 0.12);
-    --shadow-xl:
-        0 8px 16px -6px oklch(0.21 0.028 258 / 0.08),
-        0 28px 56px -16px oklch(0.21 0.028 258 / 0.18);
-    --shadow-focus: 0 0 0 3px oklch(0.42 0.19 264 / 0.18);
-
-    /* ---------- Motion ---------- */
     --transition-fast: 130ms cubic-bezier(0.32, 0.72, 0, 1);
     --transition-normal: 200ms cubic-bezier(0.32, 0.72, 0, 1);
     --transition-slow: 280ms cubic-bezier(0.32, 0.72, 0, 1);
 
-    /* ---------- Shell metrics ---------- */
-    --sidebar-width-expanded: 17rem;
-    --sidebar-width-collapsed: 4.5rem;
+    /* ---------- Shell metrics ----------
+       The rail only ever holds a section heading and four short labels,
+       so it stays compact and hands the width back to the content. */
+    --sidebar-width-expanded: 14rem;
+    --sidebar-width-collapsed: 4rem;
     --topbar-height: 4rem;
 }
 
 
 /* =========================================================
-   DARK THEME — same scale, re-weighted
+   PARCHMENT
+   Warm paper for long reading: cream canvas, brown ink, sienna
+   action. Warm surfaces need more ink to separate than cool ones,
+   which is exactly what the two strength numbers are for.
    ========================================================= */
 
-.dark {
-    --primary: oklch(0.68 0.155 258);
-    --primary-hover: oklch(0.74 0.15 258);
-    --primary-active: oklch(0.62 0.15 258);
-    --primary-foreground: oklch(0.17 0.03 262);
-    --primary-subtle: oklch(0.29 0.05 262);
-    --primary-muted: oklch(0.42 0.11 262);
+[data-theme="parchment"] {
+    color-scheme: light;
 
-    --accent-indigo: oklch(0.70 0.16 278);
-    --accent-indigo-subtle: oklch(0.29 0.05 278);
+    --background: oklch(0.925 0.042 86);
+    --background-elevated: oklch(0.95 0.033 88);
 
-    --background: oklch(0.185 0.014 254);
-    --background-elevated: oklch(0.215 0.014 254);
+    --surface: oklch(0.962 0.026 88);
+    --surface-muted: oklch(0.908 0.04 86);
+    --surface-sunken: oklch(0.882 0.046 84);
+    --surface-foreground: oklch(0.32 0.045 62);
 
-    --surface: oklch(0.225 0.015 256);
-    --surface-muted: oklch(0.26 0.015 256);
-    --surface-sunken: oklch(0.17 0.012 254);
+    --foreground: oklch(0.325 0.045 62);
+    --text-primary: oklch(0.3 0.048 60);
+    --text-secondary: oklch(0.475 0.05 58);
+    --text-tertiary: oklch(0.575 0.045 66);
+    --text-inverse: oklch(0.96 0.03 86);
+
+    --primary: oklch(0.475 0.105 52);
+    --primary-hover: oklch(0.42 0.105 50);
+    --primary-active: oklch(0.37 0.1 48);
+    --primary-foreground: oklch(0.97 0.02 85);
+    --primary-subtle: oklch(0.9 0.05 76);
+    --primary-muted: oklch(0.75 0.085 62);
+
+    --accent-indigo: oklch(0.52 0.09 40);
+    --accent-indigo-subtle: oklch(0.9 0.045 72);
+
+    --success: oklch(0.55 0.11 150);
+    --success-subtle: oklch(0.9 0.05 140);
+    --success-foreground: oklch(0.4 0.1 145);
+
+    --warning: oklch(0.62 0.13 70);
+    --warning-subtle: oklch(0.92 0.06 80);
+    --warning-foreground: oklch(0.44 0.11 68);
+
+    --danger: oklch(0.55 0.17 25);
+    --danger-subtle: oklch(0.91 0.05 30);
+    --danger-foreground: oklch(0.44 0.16 24);
+
+    --info: oklch(0.52 0.1 245);
+    --info-subtle: oklch(0.9 0.04 240);
+    --info-foreground: oklch(0.4 0.1 245);
+
+    --line-hairline-strength: 15%;
+    --line-strength: 24%;
+    --line-strong-strength: 58%;
+
+    --chart-1: oklch(0.475 0.105 52);
+    --chart-2: oklch(0.52 0.1 245);
+    --chart-3: oklch(0.55 0.11 150);
+    --chart-4: oklch(0.62 0.13 70);
+    --chart-5: oklch(0.55 0.17 25);
+}
+
+
+/* =========================================================
+   DARK
+   Navy canvas with a blue action. Shadows switch to black —
+   a light-ink shadow on a dark surface reads as a glow.
+   ========================================================= */
+
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    --background: oklch(0.195 0.032 265);
+    --background-elevated: oklch(0.23 0.032 265);
+
+    --surface: oklch(0.235 0.03 265);
+    --surface-muted: oklch(0.275 0.028 265);
+    --surface-sunken: oklch(0.165 0.028 265);
     --surface-foreground: oklch(0.96 0.006 248);
 
-    --foreground: oklch(0.95 0.007 248);
-    --text-primary: oklch(0.96 0.006 248);
-    --text-secondary: oklch(0.72 0.018 250);
-    --text-tertiary: oklch(0.60 0.018 250);
-    --text-inverse: oklch(0.18 0.015 254);
+    --foreground: oklch(0.95 0.008 250);
+    --text-primary: oklch(0.965 0.006 248);
+    --text-secondary: oklch(0.745 0.018 252);
+    --text-tertiary: oklch(0.62 0.018 252);
+    --text-inverse: oklch(0.18 0.02 258);
 
-    --border: oklch(0.32 0.014 254);
-    --border-subtle: oklch(0.27 0.012 254);
-    --border-strong: oklch(0.40 0.016 254);
-    --input: oklch(0.32 0.014 254);
-    --ring: oklch(0.68 0.155 258);
+    /* L 0.66 is the floor: the accent doubles as link text, and at 0.62 it
+       only reached 4.0:1 on a muted (hovered) surface. */
+    --primary: oklch(0.66 0.165 256);
+    --primary-hover: oklch(0.72 0.155 256);
+    --primary-active: oklch(0.6 0.17 256);
+    --primary-foreground: oklch(0.17 0.03 262);
+    --primary-subtle: oklch(0.29 0.055 262);
+    --primary-muted: oklch(0.44 0.11 262);
+
+    --accent-indigo: oklch(0.7 0.15 285);
+    --accent-indigo-subtle: oklch(0.29 0.05 285);
 
     --success: oklch(0.72 0.14 158);
     --success-subtle: oklch(0.29 0.05 158);
-    --success-foreground: oklch(0.85 0.10 158);
+    --success-foreground: oklch(0.85 0.1 158);
 
     --warning: oklch(0.78 0.14 80);
-    --warning-subtle: oklch(0.30 0.05 82);
-    --warning-foreground: oklch(0.88 0.10 84);
+    --warning-subtle: oklch(0.3 0.05 82);
+    --warning-foreground: oklch(0.88 0.1 84);
 
     --danger: oklch(0.66 0.19 24);
-    --danger-subtle: oklch(0.30 0.06 24);
+    --danger-subtle: oklch(0.3 0.06 24);
     --danger-foreground: oklch(0.85 0.11 24);
 
-    --info: oklch(0.72 0.13 244);
-    --info-subtle: oklch(0.29 0.05 244);
-    --info-foreground: oklch(0.86 0.09 244);
+    --info: oklch(0.72 0.13 240);
+    --info-subtle: oklch(0.29 0.05 240);
+    --info-foreground: oklch(0.86 0.09 240);
 
-    --card: oklch(0.225 0.015 256);
-    --card-foreground: oklch(0.95 0.007 248);
-    --popover: oklch(0.24 0.015 256);
-    --popover-foreground: oklch(0.95 0.007 248);
-    --secondary: oklch(0.28 0.014 256);
-    --secondary-foreground: oklch(0.95 0.007 248);
-    --muted: oklch(0.28 0.014 256);
-    --muted-foreground: oklch(0.72 0.018 250);
-    --accent: oklch(0.32 0.03 260);
-    --accent-foreground: oklch(0.94 0.02 258);
-    --destructive: oklch(0.66 0.19 24);
+    --line-hairline-strength: 13%;
+    --line-strength: 20%;
+    --line-strong-strength: 48%;
 
-    --chart-1: oklch(0.68 0.155 258);
-    --chart-2: oklch(0.72 0.13 244);
+    --shadow-ink: oklch(0 0 0);
+
+    --chart-1: oklch(0.66 0.165 256);
+    --chart-2: oklch(0.72 0.13 240);
     --chart-3: oklch(0.72 0.14 158);
     --chart-4: oklch(0.78 0.14 80);
     --chart-5: oklch(0.66 0.19 24);
+}
 
-    --sidebar: oklch(0.205 0.014 254);
-    --sidebar-foreground: oklch(0.95 0.007 248);
-    --sidebar-primary: oklch(0.68 0.155 258);
-    --sidebar-primary-foreground: oklch(0.17 0.03 262);
-    --sidebar-accent: oklch(0.30 0.04 260);
-    --sidebar-accent-foreground: oklch(0.94 0.02 258);
-    --sidebar-border: oklch(0.30 0.013 254);
-    --sidebar-ring: oklch(0.68 0.155 258);
 
-    --shadow-xs: 0 1px 1px 0 oklch(0 0 0 / 0.25);
-    --shadow-sm:
-        0 1px 2px 0 oklch(0 0 0 / 0.3),
-        0 1px 3px 0 oklch(0 0 0 / 0.2);
-    --shadow-md:
-        0 2px 4px -1px oklch(0 0 0 / 0.3),
-        0 6px 16px -4px oklch(0 0 0 / 0.35);
-    --shadow-lg:
-        0 4px 8px -2px oklch(0 0 0 / 0.3),
-        0 16px 32px -8px oklch(0 0 0 / 0.45);
-    --shadow-xl:
-        0 8px 16px -6px oklch(0 0 0 / 0.35),
-        0 28px 56px -16px oklch(0 0 0 / 0.55);
-    --shadow-focus: 0 0 0 3px oklch(0.68 0.155 258 / 0.3);
+/* =========================================================
+   ONYX
+   Neutral black with a sky action and deliberately harder
+   lines. The ink ramp stops higher than the other themes:
+   on a black canvas the faintest step is the first thing to
+   become unreadable, so it is not allowed to fade as far.
+   ========================================================= */
+
+[data-theme="onyx"] {
+    color-scheme: dark;
+
+    --background: oklch(0.13 0.012 265);
+    --background-elevated: oklch(0.165 0.012 265);
+
+    --surface: oklch(0.168 0.012 265);
+    --surface-muted: oklch(0.215 0.012 265);
+    --surface-sunken: oklch(0.105 0.008 265);
+    --surface-foreground: oklch(0.97 0.004 250);
+
+    --foreground: oklch(0.975 0.004 250);
+    --text-primary: oklch(0.985 0.003 250);
+    --text-secondary: oklch(0.8 0.01 250);
+    --text-tertiary: oklch(0.7 0.01 250);
+    --text-inverse: oklch(0.14 0.01 265);
+
+    --primary: oklch(0.745 0.135 232);
+    --primary-hover: oklch(0.8 0.13 232);
+    --primary-active: oklch(0.68 0.14 232);
+    --primary-foreground: oklch(0.16 0.025 240);
+    --primary-subtle: oklch(0.25 0.045 240);
+    --primary-muted: oklch(0.42 0.08 238);
+
+    --accent-indigo: oklch(0.75 0.13 200);
+    --accent-indigo-subtle: oklch(0.25 0.04 205);
+
+    --success: oklch(0.75 0.15 158);
+    --success-subtle: oklch(0.26 0.05 158);
+    --success-foreground: oklch(0.87 0.11 158);
+
+    --warning: oklch(0.8 0.14 80);
+    --warning-subtle: oklch(0.27 0.05 82);
+    --warning-foreground: oklch(0.9 0.1 84);
+
+    --danger: oklch(0.68 0.19 24);
+    --danger-subtle: oklch(0.27 0.06 24);
+    --danger-foreground: oklch(0.86 0.11 24);
+
+    --info: oklch(0.75 0.13 240);
+    --info-subtle: oklch(0.26 0.05 240);
+    --info-foreground: oklch(0.88 0.09 240);
+
+    --line-hairline-strength: 18%;
+    --line-strength: 28%;
+    --line-strong-strength: 55%;
+
+    --shadow-ink: oklch(0 0 0);
+
+    --chart-1: oklch(0.745 0.135 232);
+    --chart-2: oklch(0.75 0.13 240);
+    --chart-3: oklch(0.75 0.15 158);
+    --chart-4: oklch(0.8 0.14 80);
+    --chart-5: oklch(0.68 0.19 24);
+}
+
+
+/* =========================================================
+   THEME CROSS-FADE
+   Applied to the root for the length of one switch so the whole
+   surface changes together rather than only the elements that
+   happen to have a transition. Removed by the provider straight
+   after, so ordinary hover and focus timing is untouched.
+   ========================================================= */
+
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+    transition-duration: 180ms !important;
+    transition-property: background-color, border-color, color, fill, stroke,
+        box-shadow !important;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1) !important;
 }
 
 
 /* =========================================================
    AUTH SCENE
 
-   The sign-in page is a fixed dusk composition: it must look
-   identical whatever the app theme is, so none of these values
-   are re-weighted in `.dark`.
+   The sign-in page is a fixed brand surface and is deliberately
+   outside the theme system: none of these values are overridden
+   by a theme block, and .auth-scene re-points the semantic tokens
+   locally so the shared primitives arrive correct on the dark
+   ground in every theme.
    ========================================================= */
 
 :root {
@@ -277,12 +470,10 @@
 
 /* =========================================================
    TOKEN ISLAND
-
-   Everything below `.auth-scene` resolves --foreground, --card,
-   --primary … to the scene values, so the shared primitives
-   (Card, Input, Button, FormField) render correctly on the dark
-   ground without a duplicated style rule and without leaking into
-   the rest of the application.
+   Everything below .auth-scene resolves the semantic tokens to
+   the scene values, so the shared primitives (Card, Input,
+   Button, FormField) render correctly on the dark ground without
+   a duplicated style rule and without leaking into the app.
    ========================================================= */
 
 .auth-scene {

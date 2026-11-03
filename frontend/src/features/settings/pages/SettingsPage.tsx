@@ -1,182 +1,140 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { Link, useSearchParams } from "react-router";
+import { ArrowLeft } from "lucide-react";
 
-import {
-    TagsIcon,
-    UserRoundIcon,
-    SlidersHorizontalIcon,
-    type LucideIcon,
-} from "lucide-react";
-
-import AppLayout from "@/layouts/AppLayout";
+import DetailLayout from "@/layouts/DetailLayout";
 import { PageHeader } from "@/components/ui/page-header";
-import { cn } from "@/lib/utils";
+import PillNav from "@/components/ui/pill-nav";
+import {
+    paramsWith,
+    parseParam,
+    searchWith,
+} from "@/lib/query-params";
 
 import LabelManagement from "@/features/labels/components/LabelManagement";
+
+import GeneralSettings from "../components/GeneralSettings";
+import MembersSettings from "../components/MembersSettings";
 
 type SettingsSection = "general" | "members" | "labels";
 
 type SectionDefinition = {
     id: SettingsSection;
     label: string;
-    icon: LucideIcon;
     title: string;
-    description: string;
+    description?: string;
 };
 
 const SECTIONS: SectionDefinition[] = [
     {
         id: "general",
         label: "General",
-        icon: SlidersHorizontalIcon,
         title: "General",
-        description: "General workspace settings.",
     },
     {
         id: "members",
         label: "Members",
-        icon: UserRoundIcon,
         title: "Members",
-        description: "Manage workspace members and permissions.",
     },
     {
         id: "labels",
         label: "Labels",
-        icon: TagsIcon,
         title: "Labels",
-        description: "Create and organize the labels used across work items.",
     },
 ];
 
-export default function SettingsPage() {
-    const [activeSection, setActiveSection] =
-        useState<SettingsSection>("labels");
+const SECTION_IDS = SECTIONS.map((section) => section.id);
+const DEFAULT_SECTION: SettingsSection = "general";
 
-    const active = SECTIONS.find((s) => s.id === activeSection)!;
+export default function SettingsPage() {
+    const [params, setParams] = useSearchParams();
+
+    /*
+     * Which panel is open lives in the URL, so a refresh, a back press or a
+     * pasted link lands on the same section. Anything unrecognised falls back to
+     * General and is then removed from the address bar rather than left there
+     * claiming a section the page is not showing.
+     */
+    const { value: section, invalid } = parseParam<SettingsSection>(
+        params.get("section"),
+        SECTION_IDS,
+        DEFAULT_SECTION
+    );
+
+    useEffect(() => {
+        if (!invalid) {
+            return;
+        }
+
+        setParams((current) => paramsWith(current, { section: null }), {
+            replace: true,
+        });
+    }, [invalid, setParams]);
+
+    const active =
+        SECTIONS.find((entry) => entry.id === section) ?? SECTIONS[0];
 
     return (
-        <AppLayout>
+        <DetailLayout>
             <div className="space-y-6">
-
                 <PageHeader
-                    eyebrow="Manage"
+                    back={
+                        /*
+                         * The page carries no top bar, so this is the only way back
+                         * besides the browser control. Deterministic to the dashboard
+                         * rather than navigate(-1), which would bounce somebody who
+                         * arrived from the account menu straight out of Settings.
+                         */
+                        <Link
+                            to="/dashboard"
+                            className="
+                                inline-flex h-8 items-center gap-1.5 rounded-lg -mx-2 px-2
+                                text-[13px] font-medium text-muted-foreground
+                                transition-colors hover:bg-surface-muted hover:text-foreground
+                                focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring
+                            "
+                        >
+                            <ArrowLeft className="size-4" aria-hidden="true" />
+                            Dashboard
+                        </Link>
+                    }
                     title="Settings"
-                    description="Configure your FlowForge workspace."
+                    toolbar={
+                        <PillNav
+                            ariaLabel="Settings sections"
+                            active={section}
+                            items={SECTIONS.map((entry) => ({
+                                id: entry.id,
+                                label: entry.label,
+                                href: searchWith(params, {
+                                    section:
+                                        entry.id === DEFAULT_SECTION
+                                            ? null
+                                            : entry.id,
+                                }),
+                            }))}
+                        />
+                    }
                 />
 
-                {/* =====================================================
-                    SECTION SWITCHER
-
-                    Tabs rather than a second sidebar: a nested rail inside
-                    the shell rail read as two competing navigations, and a
-                    240px column can't survive on a phone anyway.
-                ===================================================== */}
-                <nav aria-label="Settings sections">
-                    <ul
-                        className={cn(
-                            "flex gap-1 overflow-x-auto pb-px",
-                            "border-b border-border"
-                        )}
-                    >
-                        {SECTIONS.map((section) => {
-                            const Icon = section.icon;
-                            const selected = section.id === activeSection;
-
-                            return (
-                                <li key={section.id} className="shrink-0">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setActiveSection(section.id)
-                                        }
-                                        aria-current={
-                                            selected ? "true" : undefined
-                                        }
-                                        className={cn(
-                                            "relative flex h-10 items-center gap-2 rounded-t-lg px-3.5",
-                                            "text-sm font-medium whitespace-nowrap",
-                                            "transition-colors duration-(--transition-fast)",
-                                            "outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-                                            selected
-                                                ? "text-primary"
-                                                : "text-muted-foreground hover:bg-surface-muted hover:text-foreground"
-                                        )}
-                                    >
-                                        <Icon
-                                            className="size-4"
-                                            strokeWidth={selected ? 2.1 : 1.8}
-                                        />
-                                        {section.label}
-
-                                        {/* Active tab underline */}
-                                        <span
-                                            aria-hidden="true"
-                                            className={cn(
-                                                "absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-primary",
-                                                "transition-opacity duration-(--transition-fast)",
-                                                selected
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
-                                            )}
-                                        />
-                                    </button>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </nav>
-
-                {/* =====================================================
-                    PANEL
-                ===================================================== */}
                 <section
                     aria-label={active.title}
-                    className={cn(
-                        "min-h-[50vh] overflow-hidden rounded-xl border border-border bg-card shadow-xs",
-                        /* The labels panel brings its own framing */
-                        activeSection === "labels" && "border-none shadow-none bg-transparent"
-                    )}
+                    className="min-h-[50vh] space-y-4"
                 >
-                    {activeSection === "labels" ? (
-                        <LabelManagement />
-                    ) : (
-                        <div className="divide-y divide-border">
-                            <div className="px-5 py-5 sm:px-6">
-                                <h2 className="font-heading text-base font-semibold tracking-tight text-foreground">
-                                    {active.title}
-                                </h2>
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b pb-3">
+                        <h2 className="text-lg font-semibold text-foreground">
+                            {active.title}
+                        </h2>
+                        <p className="text-xs text-muted-foreground">
+                            {active.description}
+                        </p>
+                    </div>
 
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                    {active.description}
-                                </p>
-                            </div>
-
-                            <div className="px-5 py-6 sm:px-6">
-                                <ComingSoon section={active.label} />
-                            </div>
-                        </div>
-                    )}
+                    {section === "general" ? <GeneralSettings /> : null}
+                    {section === "members" ? <MembersSettings /> : null}
+                    {section === "labels" ? <LabelManagement /> : null}
                 </section>
             </div>
-        </AppLayout>
-    );
-}
-
-/**
- * A placeholder that says what will land here, rather than an empty
- * dashed box. Actions are intentionally absent — those features don't
- * exist yet and inventing buttons would be worse than being honest.
- */
-function ComingSoon({ section }: { section: string }) {
-    return (
-        <div className="rounded-xl border border-dashed border-border-strong bg-surface-muted/60 px-6 py-12 text-center">
-            <p className="text-sm font-medium text-foreground">
-                {section} settings aren&rsquo;t available yet
-            </p>
-
-            <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-muted-foreground">
-                This area is reserved for {section.toLowerCase()} configuration
-                and will appear here once it ships.
-            </p>
-        </div>
+        </DetailLayout>
     );
 }

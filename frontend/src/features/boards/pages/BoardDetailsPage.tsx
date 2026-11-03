@@ -3,14 +3,16 @@ import {
 } from "react";
 
 import {
-    useNavigate,
+    Link,
     useParams,
 } from "react-router";
+
+import { ArrowLeft } from "lucide-react";
 
 import ColumnGrid from "../components/ColumnGrid";
 import { useBoardDetails } from "../hooks/useBoardDetails";
 
-import AppLayout from "@/layouts/AppLayout";
+import DetailLayout from "@/layouts/DetailLayout";
 
 import BoardPresence from "@/features/presence/components/BoardPresence";
 import {
@@ -21,12 +23,9 @@ import {
 export default function BoardDetailsPage() {
 
     const {
+        projectId,
         boardId,
     } = useParams();
-
-
-    const navigate =
-        useNavigate();
 
 
     const {
@@ -91,7 +90,7 @@ export default function BoardDetailsPage() {
     if (isLoading) {
 
         return (
-            <AppLayout>
+            <DetailLayout>
                 <div className="
                     flex
                     h-[60vh]
@@ -102,7 +101,7 @@ export default function BoardDetailsPage() {
                 ">
                     Loading board...
                 </div>
-            </AppLayout>
+            </DetailLayout>
         );
     }
 
@@ -117,7 +116,7 @@ export default function BoardDetailsPage() {
     ) {
 
         return (
-            <AppLayout>
+            <DetailLayout>
                 <div className="
                     flex
                     h-[60vh]
@@ -128,7 +127,7 @@ export default function BoardDetailsPage() {
                 ">
                     Board not found.
                 </div>
-            </AppLayout>
+            </DetailLayout>
         );
     }
 
@@ -139,7 +138,7 @@ export default function BoardDetailsPage() {
 
     return (
 
-        <AppLayout>
+        <DetailLayout>
 
         <div className="
             space-y-6
@@ -153,40 +152,39 @@ export default function BoardDetailsPage() {
 
                 {/* Back */}
 
-                <button
-                    type="button"
-                    onClick={() =>
-                        navigate(-1)
-                    }
+                <Link
+                    to={`/projects/${projectId}`}
                     className="
                         mb-4
                         inline-flex
+                        h-8
                         items-center
-                        gap-2
+                        gap-1.5
                         rounded-lg
-                        px-3
-                        py-2
-                        text-sm
+                        -mx-2
+                        px-2
+                        text-[13px]
                         font-medium
                         text-muted-foreground
-                        transition
-                        hover:bg-surface-sunken
+                        transition-colors
+                        hover:bg-surface-muted
                         hover:text-foreground
+                        focus-visible:outline-2
+                        focus-visible:outline-offset-2
+                        focus-visible:outline-ring
                     "
                 >
 
-                    <span className="
-                        text-base
-                        leading-none
-                    ">
-                        ←
-                    </span>
+                    <ArrowLeft
+                        className="size-4"
+                        aria-hidden="true"
+                    />
 
                     <span>
                         Boards
                     </span>
 
-                </button>
+                </Link>
 
 
                 {/* =================================================
@@ -256,6 +254,6 @@ export default function BoardDetailsPage() {
 
         </div>
 
-        </AppLayout>
+        </DetailLayout>
     );
 }

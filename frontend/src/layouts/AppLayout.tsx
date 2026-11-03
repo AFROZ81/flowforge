@@ -5,12 +5,11 @@ import Sidebar from "@/components/layout/Sidebar";
 import SidebarToggle from "@/components/layout/SidebarToggle";
 import TopBar from "@/components/layout/Topbar";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useUiStore } from "@/stores/ui.store";
 
 type Props = {
     children: ReactNode;
 };
-
-const COLLAPSE_STORAGE_KEY = "flowforge.sidebar.collapsed";
 
 /**
  * The single application shell.
@@ -24,32 +23,15 @@ const COLLAPSE_STORAGE_KEY = "flowforge.sidebar.collapsed";
 export default function AppLayout({ children }: Props) {
     const location = useLocation();
 
-    const [collapsed, setCollapsed] = useState<boolean>(() => {
-        try {
-            return localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true";
-        } catch {
-            return false;
-        }
-    });
+    /*
+     * Rail width is shared state rather than local state because Settings offers
+     * the same control; two owners of one preference is how a setting ends up
+     * looking applied while nothing actually changes.
+     */
+    const collapsed = useUiStore((state) => state.sidebarCollapsed);
+    const toggleSidebar = useUiStore((state) => state.toggleSidebar);
 
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-    const handleSidebarToggle = () => {
-        setCollapsed((current) => {
-            const next = !current;
-
-            try {
-                localStorage.setItem(
-                    COLLAPSE_STORAGE_KEY,
-                    String(next)
-                );
-            } catch {
-                /* Private mode / storage disabled — the toggle still works */
-            }
-
-            return next;
-        });
-    };
 
     /*
      * Navigating away must never leave the drawer hanging open.
@@ -111,7 +93,7 @@ export default function AppLayout({ children }: Props) {
                  */}
                 <SidebarToggle
                     collapsed={collapsed}
-                    onToggle={handleSidebarToggle}
+                    onToggle={toggleSidebar}
                     controls="app-sidebar"
                 />
             </div>

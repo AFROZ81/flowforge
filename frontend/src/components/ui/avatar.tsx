@@ -123,11 +123,18 @@ export function AvatarGroup({
   people,
   max = 4,
   size = "sm",
+  indicator,
   className,
 }: {
   people: Array<{ id: string; name: string | null; imageSrc?: string | null }>
   max?: number
   size?: AvatarSize
+  /**
+   * Rendered on every person shown, e.g. a presence dot for a group that is
+   * online by definition. Asking for one stops the avatars from overlapping:
+   * the negative margin would bury each dot under the next circle.
+   */
+  indicator?: React.ReactNode
   className?: React.ComponentProps<"div">["className"]
 }) {
   const shown = people.slice(0, max)
@@ -146,7 +153,7 @@ export function AvatarGroup({
   return (
     <div
       data-slot="avatar-group"
-      className={cn("flex items-center", className)}
+      className={cn("flex items-center", indicator && "gap-1", className)}
       aria-label={`${people.length} member${people.length === 1 ? "" : "s"}`}
     >
       {shown.map((person, index) => (
@@ -154,7 +161,7 @@ export function AvatarGroup({
           key={person.id}
           className={cn(
             "rounded-full ring-2 ring-card",
-            index > 0 && stepSize[size]
+            !indicator && index > 0 && stepSize[size]
           )}
         >
           <Avatar
@@ -162,6 +169,7 @@ export function AvatarGroup({
             imageSrc={person.imageSrc}
             size={size}
             decorative
+            indicator={indicator}
           />
         </div>
       ))}

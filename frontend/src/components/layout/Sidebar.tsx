@@ -150,20 +150,20 @@ export default function Sidebar({
       >
         {NAV_SECTIONS.map((section, sectionIndex) => (
           <div
-            key={section.label}
+            key={section.label ?? section.items[0]?.href ?? sectionIndex}
             className={cn(sectionIndex > 0 && "mt-6")}
           >
-            {showCollapsed ? (
-              /* Keep a visible seam where the label would have been */
-              <div
-                aria-hidden="true"
-                className="mx-3 mb-3 h-px bg-sidebar-border"
-              />
-            ) : (
+            {/*
+             * Only a group that actually has a label renders a heading. When the
+             * rail is collapsed there is no room for it, and the old placeholder
+             * rule that marked "where the label would have been" is a stray line
+             * above the icons for a group nobody can see the name of.
+             */}
+            {section.label && !showCollapsed ? (
               <p className="mb-1.5 px-3 text-[10.5px] font-semibold tracking-[0.1em] text-sidebar-foreground/40 uppercase">
                 {section.label}
               </p>
-            )}
+            ) : null}
 
             <ul className="space-y-0.5">
               {section.items.map((item) => (

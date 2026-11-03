@@ -730,13 +730,13 @@ export default function WorkItemsTrend({
 
                                         <stop
                                             offset="0%"
-                                            stopColor="#3b82f6"
+                                            style={{ stopColor: "var(--chart-1)" }}
                                             stopOpacity="0.18"
                                         />
 
                                         <stop
                                             offset="100%"
-                                            stopColor="#3b82f6"
+                                            style={{ stopColor: "var(--chart-1)" }}
                                             stopOpacity="0"
                                         />
 
@@ -753,13 +753,13 @@ export default function WorkItemsTrend({
 
                                         <stop
                                             offset="0%"
-                                            stopColor="#10b981"
+                                            style={{ stopColor: "var(--chart-3)" }}
                                             stopOpacity="0.18"
                                         />
 
                                         <stop
                                             offset="100%"
-                                            stopColor="#10b981"
+                                            style={{ stopColor: "var(--chart-3)" }}
                                             stopOpacity="0"
                                         />
 
@@ -867,7 +867,7 @@ export default function WorkItemsTrend({
                                 <polyline
                                     points={createdPoints}
                                     fill="none"
-                                    stroke="#3b82f6"
+                                    style={{ stroke: "var(--chart-1)" }}
                                     strokeWidth="2.5"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -881,7 +881,7 @@ export default function WorkItemsTrend({
                                 <polyline
                                     points={completedPoints}
                                     fill="none"
-                                    stroke="#10b981"
+                                    style={{ stroke: "var(--chart-3)" }}
                                     strokeWidth="2.5"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -920,8 +920,18 @@ export default function WorkItemsTrend({
                                                         createdY
                                                     }
                                                     r="3"
-                                                    fill="white"
-                                                    stroke="#3b82f6"
+                                                    /*
+                                                     * Series colours come from the theme.
+                                                     * stop-color/stroke are presentation
+                                                     * attributes and var() is not substituted
+                                                     * inside them, so they go through style.
+                                                     * The dot fills with the card, not white,
+                                                     * or it disappears on a dark theme.
+                                                     */
+                                                    style={{
+                                                        fill: "var(--card)",
+                                                        stroke: "var(--chart-1)",
+                                                    }}
                                                     strokeWidth="2"
                                                 />
 
@@ -932,8 +942,10 @@ export default function WorkItemsTrend({
                                                         completedY
                                                     }
                                                     r="3"
-                                                    fill="white"
-                                                    stroke="#10b981"
+                                                    style={{
+                                                        fill: "var(--card)",
+                                                        stroke: "var(--chart-3)",
+                                                    }}
                                                     strokeWidth="2"
                                                 />
 

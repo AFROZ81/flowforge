@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
 
-import AppLayout from "@/layouts/AppLayout";
+import DetailLayout from "@/layouts/DetailLayout";
 import { Card } from "@/components/ui/card";
 import { ErrorStateBlock } from "@/components/ui/error-state";
 import { SkeletonPanel, SkeletonStatCard } from "@/components/ui/skeleton";
@@ -30,7 +30,7 @@ export default function ProjectDetailsPage() {
     /* ---------- LOADING ---------- */
     if (isLoading) {
         return (
-            <AppLayout>
+            <DetailLayout>
                 <div className="space-y-5" aria-busy="true">
                     <SkeletonPanel height="h-16" />
 
@@ -42,14 +42,14 @@ export default function ProjectDetailsPage() {
 
                     <SkeletonPanel height="h-40" />
                 </div>
-            </AppLayout>
+            </DetailLayout>
         );
     }
 
     /* ---------- NOT FOUND / ERROR ---------- */
     if (isError || !project) {
         return (
-            <AppLayout>
+            <DetailLayout>
                 <ErrorStateBlock
                     error={error}
                     title="We can't open this project"
@@ -63,12 +63,12 @@ export default function ProjectDetailsPage() {
                         </Button>
                     }
                 />
-            </AppLayout>
+            </DetailLayout>
         );
     }
 
     return (
-        <AppLayout>
+        <DetailLayout>
             <div className="space-y-6 lg:space-y-8">
 
                 {/* =================================================
@@ -147,6 +147,6 @@ export default function ProjectDetailsPage() {
                     </Card>
                 </div>
             </div>
-        </AppLayout>
+        </DetailLayout>
     );
 }
