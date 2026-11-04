@@ -1,75 +1,82 @@
-import { Link } from "react-router";
-import {
-    Archive,
-    ArrowUpRight,
-    MoreHorizontal,
-    Pencil,
-} from "lucide-react";
+import { useState } from "react";
+import { Archive, MoreHorizontal, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import ProjectFormDialog from "./ProjectFormDialog";
+
+import { useArchiveProjectWithUndo } from "../hooks/useArchiveProjectWithUndo";
+
+import type { Project } from "../types/project";
+
 type Props = {
-    projectId: string;
-    projectName: string;
+    project: Project;
 };
 
 /**
- * Row actions.
+ * Row actions: edit and archive.
  *
- * Edit and Archive have no endpoint behind them yet, so they are rendered
- * disabled with a reason instead of looking live and doing nothing — the
- * previous behaviour, which read as a bug on every click.
+ * "Open project" is gone — the name in the very same row already links there.
+ *
+ * Archiving is reversible: the server keeps the project and exposes a restore
+ * route, and the list simply stops returning it. So it acts immediately and
+ * offers Undo in the toast, rather than interrupting for a confirmation of
+ * something the user can take back in one click.
  */
-export default function ProjectActions({ projectId, projectName }: Props) {
+export default function ProjectActions({ project }: Props) {
+    const [editing, setEditing] = useState(false);
+    const { archiveWithUndo, isPending } = useArchiveProjectWithUndo();
+
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger
-                aria-label={`Actions for ${projectName}`}
-                render={
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        type="button"
-                        className="text-muted-foreground hover:text-foreground"
-                    />
-                }
-            >
-                <MoreHorizontal />
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end" className="min-w-[184px]">
-                <DropdownMenuItem
-                    render={<Link to={`/projects/${projectId}`} />}
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger
+                    aria-label={`Actions for ${project.name}`}
+                    render={
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            type="button"
+                            className="text-muted-foreground hover:text-foreground"
+                        />
+                    }
                 >
-                    <ArrowUpRight />
-                    Open project
-                </DropdownMenuItem>
+                    <MoreHorizontal />
+                </DropdownMenuTrigger>
 
-                <DropdownMenuSeparator />
+                <DropdownMenuContent align="end" className="min-w-[184px]">
+                    <DropdownMenuItem onClick={() => setEditing(true)}>
+                        <Pencil />
+                        Edit
+                    </DropdownMenuItem>
 
-                <DropdownMenuItem disabled title="Not available yet">
-                    <Pencil />
-                    Edit
-                    <span className="ml-auto text-[11px] text-muted-foreground">
-                        soon
-                    </span>
-                </DropdownMenuItem>
+                    <DropdownMenuItem
+                        disabled={isPending}
+                        onClick={() => archiveWithUndo(project)}
+                    >
+                        <Archive />
+                        {isPending ? "Archiving…" : "Archive"}
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
 
-                <DropdownMenuItem disabled title="Not available yet">
-                    <Archive />
-                    Archive
-                    <span className="ml-auto text-[11px] text-muted-foreground">
-                        soon
-                    </span>
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+            {/*
+             * Keyed to the row: opening the dialog for a different project
+             * remounts it, so there is no chance of saving one project's edits
+             * onto another.
+             */}
+            <ProjectFormDialog
+                key={project.id}
+                open={editing}
+                onOpenChange={setEditing}
+                project={project}
+            />
+        </>
     );
 }

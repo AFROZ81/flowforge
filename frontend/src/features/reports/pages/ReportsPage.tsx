@@ -31,7 +31,8 @@ import { EmptyStateCard } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import PillNav from "@/components/ui/pill-nav";
-import { SectionHeader } from "@/components/ui/section-header";
+import DataSection from "@/components/ui/data-section";
+import FigureStrip from "@/components/ui/figure-strip";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -115,80 +116,13 @@ function ofTotal(value: number, total: number): number {
 /* Building blocks                                                            */
 /* -------------------------------------------------------------------------- */
 
-type FigureTone = "default" | "danger" | "success";
-
-interface Figure {
-    label: string;
-    value: string;
-    tone?: FigureTone;
-}
-
-/**
- * One bordered surface with hairline separators instead of four detached cards.
- * The floor is 8.5rem so a phone gets two figures across instead of a tall
- * single column of five stacked cards.
- */
-function FigureGrid({ figures }: { figures: Figure[] }) {
-    return (
-        <div className="grid gap-px overflow-hidden rounded-xl border bg-border [grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr))]">
-            {figures.map((figure) => (
-                <div key={figure.label} className="bg-card px-3.5 py-3 sm:px-4">
-                    <div className="text-xs text-muted-foreground">
-                        {figure.label}
-                    </div>
-                    <div
-                        className={cn(
-                            "mt-0.5 text-xl font-semibold tabular-nums text-foreground",
-                            figure.tone === "danger" && "text-destructive",
-                            figure.tone === "success" && "text-success"
-                        )}
-                    >
-                        {figure.value}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function ReportSection({
-    number,
-    title,
-    note,
-    children,
-}: {
-    number: number;
-    title: string;
-    note?: string;
-    children: React.ReactNode;
-}) {
-    return (
-        <section className="overflow-hidden rounded-xl border bg-card">
-            <div className="border-b px-4 py-3">
-                <SectionHeader
-                    title={
-                        <>
-                            <span className="mr-2 tabular-nums text-muted-foreground">
-                                {number}.
-                            </span>
-                            {title}
-                        </>
-                    }
-                    description={note}
-                />
-            </div>
-            {children}
-        </section>
-    );
-}
-
 /** Bar plus its percentage, so a column can be read at a glance and exactly. */
 function Share({ value, total }: { value: number; total: number }) {
     const percentage = ofTotal(value, total);
 
     return (
         <div className="flex min-w-28 items-center gap-2">
-            <div className="h-1.5 flex-1 rounded-full bg-surface-sunken">
+            <div className="h-1.5 flex-1 rounded-full bg-foreground/10">
                 <div
                     className="h-full rounded-full bg-primary"
                     style={{ width: `${Math.min(100, percentage)}%` }}
@@ -221,7 +155,7 @@ function WorkItemsReport({ data }: { data: WorkItemSummary }) {
 
     return (
         <>
-            <FigureGrid
+            <FigureStrip
                 figures={[
                     { label: "Work items", value: formatNumber(data.total) },
                     {
@@ -247,7 +181,7 @@ function WorkItemsReport({ data }: { data: WorkItemSummary }) {
                 ]}
             />
 
-            <ReportSection
+            <DataSection
                 number={1}
                 title="Measures"
                 note="Counts are not mutually exclusive; share is of all work items"
@@ -288,7 +222,7 @@ function WorkItemsReport({ data }: { data: WorkItemSummary }) {
                         </TableRow>
                     </TableFooter>
                 </Table>
-            </ReportSection>
+            </DataSection>
         </>
     );
 }
@@ -306,7 +240,7 @@ function ProjectsReport({ data }: { data: ProjectSummary[] }) {
 
     return (
         <>
-            <FigureGrid
+            <FigureStrip
                 figures={[
                     { label: "Projects", value: formatNumber(data.length) },
                     { label: "Work items", value: formatNumber(totals.total) },
@@ -323,7 +257,7 @@ function ProjectsReport({ data }: { data: ProjectSummary[] }) {
                 ]}
             />
 
-            <ReportSection number={1} title="Project delivery">
+            <DataSection number={1} title="Project delivery">
                 <Table className="min-w-[40rem]">
                     <TableHeader>
                         <TableRow>
@@ -392,7 +326,7 @@ function ProjectsReport({ data }: { data: ProjectSummary[] }) {
                         </TableRow>
                     </TableFooter>
                 </Table>
-            </ReportSection>
+            </DataSection>
         </>
     );
 }
@@ -411,7 +345,7 @@ function TeamReport({ data }: { data: AssigneeSummary[] }) {
 
     return (
         <>
-            <FigureGrid
+            <FigureStrip
                 figures={[
                     { label: "Members with work", value: formatNumber(data.length) },
                     { label: "Assigned", value: formatNumber(totals.assigned) },
@@ -428,7 +362,7 @@ function TeamReport({ data }: { data: AssigneeSummary[] }) {
                 ]}
             />
 
-            <ReportSection number={1} title="Workload by member">
+            <DataSection number={1} title="Workload by member">
                 <Table className="min-w-[44rem]">
                     <TableHeader>
                         <TableRow>
@@ -507,7 +441,7 @@ function TeamReport({ data }: { data: AssigneeSummary[] }) {
                         </TableRow>
                     </TableFooter>
                 </Table>
-            </ReportSection>
+            </DataSection>
         </>
     );
 }
@@ -520,7 +454,7 @@ function LabelsReport({ data }: { data: LabelUsage[] }) {
 
     return (
         <>
-            <FigureGrid
+            <FigureStrip
                 figures={[
                     { label: "Labels in use", value: formatNumber(data.length) },
                     { label: "Total uses", value: formatNumber(totalUses) },
@@ -534,7 +468,7 @@ function LabelsReport({ data }: { data: LabelUsage[] }) {
                 ]}
             />
 
-            <ReportSection number={1} title="Label usage">
+            <DataSection number={1} title="Label usage">
                 <Table className="min-w-[24rem]">
                     <TableHeader>
                         <TableRow>
@@ -582,7 +516,7 @@ function LabelsReport({ data }: { data: LabelUsage[] }) {
                         </TableRow>
                     </TableFooter>
                 </Table>
-            </ReportSection>
+            </DataSection>
         </>
     );
 }
@@ -606,7 +540,7 @@ function ProductivityReport({ data }: { data: ProductivityPoint[] }) {
 
     return (
         <>
-            <FigureGrid
+            <FigureStrip
                 figures={[
                     { label: "Days reported", value: formatNumber(data.length) },
                     { label: "Created", value: formatNumber(totals.created) },
@@ -623,7 +557,7 @@ function ProductivityReport({ data }: { data: ProductivityPoint[] }) {
                 ]}
             />
 
-            <ReportSection
+            <DataSection
                 number={1}
                 title="Daily activity"
                 note="Bars are scaled to the busiest day"
@@ -689,7 +623,7 @@ function ProductivityReport({ data }: { data: ProductivityPoint[] }) {
                         </TableRow>
                     </TableFooter>
                 </Table>
-            </ReportSection>
+            </DataSection>
         </>
     );
 }
@@ -706,7 +640,7 @@ function Scaled({
 }) {
     return (
         <div className="flex items-center justify-end gap-2">
-            <div className="h-1.5 w-16 rounded-full bg-surface-sunken">
+            <div className="h-1.5 w-16 rounded-full bg-foreground/10">
                 <div
                     className={cn(
                         "h-full rounded-full",
@@ -1017,8 +951,13 @@ const ReportsPage = () => {
              * One column, full width. The report views belong to this page, so
              * they run across the top of the document rather than down a second
              * rail beside the application sidebar.
+             *
+             * The rhythm is deliberately wider than the 16px inside a summary
+             * row: a section has to sit further from its neighbour than a
+             * figure sits from the next figure, or the summary stops reading as
+             * a group of four and becomes a fifth table.
              */}
-            <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex min-w-0 flex-col gap-5 lg:gap-6">
                 {error ? (
                     <div
                         role="alert"
@@ -1143,13 +1082,19 @@ function Loading() {
         <div
             role="status"
             aria-label="Loading report"
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-5 lg:gap-6"
         >
-            <div className="grid gap-px overflow-hidden rounded-xl border bg-border [grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr))]">
+            {/* Mirrors the loaded summary row exactly - four separate cards,
+                same floor width - otherwise the row re-joins itself and the
+                whole page jumps as the tiles resize when the data lands. */}
+            <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))] sm:gap-4">
                 {[0, 1, 2, 3].map((index) => (
-                    <div key={index} className="bg-card px-4 py-3">
+                    <div
+                        key={index}
+                        className="rounded-xl border bg-card px-4 py-3.5 shadow-xs"
+                    >
                         <Skeleton className="h-3 w-20" />
-                        <Skeleton className="mt-2 h-6 w-14" />
+                        <Skeleton className="mt-2.5 h-7 w-14" />
                     </div>
                 ))}
             </div>

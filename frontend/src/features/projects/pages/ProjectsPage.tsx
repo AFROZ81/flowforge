@@ -10,7 +10,7 @@ import { useProjects } from "../hooks/useProjects";
 
 import ProjectTable from "../components/ProjectTable";
 import ProjectToolbar from "../components/ProjectToolbar";
-import CreateProjectDialog from "../components/CreateProjectDialog";
+import ProjectFormDialog from "../components/ProjectFormDialog";
 
 import type { Project } from "../types/project";
 
@@ -88,7 +88,7 @@ export default function ProjectsPage() {
                     />
                 )}
 
-                <CreateProjectDialog
+                <ProjectFormDialog
                     open={open}
                     onOpenChange={setOpen}
                 />

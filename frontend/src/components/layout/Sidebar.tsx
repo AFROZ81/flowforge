@@ -2,13 +2,11 @@ import { NavLink } from "react-router";
 
 import Logo from "@/components/layout/Logo";
 import { NAV_SECTIONS, type NavItem } from "@/components/layout/navigation";
-import { Avatar } from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAuthStore } from "@/stores/auth.store";
 import { cn } from "@/lib/utils";
 
 type SidebarProps = {
@@ -112,11 +110,6 @@ export default function Sidebar({
   const isDrawer = variant === "drawer";
   const showCollapsed = isDrawer ? false : collapsed;
 
-  const user = useAuthStore((state) => state.user);
-
-  const fullName = user?.fullName?.trim() || "User";
-  const email = user?.email?.trim() || "";
-
   return (
     <div
       className={cn(
@@ -179,41 +172,6 @@ export default function Sidebar({
           </div>
         ))}
       </nav>
-
-      {/* ==================================================
-          FOOTER — account
-
-          Identity only. Signing out lives in the top bar with the
-          other session controls, not down here among the navigation.
-      ================================================== */}
-      <div className="shrink-0 border-t border-sidebar-border p-3">
-        <div
-          className={cn(
-            "flex items-center gap-2.5 rounded-lg p-1.5",
-            showCollapsed && "justify-center"
-          )}
-        >
-          <Avatar name={fullName} size={showCollapsed ? "sm" : "md"} ring />
-
-          {!showCollapsed && (
-            <div className="min-w-0 flex-1">
-              <p
-                className="truncate text-[13px] leading-tight font-semibold text-sidebar-foreground"
-                title={fullName}
-              >
-                {fullName}
-              </p>
-
-              <p
-                className="mt-0.5 truncate text-[11px] leading-tight text-sidebar-foreground/50"
-                title={email}
-              >
-                {email || "Signed in"}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

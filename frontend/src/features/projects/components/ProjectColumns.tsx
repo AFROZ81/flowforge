@@ -79,12 +79,7 @@ export const columns: ColumnDef<Project>[] = [
     {
         id: "actions",
         header: "",
-        cell: ({ row }) => (
-            <ProjectActions
-                projectId={row.original.id}
-                projectName={row.original.name}
-            />
-        ),
+        cell: ({ row }) => <ProjectActions project={row.original} />,
         meta: { align: "right", className: "w-[1%]" },
     },
 ];

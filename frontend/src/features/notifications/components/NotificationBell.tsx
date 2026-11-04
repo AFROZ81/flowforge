@@ -129,20 +129,32 @@ export default function NotificationBell() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="relative text-muted-foreground hover:text-foreground"
+                        className="relative text-foreground"
                     />
                 }
             >
                 <Bell />
 
+                {/*
+                 * The trigger is 36px and the glyph is 16px centred inside it,
+                 * which leaves ten px of corner - so a badge large enough to
+                 * read lands squarely on the bell's ink if it stays in bounds.
+                 * Hanging it four px past the corner on both axes puts its
+                 * bottom edge level with the top of the glyph instead of six
+                 * px into it, and the card-coloured ring cuts the halo clean.
+                 *
+                 * The bell itself sits at full-strength foreground rather than
+                 * muted: a quiet grey icon next to a saturated red pill reads
+                 * as a disabled control with a badge on top of it.
+                 */}
                 {unreadCount > 0 && (
                     <span
                         aria-hidden="true"
                         className="
-                            absolute top-1 right-1 flex min-w-[15px] translate-x-1/3
-                            -translate-y-1/3 items-center justify-center rounded-full
-                            bg-danger px-1 text-[9px] leading-none font-bold text-white
-                            ring-2 ring-card tabular-nums
+                            absolute -top-1 -right-1 flex h-4 min-w-4 items-center
+                            justify-center rounded-full bg-danger-solid px-1
+                            text-[10px] leading-none font-bold text-inverse ring-2
+                            ring-card tabular-nums
                         "
                     >
                         {unreadCount > 99 ? "99+" : unreadCount}

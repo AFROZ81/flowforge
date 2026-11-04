@@ -10,6 +10,7 @@ import {
 
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogHeader,
@@ -998,18 +999,6 @@ export default function WorkItemDetailsDialog({
                             </div>
 
 
-                            {workItem && (
-                                <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-                                    <WorkItemStatusBadge
-                                        status={workItem.status}
-                                    />
-                                    <WorkItemPriorityBadge
-                                        priority={workItem.priority}
-                                        compact
-                                    />
-                                </div>
-                            )}
-
                         </div>
 
                     </DialogHeader>
@@ -1068,12 +1057,18 @@ export default function WorkItemDetailsDialog({
                         !isLoading &&
                         !isError && (
 
-                            <div
-                                className="
-                                    space-y-5 px-4 pb-5
-                                    sm:px-0 sm:pb-0
-                                "
-                            >
+                            /*
+                             * DialogBody rather than a plain div: the popup
+                             * stops scrolling the moment a body exists (see
+                             * has-data-[slot=dialog-body] in dialog.tsx), which
+                             * is what lets the title and the action row hold
+                             * still while the activity scrolls between them.
+                             * Before that, the whole popup scrolled and the
+                             * action row had to fake being pinned with
+                             * position: sticky.
+                             */
+                            <>
+                            <DialogBody className="space-y-5 px-4 sm:px-0">
 
                                 {/* =================================================
                                     BASIC INFORMATION
@@ -1904,20 +1899,28 @@ export default function WorkItemDetailsDialog({
                                 </div>
 
 
+                                </DialogBody>
+
                                 {/* =================================================
                                     ACTIONS
                                 ================================================= */}
 
-                                {/* Pinned so Complete / Block / Archive stay
-                                    reachable however long the activity runs */}
+                                {/*
+                                 * A flex sibling of the body, not a sticky child
+                                 * inside it. Complete / Block / Archive stay
+                                 * reachable however long the activity runs, and
+                                 * the row no longer reads as a translucent strip
+                                 * laid over the dialog's own bottom padding -
+                                 * which is what made it look detached from the
+                                 * panel above it.
+                                 */}
                                 <div
                                     className="
-                                        sticky bottom-0 z-10
-                                        -mx-4 px-4 py-3
-                                        flex flex-col gap-3
-                                        border-t border-border bg-card/95 backdrop-blur-xs
-                                        sm:-mx-5 sm:px-5 sm:pb-0 sm:pt-4
+                                        mt-4 flex shrink-0 flex-col gap-3
+                                        border-t border-border-subtle
+                                        px-4 pt-3 pb-4
                                         sm:flex-row sm:items-center sm:justify-between
+                                        sm:px-0 sm:pb-0
                                     "
                                 >
 
@@ -2116,7 +2119,7 @@ export default function WorkItemDetailsDialog({
 
                                 </div>
 
-                            </div>
+                            </>
 
                         )}
 

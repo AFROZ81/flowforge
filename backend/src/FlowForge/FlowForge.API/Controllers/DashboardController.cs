@@ -1,11 +1,8 @@
-using FlowForge.Application.Features.Dashboard.GetOverview;
-using FlowForge.Application.Features.Dashboard.GetWorkItemDistribution;
-using FlowForge.Application.Features.Dashboard.GetProjectProgress;
-using FlowForge.Application.Features.Dashboard.GetDueWorkItems;
-using FlowForge.Application.Features.Dashboard.GetRecentWorkItems;
-using FlowForge.Application.Features.Dashboard.GetWorkItemTrend;
+using FlowForge.Application.Common.Responses;
+using FlowForge.Application.Features.Dashboard.GetSnapshot;
 
 using MediatR;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,83 +20,24 @@ public sealed class DashboardController : ControllerBase
         _mediator = mediator;
     }
 
-    #region Queries
-
-    [HttpGet("overview")]
-    public async Task<IActionResult> GetOverview(
+    /// <summary>
+    /// The dashboard in one call.
+    ///
+    /// This used to be six endpoints the page fanned out on mount, none of which
+    /// answered the question a dashboard is actually for: what should I look at
+    /// right now. One snapshot also means one loading state, one error state and
+    /// one timestamp, so the figures on screen are known to describe the same
+    /// moment.
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<DashboardSnapshot>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSnapshot(
         CancellationToken cancellationToken)
     {
-        var response =
-            await _mediator.Send(
-                new GetDashboardOverviewQuery(),
-                cancellationToken);
+        var response = await _mediator.Send(
+            new GetDashboardSnapshotQuery(),
+            cancellationToken);
 
         return Ok(response);
     }
-
-    [HttpGet("work-item-distribution")]
-    public async Task<IActionResult> GetWorkItemDistribution(
-        CancellationToken cancellationToken)
-    {
-        var response =
-            await _mediator.Send(
-                new GetWorkItemDistributionQuery(),
-                cancellationToken);
-
-        return Ok(response);
-    }
-
-    [HttpGet("project-progress")]
-    public async Task<IActionResult> GetProjectProgress(
-        CancellationToken cancellationToken)
-    {
-        var response =
-            await _mediator.Send(
-                new GetProjectProgressQuery(),
-                cancellationToken);
-
-        return Ok(response);
-    }
-
-    [HttpGet("due-work-items")]
-    public async Task<IActionResult> GetDueWorkItems(
-        CancellationToken cancellationToken)
-    {
-        var response =
-            await _mediator.Send(
-                new GetDueWorkItemsQuery(),
-                cancellationToken);
-
-        return Ok(response);
-    }
-
-    [HttpGet("recent-work-items")]
-    public async Task<IActionResult> GetRecentWorkItems(
-        CancellationToken cancellationToken)
-    {
-        var response =
-            await _mediator.Send(
-                new GetRecentWorkItemsQuery(),
-                cancellationToken);
-
-        return Ok(response);
-    }
-
-    [HttpGet("work-item-trend")]
-    public async Task<IActionResult> GetWorkItemTrend(
-        [FromQuery] int days = 7,
-        CancellationToken cancellationToken = default)
-    {
-        var response =
-            await _mediator.Send(
-                new GetWorkItemTrendQuery
-                {
-                    Days = days
-                },
-                cancellationToken);
-
-        return Ok(response);
-    }
-
-    #endregion
 }

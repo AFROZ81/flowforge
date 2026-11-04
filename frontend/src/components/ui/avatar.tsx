@@ -130,9 +130,11 @@ export function AvatarGroup({
   max?: number
   size?: AvatarSize
   /**
-   * Rendered on every person shown, e.g. a presence dot for a group that is
-   * online by definition. Asking for one stops the avatars from overlapping:
-   * the negative margin would bury each dot under the next circle.
+   * A status marker for the group as a whole - a presence dot for a stack
+   * that is online by definition. It is drawn on the outermost element only:
+   * every other corner is already buried under the circle that follows it, so
+   * one dot per avatar renders as a row of separate avatars wearing the same
+   * badge twice over.
    */
   indicator?: React.ReactNode
   className?: React.ComponentProps<"div">["className"]
@@ -153,7 +155,7 @@ export function AvatarGroup({
   return (
     <div
       data-slot="avatar-group"
-      className={cn("flex items-center", indicator && "gap-1", className)}
+      className={cn("flex items-center", className)}
       aria-label={`${people.length} member${people.length === 1 ? "" : "s"}`}
     >
       {shown.map((person, index) => (
@@ -161,7 +163,7 @@ export function AvatarGroup({
           key={person.id}
           className={cn(
             "rounded-full ring-2 ring-card",
-            !indicator && index > 0 && stepSize[size]
+            index > 0 && stepSize[size]
           )}
         >
           <Avatar
@@ -169,20 +171,34 @@ export function AvatarGroup({
             imageSrc={person.imageSrc}
             size={size}
             decorative
-            indicator={indicator}
+            /* The dot goes on the last thing actually rendered, so an overflow
+               chip does not sit on top of it. */
+            indicator={
+              index === shown.length - 1 && overflow === 0
+                ? indicator
+                : undefined
+            }
           />
         </div>
       ))}
 
       {overflow > 0 && (
-        <span
-          className={cn(
-            "-ml-2 flex items-center justify-center rounded-full bg-surface-sunken font-semibold text-muted-foreground ring-2 ring-card",
-            sizeClasses[size]
-          )}
-        >
-          +{overflow}
-        </span>
+        <div className={cn("relative", stepSize[size])}>
+          <span
+            className={cn(
+              "flex items-center justify-center rounded-full bg-surface-sunken font-semibold text-muted-foreground ring-2 ring-card",
+              sizeClasses[size]
+            )}
+          >
+            +{overflow}
+          </span>
+
+          {indicator ? (
+            <span className="absolute -right-0.5 -bottom-0.5 flex leading-none">
+              {indicator}
+            </span>
+          ) : null}
+        </div>
       )}
     </div>
   )

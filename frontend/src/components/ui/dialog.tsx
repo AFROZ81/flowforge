@@ -132,11 +132,12 @@ function DialogContent({
  *    creating a horizontal scrollport.
  *  - `overflow-clip-margin` — lets that ring paint a few px past the box
  *    instead of stopping dead at it.
- *  - `scrollbar-gutter: stable both-edges` — a classic 10px scrollbar was
- *    making every row sit 21px from the left edge and 31px from the right.
- *    `both-edges` alone is not a valid value; it only applies alongside
- *    `stable`, and reserves the mirror gutter so content stays centred and
- *    does not shift when scrolling starts.
+ *  - `scrollbar-gutter: stable both-edges` — reserving a single scrollbar on
+ *    the right made every row sit further from the right edge than from the
+ *    left. The width is `--scrollbar-size`, so this quotes no number: it only
+ *    reserves the mirror gutter, which keeps content centred and stops it
+ *    shifting when scrolling starts. `both-edges` alone is not a valid value;
+ *    it only applies alongside `stable`.
  */
 function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
   return (

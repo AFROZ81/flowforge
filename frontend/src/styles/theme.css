@@ -136,6 +136,33 @@
     --input: var(--border-strong);
     --ring: var(--primary);
 
+    /* ---------- Solid alert fill ----------
+       A filled badge has to clear the ink sitting on top of it, and the
+       mid-tone --danger does not: near-white on it is ~3.2:1 in the light
+       schemes and only ~2.4:1 in the dark ones, because --danger is lighter
+       in a dark scheme while the ink on it stayed pale. Pulling it 20% toward
+       --foreground fixes both directions at once, since --foreground always
+       sits on the far side of --danger from --text-inverse - darker in a
+       light scheme, lighter in a dark one. */
+    --danger-solid: color-mix(in oklab, var(--danger) 80%, var(--foreground));
+
+    /* ---------- Scrollbars ----------
+       Ink over transparency rather than an opaque grey, so two values serve
+       every scheme: --foreground flips with the theme and the line strengths
+       are already tuned per scheme. A scrollbar also floats over whatever
+       surface it happens to be on - card, canvas, popover - so mixing with a
+       named surface would pick a fight with one of them. */
+    --scrollbar-thumb: color-mix(
+        in oklab,
+        var(--foreground) var(--line-strength),
+        transparent
+    );
+    --scrollbar-thumb-hover: color-mix(
+        in oklab,
+        var(--foreground) var(--line-strong-strength),
+        transparent
+    );
+
     /* ---------- shadcn slots ---------- */
     --card: var(--surface);
     --card-foreground: var(--text-primary);
@@ -202,6 +229,14 @@
     --sidebar-width-expanded: 14rem;
     --sidebar-width-collapsed: 4rem;
     --topbar-height: 4rem;
+
+    /* ---------- Scrollbar metrics ----------
+       The gutter is deliberately wider than the rail it contains: 10px of
+       grabbable space painted as a 3px floating pill. Shrinking the gutter to
+       the rail's width would make it exactly as hard to grab as it is subtle,
+       and a rail much under 3px stops reading as an object at all. */
+    --scrollbar-size: 10px;
+    --scrollbar-inset: 3.5px;
 }
 
 
@@ -494,6 +529,12 @@
     --input: var(--auth-field-line);
     --ring: var(--auth-action-ring);
 
+    /* Scrollbars have to be restated here rather than inherited: the values
+       on :root were already substituted against the app's own foreground, so
+       a light scheme would paint a dark ink rail on this dark ground. */
+    --scrollbar-thumb: color-mix(in oklab, var(--auth-ink) 26%, transparent);
+    --scrollbar-thumb-hover: color-mix(in oklab, var(--auth-ink) 44%, transparent);
+
     --muted: var(--auth-hover);
     --muted-foreground: var(--auth-ink-muted);
     --secondary: var(--auth-hover);
@@ -509,6 +550,7 @@
 
     --danger: var(--auth-alert);
     --danger-foreground: var(--auth-alert-foreground);
+    --danger-solid: color-mix(in oklab, var(--auth-alert) 80%, var(--auth-ink));
     --destructive: var(--auth-alert);
 
     --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.3);

@@ -76,6 +76,14 @@
     --color-accent-foreground: var(--accent-foreground);
     --color-destructive: var(--destructive);
 
+    /* ---------- Ink on a solid ground ----------
+       --text-inverse is the counterpart of --primary-foreground: near-white
+       in the light schemes, near-black in the dark ones, because a mid-tone
+       accent is lighter in a dark scheme and the ink has to move with it.
+       Anything filled with a solid status colour reaches for this instead of
+       a literal white. */
+    --color-inverse: var(--text-inverse);
+
     /* ---------- Status ---------- */
     --color-success: var(--success);
     --color-success-subtle: var(--success-subtle);
@@ -84,6 +92,7 @@
     --color-warning-subtle: var(--warning-subtle);
     --color-warning-foreground: var(--warning-foreground);
     --color-danger: var(--danger);
+    --color-danger-solid: var(--danger-solid);
     --color-danger-subtle: var(--danger-subtle);
     --color-danger-foreground: var(--danger-foreground);
     --color-info: var(--info);
@@ -197,15 +206,38 @@
     }
 
     /* ---------- Scrollbars ----------
-       Subtle, so the shell doesn't get framed by gray troughs. */
-    * {
-        scrollbar-width: thin;
-        scrollbar-color: var(--border-strong) transparent;
+       A floating pill rather than a trough. The gutter is 10px but only a 3px
+       pill is painted: the transparent border plus background-clip is what
+       lifts it off the edge instead of letting it sit flush against the
+       content, and keeping the gutter wide means the thin rail is still an
+       easy target to hit.
+
+       Both colours are ink over transparency, named once in styles/theme.css,
+       so they follow all four schemes without a dark variant here. */
+
+    /*
+     * The two systems cannot both be declared on the same element. Setting
+     * scrollbar-width or scrollbar-color to anything other than auto makes
+     * browsers ignore the entire ::-webkit-scrollbar family for that element -
+     * and because scrollbar-color is inherited, for every element below the
+     * one that set it. Declaring both on `*` therefore produced a native
+     * scrollbar with our colours on it and silently discarded every rule
+     * beneath this one.
+     *
+     * So the standard pair is fenced to Firefox, which is the only browser
+     * that has no ::-webkit-scrollbar support and genuinely needs it.
+     * scrollbar-width is not inherited, hence `*` rather than :root.
+     */
+    @supports (-moz-appearance: none) {
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--scrollbar-thumb) transparent;
+        }
     }
 
     ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
+        width: var(--scrollbar-size);
+        height: var(--scrollbar-size);
     }
 
     ::-webkit-scrollbar-track {
@@ -213,14 +245,37 @@
     }
 
     ::-webkit-scrollbar-thumb {
-        border: 3px solid transparent;
+        border: var(--scrollbar-inset) solid transparent;
         border-radius: 999px;
         background-clip: content-box;
-        background-color: var(--border-strong);
+        background-color: var(--scrollbar-thumb);
     }
 
-    ::-webkit-scrollbar-thumb:hover {
-        background-color: var(--text-tertiary);
+    /*
+     * Brightened on the scroll region's own :hover as well as the thumb's.
+     * A 3px rail is a small target to land a pointer on, so waiting purely for
+     * the thumb's hover state would leave it dim exactly when someone is about
+     * to reach for it. :hover matches ancestors too, so hovering anywhere
+     * inside a scroller lifts its rail - which is what makes a thin scrollbar
+     * feel deliberate instead of hard to find.
+     */
+    :hover::-webkit-scrollbar-thumb,
+    ::-webkit-scrollbar-thumb:hover,
+    ::-webkit-scrollbar-thumb:active {
+        background-color: var(--scrollbar-thumb-hover);
+    }
+
+    /* The steppers and the corner square are the last two pieces of the native
+       look: no arrow buttons capping a rail, and no grey block where a
+       vertical and a horizontal gutter cross inside a table pane. */
+    ::-webkit-scrollbar-button {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+
+    ::-webkit-scrollbar-corner {
+        background: transparent;
     }
 }
 

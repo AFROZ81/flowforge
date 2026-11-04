@@ -1,112 +1,81 @@
-export interface ApiResponse<T> {
-    success: boolean;
-    message: string;
-    data: T | null;
-    traceId?: string | null;
-    errors?: string[] | null;
-}
+/**
+ * Mirrors DashboardSnapshot from
+ * FlowForge.Application.Features.Dashboard.GetSnapshot, one field per field.
+ *
+ * Status and priority arrive as strings: the API renders them the way the board
+ * does, so the page never has to keep an enum table in step with the backend.
+ */
 
+export type WorkItemBrief = {
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+    dueDate: string | null;
+    projectId: string;
+    projectName: string;
+    projectKey: string;
+    boardId: string;
+    boardName: string;
+    /** Filled only for the recently-updated list. */
+    lastActivityAt: string | null;
+};
 
-/* =========================================================
-   DASHBOARD OVERVIEW
-   ========================================================= */
+/** Counts over the signed-in user's own open work. */
+export type MyWorkSummary = {
+    open: number;
+    overdue: number;
+    dueSoon: number;
+    blocked: number;
+};
 
-export interface DashboardOverview {
-    totalProjects: number;
-    totalBoards: number;
-    totalWorkItems: number;
-
-    activeWorkItems: number;
-    completedWorkItems: number;
-    blockedWorkItems: number;
-    overdueWorkItems: number;
-
-    completionPercentage: number;
-}
-
-
-/* =========================================================
-   PROJECT PROGRESS
-   ========================================================= */
-
-export interface ProjectProgressItem {
+export type ProjectHealth = {
     projectId: string;
     projectName: string;
     projectKey: string;
     color: string;
-
-    totalWorkItems: number;
-    activeWorkItems: number;
-    completedWorkItems: number;
-    blockedWorkItems: number;
-    overdueWorkItems: number;
-
+    /** The emoji chosen at creation; the mark falls back to the key without it. */
+    icon: string | null;
+    total: number;
+    completed: number;
+    blocked: number;
+    overdue: number;
     completionPercentage: number;
-}
+};
 
+export type WorkloadMember = {
+    userId: string;
+    fullName: string;
+    assigned: number;
+    active: number;
+    completed: number;
+    blocked: number;
+    overdue: number;
+};
 
-/* =========================================================
-   DUE WORK ITEMS
-   ========================================================= */
+export type StatusMix = {
+    total: number;
+    active: number;
+    completed: number;
+    blocked: number;
+    overdue: number;
+};
 
-export interface DueWorkItem {
-    workItemId: string;
-    title: string;
-    status: string;
-    priority: string;
-
-    dueDate: string;
-
-    projectId: string;
-    projectName: string;
-    projectKey: string;
-
-    boardId: string;
-    boardName: string;
-
-    columnId: string;
-    columnName: string;
-}
-
-
-export interface DueWorkItemsResponse {
-    overdue: DueWorkItem[];
-    upcoming: DueWorkItem[];
-}
-
-
-/* =========================================================
-   RECENT WORK ITEMS
-   ========================================================= */
-
-export interface RecentWorkItem {
-    workItemId: string;
-    title: string;
-    status: string;
-    priority: string;
-
-    dueDate: string | null;
-
-    projectId: string;
-    projectName: string;
-    projectKey: string;
-
-    boardId: string;
-    boardName: string;
-
-    columnId: string;
-    columnName: string;
-
-    lastActivityAt: string;
-}
-
-
-/* =========================================================
-   WORK ITEM TREND
-   ========================================================= */
-
-export interface WorkItemTrendItem {
+/** `date` is a server-side DateOnly: a plain "YYYY-MM-DD", no instant attached. */
+export type TrendPoint = {
     date: string;
     created: number;
     completed: number;
-}
+};
+
+export type DashboardSnapshot = {
+    myWork: MyWorkSummary;
+    myOpenItems: WorkItemBrief[];
+    projectHealth: ProjectHealth[];
+    projectCount: number;
+    teamWorkload: WorkloadMember[];
+    statusMix: StatusMix;
+    throughput: TrendPoint[];
+    recentlyUpdated: WorkItemBrief[];
+    generatedAtUtc: string;
+};

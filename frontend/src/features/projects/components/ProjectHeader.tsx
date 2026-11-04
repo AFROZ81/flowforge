@@ -1,10 +1,14 @@
-import { Link } from "react-router";
-import { ArrowLeft, Archive, Pencil } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { Archive, ArrowLeft, Loader2, Pencil } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProjectMark } from "@/components/common/project-mark";
+import ProjectFormDialog from "./ProjectFormDialog";
 import ProjectStatusBadge from "./ProjectStatusBadge";
+
+import { useArchiveProjectWithUndo } from "../hooks/useArchiveProjectWithUndo";
 
 import type { Project } from "../types/project";
 
@@ -13,6 +17,10 @@ type Props = {
 };
 
 export default function ProjectHeader({ project }: Props) {
+    const [editing, setEditing] = useState(false);
+    const { archiveWithUndo, isPending } = useArchiveProjectWithUndo();
+    const navigate = useNavigate();
+
     return (
         <header className="space-y-4">
             <Link
@@ -62,21 +70,44 @@ export default function ProjectHeader({ project }: Props) {
                 </div>
 
                 {/*
-                 * Neither action has an endpoint yet. They are disabled
-                 * with a stated reason rather than firing nothing on click.
+                 * Archiving leaves the detail page: the project no longer comes
+                 * back in the list, so staying would strand the reader on a page
+                 * about something that just disappeared. Undo puts it back.
                  */}
                 <div className="flex shrink-0 gap-2 [&>*]:grow sm:[&>*]:grow-0">
-                    <Button variant="outline" disabled title="Not available yet">
+                    <Button
+                        variant="outline"
+                        onClick={() => setEditing(true)}
+                        disabled={isPending}
+                    >
                         <Pencil />
                         Edit
                     </Button>
 
-                    <Button variant="outline" disabled title="Not available yet">
-                        <Archive />
-                        Archive
+                    <Button
+                        variant="outline"
+                        disabled={isPending}
+                        onClick={() =>
+                            archiveWithUndo(project, () =>
+                                navigate("/projects", { replace: true })
+                            )
+                        }
+                    >
+                        {isPending ? (
+                            <Loader2 className="animate-spin" />
+                        ) : (
+                            <Archive />
+                        )}
+                        {isPending ? "Archiving…" : "Archive"}
                     </Button>
                 </div>
             </div>
+
+            <ProjectFormDialog
+                open={editing}
+                onOpenChange={setEditing}
+                project={project}
+            />
         </header>
     );
 }

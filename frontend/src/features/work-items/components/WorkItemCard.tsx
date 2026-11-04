@@ -37,7 +37,6 @@ import {
 
 import {
     DueDateChip,
-    PriorityFlag,
     WorkItemStatusBadge,
 } from "@/components/common/indicators";
 import { Avatar } from "@/components/ui/avatar";
@@ -240,10 +239,12 @@ export default function WorkItemCard({
                         {item.title}
                     </h4>
 
-                    <div className="flex shrink-0 items-center gap-1">
-                        <WorkItemStatusBadge status={item.status} />
-                        <PriorityFlag priority={item.priority} />
-                    </div>
+                    {/* The priority flag used to sit beside this badge. It is a
+                        bare rounded bar with no label, so next to a pill it read
+                        as a rendering artefact rather than as information - and
+                        on a Critical blocked item it was the same red as the
+                        badge beside it, which looked like a duplicate. */}
+                    <WorkItemStatusBadge status={item.status} />
 
                 </div>
 
