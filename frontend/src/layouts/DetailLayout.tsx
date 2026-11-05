@@ -15,13 +15,18 @@ type Props = {
  *
  * So this is only the scroll container and the page padding, sized to the
  * viewport the way AppLayout's content column was.
+ *
+ * `relative` for the same reason AppLayout's `main` carries it: an absolutely
+ * positioned descendant with no positioned ancestor resolves against the
+ * initial containing block, escapes this scroller's clip and extends the
+ * document instead of the page.
  */
 export default function DetailLayout({ children }: Props) {
     return (
         <main
             id="main-content"
             className="
-                h-dvh min-h-0 w-full
+                relative h-dvh min-h-0 w-full
                 overflow-x-hidden overflow-y-auto
                 bg-background px-4 py-5
                 sm:px-6

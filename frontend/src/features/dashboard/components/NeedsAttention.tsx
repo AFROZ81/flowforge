@@ -79,12 +79,6 @@ export default function NeedsAttention({ summary }: { summary: MyWorkSummary }) 
 
     return (
         <section aria-labelledby="needs-attention-heading" className="space-y-2">
-            <h2
-                id="needs-attention-heading"
-                className="px-1 text-xs leading-none font-semibold tracking-[0.08em] text-muted-foreground uppercase"
-            >
-                Needs your attention
-            </h2>
 
             <FigureStrip
                 figures={[

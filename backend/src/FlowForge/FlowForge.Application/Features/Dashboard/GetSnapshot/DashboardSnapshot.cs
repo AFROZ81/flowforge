@@ -22,6 +22,8 @@ public sealed class DashboardSnapshot
 
     public required StatusMix StatusMix { get; init; }
 
+    public required PriorityMix PriorityMix { get; init; }
+
     public required IReadOnlyList<TrendPoint> Throughput { get; init; }
 
     public required IReadOnlyList<WorkItemBrief> RecentlyUpdated { get; init; }
@@ -135,6 +137,29 @@ public sealed class StatusMix
     public int Blocked { get; init; }
 
     public int Overdue { get; init; }
+}
+
+/// <summary>
+/// Workspace-wide, and over open work only.
+///
+/// Completed items are left out on purpose: once work is done its urgency is
+/// history, so counting it would let a Critical slice describe a fire that has
+/// already been put out. The four buckets are the whole of
+/// <see cref="FlowForge.Domain.Common.Enums.WorkItemPriority"/>, which is why
+/// they are named rather than sent as a list - a missing priority must read as
+/// a zero, not as an absent category.
+/// </summary>
+public sealed class PriorityMix
+{
+    public int Total { get; init; }
+
+    public int Low { get; init; }
+
+    public int Medium { get; init; }
+
+    public int High { get; init; }
+
+    public int Critical { get; init; }
 }
 
 public sealed class TrendPoint

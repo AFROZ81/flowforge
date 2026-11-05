@@ -1,0 +1,72 @@
+<mxfile host="app.diagrams.net" type="device" version="24.0.0">
+  <diagram id="flowforge-project-aggregate" name="ProjectAggregate">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1540" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="FlowForge — organization and project aggregate" style="text;html=1;align=left;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#1f2933;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="760" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sub" value="Fields and max lengths from the domain entities · indexes and delete behaviour from Persistence/Configurations · edge label = multiplicity" style="text;html=1;align=left;verticalAlign=middle;fontSize=12;fontColor=#52606d;" vertex="1" parent="1">
+          <mxGeometry x="40" y="52" width="1200" height="22" as="geometry" />
+        </mxCell>
+
+        <mxCell id="org" value="&lt;b&gt;Organization  (Organizations)&lt;/b&gt;&#10;Id : Guid&#10;Name : string  required&#10;Slug : string  required&#10;Description? ≤ 1000&#10;LogoUrl? · IsActive = true&#10;Projects · Labels · Notifications&#10;&#10;&lt;i&gt;+ EntityBase audit and soft delete&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f3eafd;strokeColor=#6b3fa0;fontSize=11;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="110" width="300" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="project" value="&lt;b&gt;Project  (Projects)&lt;/b&gt;&#10;Id · OrganizationId&#10;Name ≤ 200 · Key ≤ 10 (UPPER)&#10;Description? ≤ 1000&#10;Color ≤ 20 (default #2563EB)&#10;Icon? ≤ 100 · IsArchived&#10;Boards : ICollection&amp;lt;Board&amp;gt;&#10;&#10;ctor and Update() trim and&#10;upper-case the key&#10;Archive() / Restore() are guarded" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f3eafd;strokeColor=#6b3fa0;fontSize=11;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="400" y="110" width="320" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="board" value="&lt;b&gt;Board  (Boards)&lt;/b&gt;&#10;Id · ProjectId&#10;Name ≤ 100 · Description? ≤ 500&#10;IsArchived · Columns&#10;&#10;CreateBoardCommandHandler inserts&#10;the five default columns in the&#10;same request:&#10;Backlog · To Do · In Progress&#10;· Review · Done" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f3eafd;strokeColor=#6b3fa0;fontSize=11;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="780" y="110" width="320" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="column" value="&lt;b&gt;Column  (Columns)&lt;/b&gt;&#10;Id · BoardId · Name ≤ 100&#10;Description? ≤ 500&#10;DisplayOrder : int · IsArchived&#10;WorkItems&#10;&#10;entry to the work-item aggregate —&#10;see BoardAggregate.drawio" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eef2f7;strokeColor=#4a6b8a;fontSize=11;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="110" width="300" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="appuser" value="&lt;b&gt;ApplicationUser  (AspNetUsers)&lt;/b&gt;&#10;IdentityUser&amp;lt;Guid&amp;gt; —&#10;UserName = Email&#10;FullName : string&#10;OrganizationId : Guid&#10;&#10;&lt;i&gt;one organization per account —&#10;there is no workspace switcher&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f3eafd;strokeColor=#6b3fa0;fontSize=11;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="370" width="300" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="label" value="&lt;b&gt;Label  (Labels)&lt;/b&gt;&#10;Id · OrganizationId · Name ≤ 100&#10;Color ≤ 7 (a hex literal)&#10;Description? ≤ 500&#10;WorkItemLabels&#10;unique (OrganizationId, Name)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f3eafd;strokeColor=#6b3fa0;fontSize=11;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="400" y="370" width="320" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="notif" value="&lt;b&gt;Notification  (Notifications)&lt;/b&gt;&#10;Id · OrganizationId · RecipientId&#10;Type : NotificationType&#10;Title ≤ 200 · Message ≤ 1000&#10;WorkItemId? · IsRead · ReadAt?&#10;index (RecipientId, IsRead, CreatedAt)&#10;index (OrganizationId, RecipientId, CreatedAt)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f3eafd;strokeColor=#6b3fa0;fontSize=11;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="780" y="370" width="360" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rules" value="&lt;b&gt;Rules that enforce this&lt;/b&gt;&#10;ProjectRules: GetByIdAsync(projectId, organizationId) → NotFound 404&#10;EnsureNameUniqueAsync(name, organizationId) → BadRequest 400&#10;EnsureNotArchived / EnsureArchived guard the archive endpoints&#10;BoardRules and ColumnRules take the same shape: load inside the&#10;caller's organization, reject an archived parent, keep names unique&#10;within the parent" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#e9f6ef;strokeColor=#2f7a52;fontSize=11;align=left;verticalAlign=middle;spacingLeft=12;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="570" width="640" height="131" as="geometry" />
+        </mxCell>
+
+        <mxCell id="keys" value="&lt;b&gt;Unique indexes in the schema&lt;/b&gt;&#10;Projects (OrganizationId, Key) · Boards (ProjectId, Name)&#10;Columns (BoardId, Name) · Labels (OrganizationId, Name)&#10;WorkItemLabels (WorkItemId, LabelId) · WorkItemWatchers (WorkItemId, UserId)&#10;Cascade runs down the tree: removing an organization removes its&#10;projects, boards and columns; removing a project removes its boards" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#98a2ad;fontSize=11;align=left;verticalAlign=middle;spacingLeft=12;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="740" y="570" width="720" height="116" as="geometry" />
+        </mxCell>
+
+        <mxCell id="statusnote" value="&lt;b&gt;Unused enum&lt;/b&gt;&#10;Domain/Enums/ProjectStatus.cs (Planning · Active · OnHold · Completed ·&#10;Archived) is declared and referenced nowhere. A Project carries&#10;IsArchived, and ProjectStatusBadge renders Active / Archived from that flag." style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#fdf2e4;strokeColor=#a2641f;fontSize=11;align=left;verticalAlign=middle;spacingLeft=12;spacingRight=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="730" width="640" height="91" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r1" value="1 : 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontColor=#52606d;labelBackgroundColor=#ffffff;strokeColor=#6b3fa0;endArrow=open;endFill=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="org" target="project"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r2" value="1 : 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontColor=#52606d;labelBackgroundColor=#ffffff;strokeColor=#6b3fa0;endArrow=open;endFill=0;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="org" target="appuser"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r3" value="1 : 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontColor=#52606d;labelBackgroundColor=#ffffff;strokeColor=#6b3fa0;endArrow=open;endFill=0;exitX=0.87;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="org" target="label">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="301" y="345" /><mxPoint x="560" y="345" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r4" value="1 : 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontColor=#52606d;labelBackgroundColor=#ffffff;strokeColor=#6b3fa0;endArrow=open;endFill=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="project" target="board"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="r5" value="1 : 5 by default" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=10;fontColor=#52606d;labelBackgroundColor=#ffffff;strokeColor=#4a6b8a;endArrow=open;endFill=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="board" target="column"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="legend" value="Notifications point at an organization, a recipient and optionally a work item — the work-item side is drawn in BoardAggregate.drawio." style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#52606d;" vertex="1" parent="1">
+          <mxGeometry x="780" y="530" width="700" height="22" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

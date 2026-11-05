@@ -1,16 +1,20 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * The loading shape mirrors the finished page - figure strip, then a main
- * column beside a rail - so nothing shifts when the data lands. A spinner in
- * the middle of an empty screen would make the whole page jump twice.
+ * The loading shape mirrors the finished page exactly, including the three fixed
+ * row heights from styles/theme.css, so nothing shifts when the data lands: the
+ * same `xl:h-(--dashboard-row-*)` classes are on the same wrappers, which is why
+ * the placeholders sit in the same boxes the charts will.
+ *
+ * A spinner in the middle of an empty screen would make the whole page jump
+ * twice, and a skeleton that guessed at the heights would jump once.
  */
 export default function DashboardSkeleton() {
     return (
         <div
             role="status"
             aria-label="Loading dashboard"
-            className="space-y-5 lg:space-y-6"
+            className="grid gap-(--dashboard-gap)"
         >
             <div className="space-y-2">
                 <Skeleton className="h-3 w-44" />
@@ -35,26 +39,26 @@ export default function DashboardSkeleton() {
                 </div>
             </div>
 
-            <div className="grid gap-5 lg:gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-                <div className="flex min-w-0 flex-col gap-5 lg:gap-6">
-                    <Block rows={6} />
-                    <Block rows={4} />
-                    <div className="overflow-hidden rounded-xl border bg-card">
-                        <div className="border-b px-4 py-3">
-                            <Skeleton className="h-4 w-28" />
-                        </div>
-                        <div className="px-4 py-4">
-                            <Skeleton className="h-3 w-52" />
-                            <Skeleton className="mt-4 h-40 w-full rounded-md opacity-40" />
-                        </div>
-                    </div>
-                </div>
+            {/* Row 1: the queue against the two charts stacked beside it. */}
+            <div className="grid gap-(--dashboard-gap) xl:h-(--dashboard-row-work) xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                <Block rows={5} />
 
-                <div className="flex min-w-0 flex-col gap-5 lg:gap-6">
+                <div className="flex min-h-0 min-w-0 flex-col gap-(--dashboard-gap)">
                     <Block rows={3} />
-                    <Block rows={4} />
-                    <Block rows={5} />
+                    <RingBlock />
                 </div>
+            </div>
+
+            {/* Row 2: portfolio bars against workload bars. */}
+            <div className="grid gap-(--dashboard-gap) xl:h-(--dashboard-row-portfolio) xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                <Block rows={4} />
+                <Block rows={3} />
+            </div>
+
+            {/* Row 3: the chart against the activity feed. */}
+            <div className="grid gap-(--dashboard-gap) xl:h-(--dashboard-row-activity) xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                <ChartBlock />
+                <Block rows={4} />
             </div>
         </div>
     );
@@ -81,6 +85,51 @@ function Block({ rows }: { rows: number }) {
                     <Skeleton className="h-4 w-10" />
                 </div>
             ))}
+        </div>
+    );
+}
+
+/** The ring and its legend, at the height the donut actually takes. */
+function RingBlock() {
+    return (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-card">
+            <div className="flex items-center gap-3 border-b px-4 py-3">
+                <Skeleton className="size-8 shrink-0 rounded-lg" />
+                <div className="min-w-0 flex-1">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="mt-1.5 h-2.5 w-40" />
+                </div>
+            </div>
+
+            <div className="flex min-h-[9rem] flex-1 items-center gap-6 px-4 py-4">
+                <Skeleton className="size-[132px] shrink-0 rounded-full" />
+
+                <div className="min-w-0 flex-1 space-y-2.5">
+                    {[0, 1, 2, 3].map((index) => (
+                        <Skeleton key={index} className="h-4 w-full" />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/** The plot area at the height the row leaves for it. */
+function ChartBlock() {
+    return (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-card">
+            <div className="flex items-center gap-3 border-b px-4 py-3">
+                <Skeleton className="size-8 shrink-0 rounded-lg" />
+                <div className="min-w-0 flex-1">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="mt-1.5 h-2.5 w-44" />
+                </div>
+            </div>
+
+            <div className="flex flex-1 flex-col gap-3 px-4 py-4">
+                <Skeleton className="h-3 w-52 shrink-0" />
+                <Skeleton className="min-h-40 flex-1 rounded-md opacity-40" />
+            </div>
         </div>
     );
 }

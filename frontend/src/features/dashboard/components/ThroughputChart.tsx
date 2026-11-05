@@ -8,10 +8,22 @@ import EmptyStatePanel from "./EmptyStatePanel";
 
 import type { TrendPoint } from "../types/dashboard.types";
 
+/* Completed is drawn in the success hue - the same green the status bar, the
+   project bars and the board badges use. It used to be chart-1, the brand
+   colour, which made "completed" mean one thing in this card and another in
+   the card beside it. chart-3 is the success hue in every theme by
+   construction. */
 const SERIES = [
-    { key: "created" as const, label: "Created", color: "var(--chart-3)" },
-    { key: "completed" as const, label: "Completed", color: "var(--chart-1)" },
+    { key: "created" as const, label: "Created", color: "var(--chart-2)" },
+    { key: "completed" as const, label: "Completed", color: "var(--chart-3)" },
 ];
+
+/* The tooltip is a fixed size on purpose: that is what lets the clamps keep it
+   inside the plot be stated in the same units as the box itself. A tooltip that
+   sizes itself to its content can be pushed out of the card by the day it sits
+   nearest the edge, which is the usual way these things get dropped. */
+const TOOLTIP_HALF = "4.5rem";
+const TOOLTIP_HEIGHT = "5rem";
 
 /**
  * Work created against work completed, one pair of columns per day.
@@ -27,10 +39,16 @@ const SERIES = [
  * than a small number, so the step is chosen first and the top of the scale is
  * four steps above it.
  *
- * The plot has no fixed height: it fills whatever the card is given. This is
- * the dashboard's only element that gains from being taller, so the card is
- * the one that stretches to meet the column beside it instead of leaving a
- * gap under it.
+ * The band fills the card, and the card is only as tall as the row the page
+ * gives it - which is the part that matters.
+ *
+ * An earlier version let the band fill whatever the card happened to be, on the
+ * theory that a chart gains from being taller. It does not: the card was the one
+ * element told to absorb the difference between two columns of unequal height, so
+ * when the rail gained a fourth card the columns were drawn fifteen pixels wide
+ * against a band stretched to soak it up. The row height is the bound now, and
+ * inside a bound the band can fill it honestly - `min-h-40` is the floor for a
+ * one-column layout, where there is no row to set the height.
  */
 export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
     const [index, setIndex] = useState<number | null>(null);
@@ -75,38 +93,44 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
 
     const hovered = index === null ? null : points[index];
 
-    const readout = hovered ?? {
-        date: null as string | null,
-        created: totals.created,
-        completed: totals.completed,
-    };
+    /* Where the tooltip goes: over the middle of the hovered day's slot, high
+       enough to clear that day's tallest column. Both are percentages here and
+       clamped in CSS, because the plot's width and height are not known until
+       it is laid out - and a tooltip that runs off the edge of the card is the
+       reason this used to be a line above the plot instead.
+
+       `TOOLTIP_HALF` and `TOOLTIP_HEIGHT` are the fixed size of the box below,
+       which is why the insets can be stated in the same units. */
+    const slotCentre =
+        index === null ? 0 : ((index + 0.5) / points.length) * 100;
+
+    const anchor = hovered
+        ? (Math.max(hovered.created, hovered.completed) / top) * 100
+        : 0;
 
     const moveTo = (next: number) =>
         setIndex(Math.min(points.length - 1, Math.max(0, next)));
 
     return (
         <DataSection
-            className="flex-1"
             title="Throughput"
             icon={Activity}
-            note={`Last ${formatNumber(points.length)} days, ${formatNumber(
-                totals.created
-            )} created · ${formatNumber(totals.completed)} completed`}
+            note={`Last ${formatNumber(points.length)} days, up to ${formatNumber(
+                peak
+            )} a day`}
         >
-            <div className="flex min-h-0 flex-1 flex-col px-4 pt-4 pb-3">
-                {/* The readout sits above the plot rather than floating as a
-                    tooltip: it cannot be pushed off-screen, and it survives a
-                    narrow phone. */}
-                <div
-                    aria-live="polite"
-                    className="mb-3 flex shrink-0 flex-wrap items-baseline gap-x-4 gap-y-1"
-                >
-                    <span className="text-xs text-muted-foreground">
-                        {readout.date
-                            ? dayLabel(readout.date)
-                            : `Totals over ${points.length} days`}
-                    </span>
-
+            {/* `relative` so the live region below has a containing block that
+                is inside this card. `sr-only` is position:absolute, and an
+                absolute box with no positioned ancestor resolves against the
+                initial containing block - outside every scroller's clip, adding
+                its offset to the document's height. That is how a 1px invisible
+                span managed to make the page scroll ~870px past its own end. */}
+            <div className="relative flex flex-1 flex-col justify-center gap-3 px-4 py-4">
+                {/* Totals, and only totals. This line describes the whole
+                    fourteen days, so it stays put; the day under the pointer
+                    belongs to the tooltip inside the plot, where it can sit
+                    above the column it is talking about. */}
+                <div className="flex shrink-0 flex-wrap items-baseline gap-x-4 gap-y-1">
                     {SERIES.map((item) => (
                         <span
                             key={item.key}
@@ -121,11 +145,25 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                                 {item.label}
                             </span>
                             <span className="font-semibold tabular-nums text-foreground">
-                                {formatNumber(readout[item.key])}
+                                {formatNumber(totals[item.key])}
                             </span>
                         </span>
                     ))}
                 </div>
+
+                {/* The visible line no longer changes, so the day a keyboard
+                    reader steps onto is announced here instead - and only here,
+                    since the tooltip is the same information twice over for
+                    anyone who can see it. */}
+                <span aria-live="polite" className="sr-only">
+                    {hovered
+                        ? `${dayLabel(hovered.date)}: ${formatNumber(
+                              hovered.created
+                          )} created, ${formatNumber(
+                              hovered.completed
+                          )} completed`
+                        : ""}
+                </span>
 
                 {/* Three grid children, not two. The axis and the plot share
                     row one and the day labels own row two, so the tick column
@@ -216,7 +254,7 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                                 <div
                                     key={point.date}
                                     className={cn(
-                                        "flex min-w-0 flex-1 items-end justify-center gap-[3px] rounded-t-sm transition-colors",
+                                        "flex min-w-0 flex-1 items-end justify-center gap-1 rounded-t-sm transition-colors",
                                         index === i
                                             ? "bg-foreground/5"
                                             : "bg-transparent"
@@ -226,7 +264,7 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                                     {SERIES.map((item) => (
                                         <span
                                             key={item.key}
-                                            className="w-full max-w-[15px] rounded-t-[2px] transition-[height] duration-200 ease-out"
+                                            className="w-full max-w-[20px] rounded-t-[2px] transition-[height] duration-200 ease-out"
                                             style={{
                                                 height: height(point[item.key]),
                                                 minHeight:
@@ -245,6 +283,54 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                                 </div>
                             ))}
                         </div>
+
+                        {/* The hovered day, in the one place it can point at what
+                            it describes. `pointer-events-none` is not decoration:
+                            without it the box steals the pointer from the slot
+                            under it and the tooltip flickers itself away. */}
+                        {hovered ? (
+                            <div
+                                aria-hidden="true"
+                                className="
+                                    pointer-events-none absolute z-10 w-36 rounded-lg
+                                    border bg-popover px-2.5 py-2 shadow-lg
+                                "
+                                style={{
+                                    left: `clamp(${TOOLTIP_HALF}, ${slotCentre}%, calc(100% - ${TOOLTIP_HALF}))`,
+                                    transform: "translateX(-50%)",
+                                    bottom: `min(max(calc(${anchor}% + 0.5rem), 0px), calc(100% - ${TOOLTIP_HEIGHT}))`,
+                                }}
+                            >
+                                <div className="text-[11px] leading-none font-semibold text-foreground">
+                                    {dayLabel(hovered.date)}
+                                </div>
+
+                                <div className="mt-2 space-y-1">
+                                    {SERIES.map((item) => (
+                                        <div
+                                            key={item.key}
+                                            className="flex items-center gap-1.5 text-[11px]"
+                                        >
+                                            <span
+                                                aria-hidden="true"
+                                                className="size-1.5 shrink-0 rounded-full"
+                                                style={{
+                                                    background: item.color,
+                                                }}
+                                            />
+                                            <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                                                {item.label}
+                                            </span>
+                                            <span className="shrink-0 font-semibold tabular-nums text-foreground">
+                                                {formatNumber(
+                                                    hovered[item.key]
+                                                )}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
 
                     {/* Row two, in the same grid column as the band, so each

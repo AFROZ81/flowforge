@@ -1,20 +1,11 @@
 import { Link } from "react-router";
 import { FolderKanban } from "lucide-react";
 
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatPercentage } from "@/lib/format";
 import { ProjectMark } from "@/components/common/project-mark";
 import DataSection from "@/components/ui/data-section";
 import EmptyStatePanel from "./EmptyStatePanel";
-import Meter from "@/components/ui/meter";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableFooter,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import SegmentBar from "@/components/ui/segment-bar";
 
 import type { ProjectHealth } from "../types/dashboard.types";
 
@@ -25,11 +16,22 @@ type Props = {
 };
 
 /**
- * Where delivery is actually going wrong.
+ * The same three states the status mix counts, drawn per project.
  *
- * Ordered by overdue count rather than by name, because the question this
- * section answers is "which project needs me", and a project with nothing
- * behind it is not the answer.
+ * This used to be four numeric columns and a completion meter. The meter could
+ * tell you a project was 60% done but not whether the other 40% was ordinary
+ * work or something stuck, and comparing "Items: 42" against "Items: 38"
+ * across rows is slower than looking at two bar lengths - which is the one
+ * thing a table cannot do.
+ *
+ * So each bar carries two proportions at once: its *length* is the project's
+ * size against the largest project in the set, and its *segments* are what that
+ * size is made of. The scale is stated in the legend because it is an
+ * comparison the reader is entitled to know about - the track is not each
+ * project's own 100%.
+ *
+ * Ordered by overdue count rather than by name, unchanged from the table,
+ * because the question this section answers is "which project needs me".
  */
 export default function ProjectHealthPanel({
     projects,
@@ -44,6 +46,33 @@ export default function ProjectHealthPanel({
         }),
         { total: 0, completed: 0, blocked: 0, overdue: 0 }
     );
+
+    /* Every bar is measured against the same number, or the lengths say nothing. */
+    const largest = Math.max(
+        1,
+        ...projects.map((project) => project.total)
+    );
+
+    const segmentsOf = (project: ProjectHealth) => [
+        {
+            label: "Completed",
+            value: project.completed,
+            className: "bg-success",
+        },
+        {
+            label: "Active",
+            /* Status is exactly one of the three, so what is neither done nor
+               stuck is in progress. Derived rather than sent because the
+               snapshot has no reason to carry the arithmetic twice. */
+            value: Math.max(0, project.total - project.completed - project.blocked),
+            className: "bg-primary",
+        },
+        {
+            label: "Blocked",
+            value: project.blocked,
+            className: "bg-destructive",
+        },
+    ];
 
     return (
         <DataSection
@@ -63,116 +92,143 @@ export default function ProjectHealthPanel({
                     description="Projects appear here as soon as your team creates them."
                 />
             ) : (
-                /* Proportions stated rather than measured from content, for
-                   the same reason as the list above: an auto layout lets the
-                   longest project name dictate the table's width and shove the
-                   completion meter out of the card. */
-                <Table className="w-full min-w-[40rem] table-fixed">
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[34%]">Project</TableHead>
-                            <TableHead className="w-[11%] text-right">
-                                Items
-                            </TableHead>
-                            <TableHead className="w-[12%] text-right">
-                                Blocked
-                            </TableHead>
-                            <TableHead className="w-[12%] text-right">
-                                Overdue
-                            </TableHead>
-                            <TableHead className="w-[31%]">
-                                Completion
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <>
+                    {/* Stated once for the whole column, which is what turns the
+                        bars from decoration into a chart. Overdue is not a
+                        segment: a past-due item is also active or blocked, so it
+                        would be counted twice - it stays a number on its row. */}
+                    <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1.5 border-b px-4 py-2.5 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className="size-2 shrink-0 rounded-full bg-success"
+                            />
+                            Completed
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className="size-2 shrink-0 rounded-full bg-primary"
+                            />
+                            Active
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className="size-2 shrink-0 rounded-full bg-destructive"
+                            />
+                            Blocked
+                        </span>
+                        <span className="ml-auto">
+                            length against {formatNumber(largest)}, the largest
+                        </span>
+                    </div>
+
+                    {/* The rows scroll between a legend that stays on top and a
+                        summary that stays at the bottom, because the two things
+                        a reader comes back to should not move. */}
+                    <ul className="max-h-[26rem] min-h-[12rem] flex-1 divide-y divide-border overflow-y-auto xl:max-h-none">
                         {projects.map((project) => (
-                            <TableRow key={project.projectId}>
-                                <TableCell>
-                                    <Link
-                                        to={`/projects/${project.projectId}`}
-                                        className="
-                                            group flex min-w-0 items-center gap-2.5 rounded-sm
-                                            outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40
-                                        "
-                                    >
-                                        {/* The same mark the project list uses, so a
-                                            project is recognisable across the app. */}
-                                        <ProjectMark
-                                            color={project.color}
-                                            icon={project.icon}
-                                            keyName={project.projectKey}
-                                            size="sm"
-                                        />
-                                        <span className="min-w-0">
-                                            <span className="block truncate font-medium group-hover:underline">
-                                                {project.projectName}
-                                            </span>
-                                            <span className="block font-mono text-[10px] tracking-[0.05em] text-muted-foreground uppercase">
-                                                {project.projectKey}
-                                            </span>
-                                        </span>
-                                    </Link>
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums">
-                                    {formatNumber(project.total)}
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums">
-                                    {project.blocked > 0 ? (
-                                        <span className="font-medium text-destructive">
-                                            {formatNumber(project.blocked)}
-                                        </span>
-                                    ) : (
-                                        <span className="text-muted-foreground/60">
-                                            0
-                                        </span>
-                                    )}
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums">
-                                    {project.overdue > 0 ? (
-                                        <span className="font-medium text-destructive">
-                                            {formatNumber(project.overdue)}
-                                        </span>
-                                    ) : (
-                                        <span className="text-muted-foreground/60">
-                                            0
-                                        </span>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <Meter
-                                        value={project.completed}
-                                        total={project.total}
-                                        tone="success"
+                            <li
+                                key={project.projectId}
+                                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 px-4 py-3 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_3.75rem]"
+                            >
+                                <Link
+                                    to={`/projects/${project.projectId}`}
+                                    className="group col-span-2 flex min-w-0 items-center gap-2.5 rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 sm:col-span-1"
+                                >
+                                    {/* The same mark the project list uses, so a
+                                        project is recognisable across the app. */}
+                                    <ProjectMark
+                                        color={project.color}
+                                        icon={project.icon}
+                                        keyName={project.projectKey}
+                                        size="sm"
                                     />
-                                </TableCell>
-                            </TableRow>
+                                    <span className="min-w-0">
+                                        <span className="block truncate text-sm font-medium group-hover:underline">
+                                            {project.projectName}
+                                        </span>
+                                        <span className="block font-mono text-[10px] tracking-[0.05em] text-muted-foreground uppercase">
+                                            {project.projectKey}
+                                        </span>
+                                    </span>
+                                </Link>
+
+                                <div className="min-w-0">
+                                    <SegmentBar
+                                        segments={segmentsOf(project)}
+                                        total={largest}
+                                    />
+
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 text-[11px] tabular-nums text-muted-foreground">
+                                        <span>
+                                            {formatNumber(project.total)} items
+                                        </span>
+
+                                        {project.overdue > 0 ? (
+                                            <span className="font-medium text-destructive">
+                                                {formatNumber(project.overdue)}{" "}
+                                                past due
+                                            </span>
+                                        ) : null}
+                                    </div>
+                                </div>
+
+                                <div className="text-right">
+                                    {/* Whole percents. This figure is a chart
+                                        label, not a measurement to reconcile -
+                                        the counts themselves are on the row and
+                                        in the summary below. */}
+                                    <span className="text-sm leading-none font-semibold tabular-nums">
+                                        {formatPercentage(
+                                            Math.round(
+                                                project.completionPercentage
+                                            )
+                                        )}
+                                    </span>
+                                    <span className="mt-1 block text-[10px] leading-none text-muted-foreground">
+                                        done
+                                    </span>
+                                </div>
+                            </li>
                         ))}
-                    </TableBody>
-                    <TableFooter>
-                        <TableRow>
-                            <TableCell>
-                                Total across {formatNumber(projects.length)}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                                {formatNumber(totals.total)}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                                {formatNumber(totals.blocked)}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                                {formatNumber(totals.overdue)}
-                            </TableCell>
-                            <TableCell>
-                                <Meter
-                                    value={totals.completed}
-                                    total={totals.total}
-                                    tone="success"
-                                />
-                            </TableCell>
-                        </TableRow>
-                    </TableFooter>
-                </Table>
+                    </ul>
+
+                    <div className="
+                        flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t
+                        bg-surface-muted/60 px-4 py-2.5 text-xs tabular-nums text-muted-foreground
+                    ">
+                        <span className="font-medium text-foreground">
+                            {formatNumber(projects.length)} projects
+                        </span>
+                        <span>{formatNumber(totals.total)} items</span>
+                        <span>{formatNumber(totals.completed)} done</span>
+
+                        {totals.blocked > 0 ? (
+                            <span className="text-destructive">
+                                {formatNumber(totals.blocked)} blocked
+                            </span>
+                        ) : null}
+
+                        {totals.overdue > 0 ? (
+                            <span className="text-destructive">
+                                {formatNumber(totals.overdue)} past due
+                            </span>
+                        ) : null}
+
+                        {totals.total > 0 ? (
+                            <span className="ml-auto font-medium text-foreground">
+                                {formatPercentage(
+                                    Math.round(
+                                        (totals.completed / totals.total) * 100
+                                    )
+                                )}{" "}
+                                done overall
+                            </span>
+                        ) : null}
+                    </div>
+                </>
             )}
         </DataSection>
     );

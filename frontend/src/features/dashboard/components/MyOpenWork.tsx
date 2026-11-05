@@ -72,10 +72,17 @@ const HEAD_CELL =
 /**
  * The list behind the figures above it.
  *
- * The pane has a fixed height and scrolls internally. An unbounded list is the
- * one thing that breaks a two-column dashboard: this card is the only section
- * whose row count is somebody's workload, so on a busy account it grew past
- * every other card and left the whole right rail standing in empty background.
+ * The pane scrolls inside a bounded card. An unbounded list is the one thing
+ * that breaks a two-column dashboard: this card is the only section whose row
+ * count is somebody's workload, so on a busy account it grew past every other
+ * card and left the whole right rail standing in empty background.
+ *
+ * From xl the row the page puts it in has a definite height, so the pane fills
+ * that and the ceiling is lifted; below the breakpoint the page is one column
+ * with no row to match, and `max-h` is what keeps a long queue from turning into
+ * a very tall card on a phone. `min-h` is not decoration: a flex item with a
+ * zero basis and no floor collapses to nothing inside an auto-height card, which
+ * would leave the table laid out over a pane of no height at all.
  *
  * The note counts against the true total, not the loaded window - the snapshot
  * returns at most a hundred rows while the figures above it are computed over
@@ -115,7 +122,9 @@ export default function MyOpenWork({
                 <div
                     role="group"
                     aria-label="Filter my open work"
-                    className="flex items-center gap-1 overflow-x-auto border-b px-4 py-2"
+                    className="
+                        flex items-center gap-1 overflow-x-auto border-b px-4 py-2 shrink-0
+                    "
                 >
                     {FILTERS.map((option) => {
                         const selected = option.id === filter;
@@ -171,7 +180,10 @@ export default function MyOpenWork({
                    title gets half the width. */
                 <Table
                     className="w-full min-w-[38rem] table-fixed"
-                    containerClassName="max-h-[26rem] overflow-x-auto overflow-y-auto"
+                    containerClassName="
+                        max-h-[26rem] min-h-[16rem] flex-1 overflow-x-auto overflow-y-auto
+                        xl:max-h-none
+                    "
                 >
                     <TableHeader>
                         <TableRow>

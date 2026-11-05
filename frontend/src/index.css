@@ -3,6 +3,7 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 @import "./styles/theme.css";
+@import "./styles/toast.css";
 
 /*
  * The dark variant is a FAMILY hook, not an identity one: it answers "is this

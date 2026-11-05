@@ -107,26 +107,14 @@ export function AppProvider({ children }: Props) {
                 {children}
 
                 {/*
-                 * One toaster for the whole app. It used to be mounted twice
-                 * (here and in main.tsx), which rendered every toast twice.
+                 * One toaster for the whole app, mounted once. It used to be
+                 * mounted twice (here and in main.tsx), which rendered every
+                 * toast twice, and it used to carry its own placement here
+                 * while sonner.tsx chose the icons - two halves of one
+                 * decision. Everything about where and how a toast looks is
+                 * the wrapper's business now.
                  */}
-                <Toaster
-                    position="top-right"
-                    richColors
-                    closeButton
-                    expand={false}
-                    offset={{
-                        top: "calc(var(--topbar-height) + 0.75rem)",
-                        right: "1rem",
-                    }}
-                    mobileOffset={{
-                        top: "calc(var(--topbar-height) + 0.5rem)",
-                        right: "0.5rem",
-                    }}
-                    toastOptions={{
-                        duration: 4500,
-                    }}
-                />
+                <Toaster />
             </QueryClientProvider>
         </ThemeProvider>
     );

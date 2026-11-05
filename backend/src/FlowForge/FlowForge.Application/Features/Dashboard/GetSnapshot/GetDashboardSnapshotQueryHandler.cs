@@ -85,6 +85,23 @@ public sealed class GetDashboardSnapshotQueryHandler
                 .Sum(x => x.Overdue)
         };
 
+        // ---- 1b. open work by priority, the dimension the status mix cannot see ----
+
+        var priorityGroups = await visible
+            .Where(x => x.Status != WorkItemStatus.Completed)
+            .GroupBy(x => x.Priority)
+            .Select(g => new PriorityCount(g.Key, g.Count()))
+            .ToListAsync(cancellationToken);
+
+        var priorityMix = new PriorityMix
+        {
+            Total = priorityGroups.Sum(x => x.Count),
+            Low = SumFor(priorityGroups, WorkItemPriority.Low),
+            Medium = SumFor(priorityGroups, WorkItemPriority.Medium),
+            High = SumFor(priorityGroups, WorkItemPriority.High),
+            Critical = SumFor(priorityGroups, WorkItemPriority.Critical)
+        };
+
         // ---- 2. the same shape, scoped to the signed-in user ----
 
         var myGroups = await visible
@@ -283,6 +300,7 @@ public sealed class GetDashboardSnapshotQueryHandler
                 ProjectCount = projectRows.Count,
                 TeamWorkload = teamWorkload,
                 StatusMix = statusMix,
+                PriorityMix = priorityMix,
                 Throughput = throughput,
                 RecentlyUpdated = recentlyUpdated,
                 GeneratedAtUtc = now
@@ -316,6 +334,11 @@ public sealed class GetDashboardSnapshotQueryHandler
     private static int SumFor(IEnumerable<MyCount> groups, WorkItemStatus status) =>
         groups.Where(x => x.Status == status).Sum(x => x.Count);
 
+    private static int SumFor(
+        IEnumerable<PriorityCount> groups,
+        WorkItemPriority priority) =>
+        groups.Where(x => x.Priority == priority).Sum(x => x.Count);
+
     /// <summary>Intermediate shapes for the grouped aggregates.</summary>
     private sealed record StatusCount(
         WorkItemStatus Status,
@@ -327,6 +350,8 @@ public sealed class GetDashboardSnapshotQueryHandler
         int Count,
         int Overdue,
         int DueSoon);
+
+    private sealed record PriorityCount(WorkItemPriority Priority, int Count);
 
     private sealed record ProjectRow(
         Guid Id,

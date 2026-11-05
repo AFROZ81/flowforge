@@ -5,7 +5,7 @@ import { formatNumber } from "@/lib/format";
 import { usePresence } from "@/features/presence";
 import DataSection from "@/components/ui/data-section";
 import EmptyStatePanel from "./EmptyStatePanel";
-import Meter from "@/components/ui/meter";
+import SegmentBar from "@/components/ui/segment-bar";
 
 import type { WorkloadMember } from "../types/dashboard.types";
 
@@ -14,9 +14,17 @@ import type { WorkloadMember } from "../types/dashboard.types";
  *
  * A list rather than a table, because this lives in the dashboard's right rail
  * and six numeric columns cannot fit in 380px without panning. The shape also
- * reads better: one bar per person against the busiest, with the secondary
- * counts as a sentence underneath instead of six right-aligned numbers nobody
- * compares across rows.
+ * reads better: one segmented bar per person against the busiest, with the two
+ * numbers that are not in the bar underneath it, instead of six right-aligned
+ * columns nobody compares across rows.
+ *
+ * Bars are scaled to `assigned`, which is every item the person owns including
+ * the finished ones, so the bar's right edge and the number beside the name
+ * describe the same quantity.
+ *
+ * The bar carries both proportions that matter here: its length is the person's
+ * load against the busiest member, its segments are what that load is made of.
+ * Two people can be equally loaded and one of them stuck.
  *
  * Presence comes from the live SignalR feed rather than the snapshot, so a dot
  * here means online at this second - the numbers beside it are as of the
@@ -62,7 +70,37 @@ export default function TeamWorkload({
                 />
             ) : (
                 <>
-                    <ul className="divide-y divide-border">
+                    {/* The same three states the project and status cards use,
+                        keyed here as well: a bar a reader has to remember a
+                        key from another card for is a bar they will not read. */}
+                    <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1.5 border-b px-4 py-2.5 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className="size-2 shrink-0 rounded-full bg-success"
+                            />
+                            Completed
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className="size-2 shrink-0 rounded-full bg-primary"
+                            />
+                            Active
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className="size-2 shrink-0 rounded-full bg-destructive"
+                            />
+                            Blocked
+                        </span>
+                    </div>
+
+                    {/* Scrolls between the legend and the summary, the same way
+                        the portfolio card beside it does, so the two agree about
+                        what stays put and what moves. */}
+                    <ul className="max-h-[26rem] min-h-[12rem] flex-1 divide-y divide-border overflow-y-auto xl:max-h-none">
                         {members.map((member) => {
                             const online = onlineUserIds.includes(
                                 member.userId
@@ -101,23 +139,36 @@ export default function TeamWorkload({
                                             </span>
                                         </div>
 
-                                        <Meter
-                                            value={member.assigned}
+                                        <SegmentBar
+                                            className="mt-2"
                                             total={busiest}
-                                            showValue={false}
-                                            className="mt-2 w-full min-w-0"
+                                            segments={[
+                                                {
+                                                    label: "Completed",
+                                                    value: member.completed,
+                                                    className: "bg-success",
+                                                },
+                                                {
+                                                    label: "Active",
+                                                    value: member.active,
+                                                    className: "bg-primary",
+                                                },
+                                                {
+                                                    label: "Blocked",
+                                                    value: member.blocked,
+                                                    className: "bg-destructive",
+                                                },
+                                            ]}
                                         />
 
+                                        {/* Only the two figures the bar cannot
+                                            tell: blocked is a segment, but a red
+                                            sliver is not a number you can act
+                                            on, and being past due is a date
+                                            property that cuts across every
+                                            segment rather than a state of its
+                                            own. */}
                                         <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] tabular-nums text-muted-foreground">
-                                            <span>
-                                                {formatNumber(member.active)}{" "}
-                                                active
-                                            </span>
-                                            <span>
-                                                {formatNumber(member.completed)}{" "}
-                                                done
-                                            </span>
-
                                             {member.blocked > 0 ? (
                                                 <span className="font-medium text-destructive">
                                                     {formatNumber(
@@ -132,7 +183,14 @@ export default function TeamWorkload({
                                                     {formatNumber(
                                                         member.overdue
                                                     )}{" "}
-                                                    overdue
+                                                    past due
+                                                </span>
+                                            ) : null}
+
+                                            {member.blocked === 0 &&
+                                            member.overdue === 0 ? (
+                                                <span>
+                                                    nothing blocked or past due
                                                 </span>
                                             ) : null}
                                         </div>
@@ -142,7 +200,10 @@ export default function TeamWorkload({
                         })}
                     </ul>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t bg-surface-muted/60 px-4 py-2.5 text-xs tabular-nums text-muted-foreground">
+                    <div className="
+                        flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t
+                        bg-surface-muted/60 px-4 py-2.5 text-xs tabular-nums text-muted-foreground
+                    ">
                         <span className="font-medium text-foreground">
                             All members
                         </span>
@@ -156,7 +217,7 @@ export default function TeamWorkload({
                         ) : null}
                         {totals.overdue > 0 ? (
                             <span className="text-destructive">
-                                {formatNumber(totals.overdue)} overdue
+                                {formatNumber(totals.overdue)} past due
                             </span>
                         ) : null}
                     </div>

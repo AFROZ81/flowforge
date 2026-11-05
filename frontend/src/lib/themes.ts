@@ -23,9 +23,12 @@ export interface ThemeDescriptor {
 }
 
 /**
- * `light` is the default: its values live in `:root` with no override block,
- * so it is deliberately absent from the drift guard's search for a
- * `[data-theme="…"]` rule.
+ * `light` is the default: its values are declared once, on a selector list of
+ * `:root, [data-theme="light"]`. The attribute half exists so a theme swatch
+ * can paint the light palette while the app wears another theme — with only
+ * `:root`, `[data-theme="light"]` would match nothing and the light chip would
+ * silently inherit the running theme. The drift guard below still skips it, so
+ * adding a fifth theme without a block is the one case it can catch.
  */
 export const DEFAULT_THEME_ID: ThemeId = "light";
 

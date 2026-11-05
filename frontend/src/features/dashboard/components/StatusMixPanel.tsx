@@ -3,16 +3,26 @@ import { Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber, formatPercentage } from "@/lib/format";
 import DataSection from "@/components/ui/data-section";
+import SegmentBar from "@/components/ui/segment-bar";
 
 import type { StatusMix } from "../types/dashboard.types";
 
 /**
- * How workspace work is distributed across its three states.
+ * This is the workspace's whole stock of work - completed included - which is
+ * why it is not the same three numbers as the priority ring beside it: that one
+ * counts only what is still open.
  *
- * A stacked bar rather than a pie: three slices is already too few for angles
- * to carry meaning, and a bar lets the eye compare them against the same
- * baseline. Overdue is reported underneath instead of as a fourth segment,
- * because it cuts across the states rather than being one.
+ * A stacked bar rather than a pie: three slices is too few for angles to carry
+ * meaning, and a bar lets the eye compare them against the same baseline. The
+ * ring two cards down is a ring because it has four bands to compare, not
+ * because circles look like dashboards.
+ *
+ * Overdue is reported underneath instead of as a fourth segment, because it
+ * cuts across the states rather than being one - a past-due item is also
+ * active or blocked, and drawing it as a slice would count it twice.
+ *
+ * It keeps its own height in the stacked pair and lets the ring beside it take
+ * the rest of the row, because three rows of a legend know how tall they are.
  */
 export default function StatusMixPanel({ mix }: { mix: StatusMix }) {
     const segments = [
@@ -27,6 +37,7 @@ export default function StatusMixPanel({ mix }: { mix: StatusMix }) {
 
     return (
         <DataSection
+            className="shrink-0"
             title="Status mix"
             icon={Layers}
             note={
@@ -42,22 +53,7 @@ export default function StatusMixPanel({ mix }: { mix: StatusMix }) {
                     </p>
                 ) : (
                     <>
-                        {/* Gaps between the segments let the track show through,
-                            so a zero-count state is visible as an absent segment
-                            rather than as a bar of one colour. */}
-                        <div className="flex h-3.5 w-full gap-1 rounded-full bg-foreground/10 p-0.5">
-                            {segments.map((segment) => (
-                                <span
-                                    key={segment.label}
-                                    title={`${segment.label}: ${formatNumber(segment.value)}`}
-                                    className={cn(
-                                        "min-w-0 rounded-full transition-[flex-grow] duration-200 ease-out",
-                                        segment.className
-                                    )}
-                                    style={{ flexGrow: segment.value }}
-                                />
-                            ))}
-                        </div>
+                        <SegmentBar segments={segments} />
 
                         <dl className="space-y-2">
                             {segments.map((segment) => (

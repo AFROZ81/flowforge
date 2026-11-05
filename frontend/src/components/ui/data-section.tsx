@@ -25,6 +25,13 @@ type DataSectionProps = {
  * A flex column with a fixed header, so a caller placed in a stretched grid
  * row can hand its own height to the content with `flex-1` rather than
  * leaving that height as empty space under the last row.
+ *
+ * `min-h-0` is what makes that promise safe. A stretched grid item's minimum
+ * height is its min-content height by default, so a card whose header, legend
+ * and footer together want more than the row allows does not shrink - it spills
+ * below the row box, and the gap under it is eaten from the outside while the
+ * gap beside it stays exactly as specified. With the floor removed the row
+ * height wins and the card's own scroll region absorbs the difference.
  */
 export default function DataSection({
     number,
@@ -37,7 +44,7 @@ export default function DataSection({
     return (
         <section
             className={cn(
-                "flex flex-col overflow-hidden rounded-xl border bg-card shadow-xs",
+                "flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card shadow-xs",
                 className
             )}
         >

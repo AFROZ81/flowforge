@@ -1,0 +1,341 @@
+/* =========================================================
+   TOASTS
+
+   The whole visual contract for a toast lives here. `sonner.tsx` owns
+   where the stack sits and which tokens it is handed; this file owns
+   what a toast looks like.
+
+   Sonner builds its own stylesheet into a string and appends it to
+   `document.head` while React renders, so it can land *after* this file
+   and win every tie on source order. Nothing below relies on order.
+   Its rules are all attribute selectors: the card itself is
+   `[data-sonner-toast][data-styled='true']` (0,2,0) and its heaviest
+   descendant rule, for the dark close button, reaches (0,4,0). Prefixing
+   every selector here with `[data-sonner-toaster].ff-toaster` adds a class
+   to the front of them all, so the card lands at (0,4,0) and every child at
+   (0,5,0) — each one wins on the cascade alone, whatever order the sheets
+   arrive in. That is why the class on the Toaster is load-bearing and not
+   decoration.
+   ========================================================= */
+
+:root {
+    /* ---------- Motion ----------
+       Declared here rather than taken from the @theme block: Tailwind only
+       emits a theme variable that a utility actually references, so
+       `--ease-spring` had already been shaken out of the build by the time
+       a raw `var()` needed it, and the animation would have silently run
+       with no easing at all. Plain CSS in this file is passed through
+       untouched. */
+    --toast-ease: cubic-bezier(0.32, 0.72, 0, 1);
+    --toast-ease-pop: cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+
+/* ---------- The stack ---------- */
+
+[data-sonner-toaster].ff-toaster {
+    /* The library names its own system font stack on the toaster, which
+       would make the toast the only thing in the app not set in Geist. */
+    font-family: inherit;
+}
+
+
+/* ---------- The card ---------- */
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] {
+    /* The one value a toast type replaces. The disc, the edge and the timer
+       all read from it, so teaching the toast a new type is one line at the
+       bottom of this file rather than four. */
+    --toast-accent: var(--primary);
+
+    /* A filled disc has to clear the glyph sitting on it, and the mid-tone
+       status colours do not: near-white ink on `--danger` measures ~3.2:1 in
+       parchment and ~3.4:1 in dark. `--foreground` always sits on the far
+       side of a status hue from `--text-inverse`, so pulling the hue toward
+       the ink darkens it in a light scheme and brightens it in a dark one,
+       which is the same derivation `--danger-solid` uses. */
+    --toast-accent-solid: color-mix(
+        in oklab,
+        var(--toast-accent) 78%,
+        var(--foreground)
+    );
+
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    /* Bottom gets the extra 2px so the timer line hugs the edge without
+       crowding the description above it. */
+    padding: 0.5rem 0.625rem 0.625rem;
+    font-size: 0.8125rem;
+    background: var(--popover);
+    color: var(--popover-foreground);
+    /* The *edge* carries the status hue, not the panel. A tinted card is
+       loud, and a tinted panel cannot agree with the theme's own surface
+       colour across four schemes — this is what the old `richColors` setup
+       got wrong. */
+    border-color: color-mix(
+        in oklab,
+        var(--toast-accent) 30%,
+        var(--border)
+    );
+    /* xl, not lg: this card floats above the topbar, so it needs the lift
+       that separates an overlay from a panel sitting in the page. The ramp is
+       already ink-tinted per theme, so it never reads as a grey smudge. */
+    box-shadow: var(--shadow-xl);
+}
+
+/* Keyboard focus, which the toast receives when the stack is reached by
+   hotkey. The library paints a black ring that is invisible on a dark card. */
+[data-sonner-toaster].ff-toaster [data-sonner-toast]:focus-visible {
+    box-shadow: var(--shadow-xl), var(--shadow-focus);
+}
+
+/*
+ * The drop itself keeps the library's timing, deliberately.
+ *
+ * Sonner animates `transform`, and `transform` is where its stacking maths
+ * lives (`--y`, `--lift`, `--offset`), including the instant transform it
+ * applies while a toast is being dragged. Replacing that `transition`
+ * shorthand here means re-declaring every state the library swaps it for -
+ * swiping, removal, collapse - and keeping the list of four properties in
+ * step with a file that changes underneath. A spring on the drop is a two
+ * millisecond difference in feel; the disc popping in is what sells the
+ * entrance, and that one is ours to animate.
+ */
+
+
+/* ---------- Icon disc ---------- */
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-icon] {
+    order: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 1.75rem;
+    width: 1.75rem;
+    /* The library nudges a bare 16px glyph by a few px to optically centre
+       it; a disc is a shape, so it takes real spacing instead of a fudge. */
+    margin-inline: 0;
+    border-radius: 999px;
+    background: var(--toast-accent-solid);
+    color: var(--text-inverse);
+    animation: ff-toast-pop 280ms var(--toast-ease-pop) both;
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-icon] svg {
+    margin-inline: 0;
+}
+
+
+/* ---------- Words ---------- */
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-content] {
+    order: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 0.0625rem;
+    /* Takes the row and can shrink below its content, so a long word or an
+       unbroken id wraps inside the card instead of pushing the action and
+       the close button out of it. */
+    flex: 1;
+    min-width: 0;
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-title] {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.011em;
+    color: var(--popover-foreground);
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-description] {
+    /* The library hardcodes `#3f3f3f` and, in its dark block only, a
+       near-white. Neither is this app's ink: on parchment that grey is a
+       few steps from the paper and on onyx the white is a few steps from
+       the card, which is how a toast ends up with an invisible second line. */
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+
+/* ---------- Action ---------- */
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-button] {
+    order: 5;
+    flex-shrink: 0;
+    height: 1.625rem;
+    padding-inline: 0.75rem;
+    margin-inline: 0;
+    border: 0;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--primary-foreground);
+    background: var(--primary);
+    box-shadow: var(--shadow-xs);
+    transition:
+        background-color 150ms var(--toast-ease),
+        transform 150ms var(--toast-ease);
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-button]:hover {
+    background: var(--primary-hover);
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-button]:active {
+    transform: scale(0.96);
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-button]:focus-visible {
+    box-shadow: var(--shadow-focus);
+}
+
+
+/* ---------- Close ---------- */
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-close-button] {
+    /* Sits in the row instead of overhanging the top-left corner. Overhanging
+       was the reason the old one clipped against the rounded card edge and
+       covered the first line of a long title. */
+    order: 9;
+    position: static;
+    inset: auto;
+    transform: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 1.375rem;
+    width: 1.375rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-tertiary);
+    /* Reserves its width from the moment the card appears, so nothing
+       reflows when it is revealed. */
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        opacity 150ms var(--toast-ease),
+        background-color 150ms var(--toast-ease),
+        color 150ms var(--toast-ease);
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"]:hover [data-close-button],
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-close-button]:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-close-button]:hover {
+    background: color-mix(in oklab, var(--foreground) 8%, transparent);
+    color: var(--popover-foreground);
+}
+
+/* No hover state to reveal it on a touch screen, and swiping a toast away is
+   the more natural gesture there — so the button is simply always shown. */
+@media (hover: none) {
+    [data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"] [data-close-button] {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+
+/* ---------- Timer line ---------- */
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"]::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0.625rem;
+    right: 0.625rem;
+    /* `auto`, not a length: the library's own `::after` for an expanded stack
+       declares `width: 100%`, and an absolutely positioned box with left, right
+       *and* width set drops `right` - the line would run past the card's right
+       edge. Auto leaves both insets in charge so the line stays inside the
+       padding. */
+    width: auto;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--toast-accent);
+    opacity: 0.45;
+    transform-origin: left center;
+    /* `--toast-duration` arrives from the Toaster's inline style, which is
+       the same constant that configures sonner's own timeout — the line can
+       not drift from the timer it represents. */
+    animation: ff-toast-drain var(--toast-duration, 4500ms) linear both;
+}
+
+/* The only toast that runs longer than the default is the one asking for a
+   decision, and sonner gives every toast with an action a `[data-button]`.
+   Duration itself is never handed to CSS, so the shape of the toast stands in
+   for it rather than a number guessed a second time. */
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"]:has([data-button]) {
+    --toast-duration: 8s;
+}
+
+/* Sonner pauses its real timeout on hover, so the line pauses with it. */
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"]:hover::after,
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"]:focus-within::after {
+    animation-play-state: paused;
+}
+
+/* A toast tucked behind another in the collapsed stack has its own children
+   faded out by the library; the line belongs to that same hiding, or a stack
+   of three shows three timer lines on the bottom card. */
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-expanded="false"][data-front="false"]::after {
+    opacity: 0;
+    animation: none;
+}
+
+
+/* ---------- Type ----------
+   Each adds one line: the accent. Everything else on the card is derived
+   from it above. `[data-styled]` is repeated so these sit a rank above the
+   card rule that supplies the default, rather than tying with it and
+   leaving the answer to whichever order the bundler picks. */
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"][data-type="success"] {
+    --toast-accent: var(--success);
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"][data-type="error"] {
+    --toast-accent: var(--danger);
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"][data-type="warning"] {
+    --toast-accent: var(--warning);
+}
+
+[data-sonner-toaster].ff-toaster [data-sonner-toast][data-styled="true"][data-type="info"] {
+    --toast-accent: var(--info);
+}
+
+
+@keyframes ff-toast-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.55);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes ff-toast-drain {
+    from {
+        transform: scaleX(1);
+    }
+
+    to {
+        transform: scaleX(0);
+    }
+}

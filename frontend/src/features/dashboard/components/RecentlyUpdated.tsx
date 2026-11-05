@@ -13,6 +13,9 @@ import type { WorkItemBrief } from "../types/dashboard.types";
  *
  * A list rather than a table: each row is read as a sentence, and the four
  * columns a table would force are noise at eight rows.
+ *
+ * It shares its row with the throughput chart, so the feed scrolls inside a
+ * bounded card rather than deciding how tall that row has to be.
  */
 export default function RecentlyUpdated({
     items,
@@ -32,7 +35,7 @@ export default function RecentlyUpdated({
                     description="Work items appear here as soon as anybody touches them."
                 />
             ) : (
-                <ul className="divide-y divide-border">
+                <ul className="max-h-[26rem] min-h-[12rem] flex-1 divide-y divide-border overflow-y-auto xl:max-h-none">
                     {items.map((item) => (
                         <li key={item.id}>
                             <Link

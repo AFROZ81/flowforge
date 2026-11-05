@@ -9,8 +9,10 @@ const SYSTEM_VALUE: ThemePreference = "system";
  * A miniature of a theme: surface on the left half, accent on the right.
  *
  * The colours are not hardcoded — `data-theme` re-points the tokens on this
- * element alone, so the swatch shows the real palette whatever theme the app is
- * currently wearing. Used by the top bar picker and by Settings.
+ * element alone, so the swatch shows the real palette whatever theme the app
+ * is currently wearing. That depends on `light` being present in the selector
+ * list of the token blocks in styles/theme.css; until it was, the light chip
+ * silently inherited the running theme and looked like a duplicate of it.
  */
 export default function ThemeSwatch({
     themeId,
@@ -20,6 +22,20 @@ export default function ThemeSwatch({
     className?: string;
 }) {
     if (themeId === SYSTEM_VALUE) {
+        /*
+         * "System" is not a palette, so it cannot be a surface-and-accent
+         * circle like the other four. It keeps the circle to hold the row's
+         * rhythm and a dashed edge to say "derived", with the monitor glyph
+         * inside it.
+         *
+         * Three things make it read cleanly where the previous version did
+         * not. The glyph is sized as a share of the disc rather than a fixed
+         * step, so it is as comfortable in Settings' 16px as in the header's
+         * 20px instead of crowding the dashes. The stroke is lighter than the
+         * default, because at this size the screen, its stem and its base
+         * otherwise merge. And the disc is filled with `--surface`, so the
+         * glyph sits on a ground rather than on the track showing through.
+         */
         return (
             <span
                 aria-hidden="true"
@@ -28,7 +44,10 @@ export default function ThemeSwatch({
                     className
                 )}
             >
-                <Monitor className="size-3.5 text-muted-foreground" />
+                <Monitor
+                    className="size-[55%] text-muted-foreground"
+                    strokeWidth={1.75}
+                />
             </span>
         );
     }

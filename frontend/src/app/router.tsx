@@ -8,6 +8,8 @@ import PublicRoute from "@/routes/PublicRoute";
 
 import LoginPage from "@/features/auth/pages/LoginPage";
 
+import LandingPage from "@/features/landing/pages/LandingPage";
+
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
 
 import ProjectsPage from "@/features/projects/pages/ProjectsPage";
@@ -19,43 +21,18 @@ import ReportsPage from "@/features/reports/pages/ReportsPage";
 
 import SettingsPage from "@/features/settings/pages/SettingsPage";
 
-import { useAuthStore } from "@/stores/auth.store";
-
 
 /* =========================================================
-   ROOT REDIRECT
+   ROOT
    ========================================================= */
 
-function RootRedirect() {
-
-    const isAuthenticated =
-        useAuthStore(
-            (state) =>
-                state.isAuthenticated
-        );
-
-
-    /*
-     * Authenticated:
-     *
-     *      / → /dashboard
-     *
-     * Not authenticated:
-     *
-     *      / → /login
-     */
-
-    return (
-        <Navigate
-            to={
-                isAuthenticated
-                    ? "/dashboard"
-                    : "/login"
-            }
-            replace
-        />
-    );
-}
+/*
+ * `/` used to be a redirect that picked between the dashboard and the
+ * sign-in form. It is now the landing page, and the choosing is done by
+ * PublicRoute, which already sends a session to /dashboard — so an
+ * authenticated visitor never sees the marketing surface, and an anonymous
+ * one is no longer dumped on a form before they know what it is for.
+ */
 
 
 /* =========================================================
@@ -66,18 +43,6 @@ export const router =
     createBrowserRouter([
 
         /* =================================================
-           ROOT
-           ================================================= */
-
-        {
-            path: "/",
-
-            element:
-                <RootRedirect />,
-        },
-
-
-        /* =================================================
            PUBLIC ROUTES
            ================================================= */
 
@@ -86,6 +51,18 @@ export const router =
                 <PublicRoute />,
 
             children: [
+
+                /* -----------------------------------------
+                   LANDING
+                   ----------------------------------------- */
+
+                {
+                    index: true,
+
+                    element:
+                        <LandingPage />,
+                },
+
 
                 /* -----------------------------------------
                    LOGIN
@@ -197,7 +174,10 @@ export const router =
             path: "*",
 
             element:
-                <RootRedirect />,
+                <Navigate
+                    to="/"
+                    replace
+                />,
         },
 
     ]);

@@ -26,9 +26,16 @@
 /* =========================================================
    LIGHT — the default surface scheme
    Cool neutral canvas, white paper, petrol-teal action.
+
+   `light` is also spelled as an attribute selector, and that is not
+   duplication: the two selectors share one declaration block. Without it
+   `[data-theme="light"]` matches nothing, so a theme swatch asked to paint the
+   light palette would inherit whichever theme the app is already wearing and
+   the light chip would be indistinguishable from the current one.
    ========================================================= */
 
-:root {
+:root,
+[data-theme="light"] {
     /* Native controls, scrollbars and form fields follow the scheme */
     color-scheme: light;
 
@@ -113,9 +120,14 @@
    DERIVED LINES + ALIASES
    Declared once, against primitives — every theme recomputes
    them simply by changing its ink, surfaces and strengths.
+
+   Same two selectors as above, for the same reason: a swatch that re-points
+   to light has to recompute its own lines too, or the border it draws belongs
+   to whichever theme the page is wearing.
    ========================================================= */
 
-:root {
+:root,
+[data-theme="light"] {
     --border-subtle: color-mix(
         in oklab,
         var(--foreground) var(--line-hairline-strength),
@@ -237,6 +249,37 @@
        and a rail much under 3px stops reading as an object at all. */
     --scrollbar-size: 10px;
     --scrollbar-inset: 3.5px;
+
+    /* ---------- Toast metrics ----------
+       The stack hangs below the sticky topbar, so its top offset quotes
+       --topbar-height where it is applied and cannot fall out of step with
+       the shell. These two are the only other numbers a toast owns. */
+    --toast-width: 23rem;
+    --toast-gap: 0.75rem;
+
+    /* ---------- Dashboard rows ----------
+       The dashboard is three rows of a wide card beside a narrow one, and each
+       row has a definite height from the xl breakpoint up. That is what makes
+       the two sides level by construction rather than by luck: the cards fill
+       the row, and anything that does not fit scrolls inside the card instead
+       of pushing the row - or the throughput plot - taller.
+
+       --dashboard-gap is the same idea for the space between things: one number
+       for the gap between rows, between the two columns of a row, between the
+       charts stacked inside a row and between the sections of the page, so the
+       rhythm cannot drift out of step with itself. The KPI tiles keep their own
+       tighter gap on purpose - four figures read as one group, not as four
+       sections.
+
+       The first row carries two charts stacked, so it needs the height the pair
+       asks for: a status card, a gap and a ring card come to roughly 480px, and
+       a row set to that number leaves the pair no headroom at all.
+
+       Three row numbers rather than one, because the rows hold different things. */
+    --dashboard-gap: 1.5rem;
+    --dashboard-row-work: 32rem;
+    --dashboard-row-portfolio: 30rem;
+    --dashboard-row-activity: 22rem;
 }
 
 

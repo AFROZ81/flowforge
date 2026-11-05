@@ -139,11 +139,22 @@ export default function AppLayout({ children }: Props) {
                  * The only scroll container. `overflow-x-hidden` is the
                  * backstop that guarantees a wide table or board can never
                  * push the whole page sideways.
+                 *
+                 * `relative` is load-bearing, not decoration. An absolutely
+                 * positioned descendant resolves its containing block against
+                 * the nearest *positioned* ancestor, and with none in this
+                 * subtree that ancestor is the initial containing block - which
+                 * puts it outside this scroller's clip and into the document's
+                 * own coordinates. A 1px `sr-only` live region in a card did
+                 * exactly that and stretched the document by 874px, so the page
+                 * scrolled well past the app into bare background. Making the
+                 * scroll container positioned gives every absolute descendant
+                 * somewhere to belong, and the overflow here can clip it.
                  */}
                 <main
                     id="main-content"
                     className="
-                        min-h-0 min-w-0 flex-1
+                        relative min-h-0 min-w-0 flex-1
                         overflow-x-hidden overflow-y-auto
                         px-4 py-5 sm:px-6 lg:px-8 lg:py-6
                     "

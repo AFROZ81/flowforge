@@ -61,6 +61,18 @@ export type StatusMix = {
     overdue: number;
 };
 
+/**
+ * Workspace-wide and over open work only - a completed item's urgency is
+ * history, so it is not in any of these four buckets.
+ */
+export type PriorityMix = {
+    total: number;
+    low: number;
+    medium: number;
+    high: number;
+    critical: number;
+};
+
 /** `date` is a server-side DateOnly: a plain "YYYY-MM-DD", no instant attached. */
 export type TrendPoint = {
     date: string;
@@ -75,6 +87,7 @@ export type DashboardSnapshot = {
     projectCount: number;
     teamWorkload: WorkloadMember[];
     statusMix: StatusMix;
+    priorityMix: PriorityMix;
     throughput: TrendPoint[];
     recentlyUpdated: WorkItemBrief[];
     generatedAtUtc: string;

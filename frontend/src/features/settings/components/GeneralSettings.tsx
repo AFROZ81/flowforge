@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { useTheme } from "next-themes";
-import { LogOut, Monitor } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/section-header";
+import PillGroup from "@/components/ui/pill-group";
 import ThemeSwatch from "@/components/layout/ThemeSwatch";
 import { usePresence } from "@/features/presence";
 import { useOrganizationOptions } from "@/features/auth/hooks/useOrganizationOptions";
@@ -100,53 +101,6 @@ function InfoRow({
     );
 }
 
-/**
- * The same raised-on-sunken pill treatment the Reports switcher uses, so a
- * setting that takes one of a few values always looks the same.
- */
-function PillGroup<T extends string>({
-    label,
-    value,
-    options,
-    onChange,
-}: {
-    label: string;
-    value: T;
-    options: { id: T; label: string; preview?: ReactNode }[];
-    onChange: (value: T) => void;
-}) {
-    return (
-        <div
-            role="group"
-            aria-label={label}
-            className="flex max-w-full flex-nowrap items-center gap-1 overflow-x-auto rounded-full border bg-surface-sunken p-1 sm:justify-end"
-        >
-            {options.map((option) => {
-                const selected = option.id === value;
-
-                return (
-                    <button
-                        key={option.id}
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => onChange(option.id)}
-                        className={cn(
-                            "flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 text-sm font-medium",
-                            "outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40",
-                            selected
-                                ? "bg-card text-foreground shadow-xs"
-                                : "text-muted-foreground hover:text-foreground"
-                        )}
-                    >
-                        {option.preview}
-                        {option.label}
-                    </button>
-                );
-            })}
-        </div>
-    );
-}
-
 /* -------------------------------------------------------------------------- */
 /* Panel                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -181,11 +135,13 @@ export default function GeneralSettings() {
         onlineUserIds.includes(member.id)
     ).length;
 
+    /* The same primitive the landing header uses, in its labeled variant: a
+       settings row has the width for the name, a header does not. */
     const themeOptions = [
         {
             id: SYSTEM_VALUE,
             label: "System",
-            preview: <Monitor className="size-4 text-muted-foreground" />,
+            preview: <ThemeSwatch themeId={SYSTEM_VALUE} className="size-4" />,
         },
         ...THEMES.map((descriptor) => ({
             id: descriptor.id as ThemePreference,
