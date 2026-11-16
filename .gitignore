@@ -21,9 +21,7 @@ node_modules/
 # Logs
 *.log
 
-# EF Core migrations are generated locally from the model and are not
-# committed (the folders are removed from the index below).
-backend/src/FlowForge/FlowForge.Infrastructure/Migrations/
+backend/src/FlowForge/publish/
 backend/src/FlowForge/FlowForge.API/Storage/
 
 # OS

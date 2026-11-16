@@ -16,6 +16,7 @@ This documentation provides an overview of the project's architecture, backend d
 | **API.md** | API conventions, authentication, response format, and error handling. |
 | **Realtime.md** | SignalR architecture, realtime events, notifications, and presence system. |
 | **Development.md** | Local development setup, coding conventions, and workflow. |
+| **Deployment.md** | Going live at zero cost on MonsterASP.NET free hosting, with the SPA served from the same site as the API. |
 | **Roadmap.md** | Project progress, completed milestones, and future plans. |
 
 ---
@@ -30,6 +31,7 @@ For new contributors, the recommended reading order is:
 4. API
 5. Realtime
 6. Development
-7. Roadmap
+7. Deployment
+8. Roadmap
 
 Following this order provides a complete understanding of how FlowForge is designed and how its components work together.

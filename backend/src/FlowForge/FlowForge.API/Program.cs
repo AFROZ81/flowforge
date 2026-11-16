@@ -732,10 +732,14 @@ var app = builder.Build();
 // ROOT
 // ============================================================
 
-app.MapGet(
-    "/",
-    () => Results.Redirect("/swagger")
-);
+// Swagger redirect only during local development
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet(
+        "/",
+        () => Results.Redirect("/swagger")
+    );
+}
 
 
 // ============================================================
@@ -862,6 +866,7 @@ app.MapHealthChecks(
     "/health"
 );
 
+app.MapFallbackToFile("index.html");
 
 // ============================================================
 // RUN

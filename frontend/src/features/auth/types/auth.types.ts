@@ -32,6 +32,23 @@ export interface OrganizationOption {
     slug: string;
 }
 
+/**
+ * Body for `POST /api/Organizations`. Only used to bootstrap the very first
+ * workspace, so `description` is never sent — the person filling the form has
+ * not got a workspace yet, let alone one to describe.
+ */
+export interface CreateOrganizationRequest {
+    name: string;
+    slug: string;
+}
+
+/** Mirrors the backend `CreateOrganizationResponse`, returned bare. */
+export interface CreateOrganizationResponse {
+    id: string;
+    name: string;
+    slug: string;
+}
+
 export interface ApiResponse<T> {
     success: boolean;
     message: string;

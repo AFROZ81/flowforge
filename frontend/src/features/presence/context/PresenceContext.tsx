@@ -164,18 +164,6 @@ const PRESENCE_URL =
     `${API_BASE_URL}/Presence/online-users`;
 
 
-console.log(
-    "Presence API URL:",
-    PRESENCE_URL
-);
-
-
-console.log(
-    "Presence SignalR URL:",
-    HUB_URL
-);
-
-
 /* =========================================================
    HELPERS
    ========================================================= */
@@ -1159,10 +1147,9 @@ export default function PresenceProvider({
                                         "",
 
                                 transport:
-                                    HttpTransportType.WebSockets,
-
-                                skipNegotiation:
-                                    true,
+                                    HttpTransportType.WebSockets |
+                                    HttpTransportType.ServerSentEvents |
+                                    HttpTransportType.LongPolling,
                             }
                         )
                         .withAutomaticReconnect(

@@ -99,7 +99,9 @@ export default function SettingsPage() {
                         </Link>
                     }
                     title="Settings"
-                    toolbar={
+                    /* Same slot the Reports switcher uses, so a view picker sits
+                       on the heading line on every page that has one. */
+                    center={
                         <PillNav
                             ariaLabel="Settings sections"
                             active={section}

@@ -6,7 +6,8 @@ import {
     Mail,
     UserRound,
 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { useMemo } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,14 @@ import { FormField } from "@/components/ui/form-field";
 import { normalizeError } from "@/lib/errors";
 
 import { AuthPasswordField, AuthSelectField, AuthTextField } from "./AuthFields";
+import PasswordStrengthMeter from "./PasswordStrengthMeter";
+import { toOrganizationSlug } from "../lib/organization-slug";
+import { useCreateOrganization } from "../hooks/useCreateOrganization";
 import { useOrganizationOptions } from "../hooks/useOrganizationOptions";
 import { useRegister } from "../hooks/useRegister";
 import {
-    registerSchema,
+    buildRegisterSchema,
+    EMPTY_REGISTER_FORM,
     type RegisterFormValues,
 } from "../validation/register.schema";
 
@@ -26,19 +31,12 @@ type Props = {
     onSwitchToLogin: () => void;
 };
 
-const EMPTY: RegisterFormValues = {
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    organizationId: "",
-};
-
 export default function RegisterForm({
     onRegistered,
     onSwitchToLogin,
 }: Props) {
     const mutation = useRegister();
+    const createOrganization = useCreateOrganization();
 
     /*
      * This face only exists while it is showing, so asking for the workspace
@@ -47,29 +45,71 @@ export default function RegisterForm({
      */
     const organizations = useOrganizationOptions(true);
 
+    const options = organizations.data ?? [];
+
+    /*
+     * The first run against an empty database: the list came back with nothing
+     * in it. There is nothing to choose and no other way to make one, so the
+     * form asks for a name instead and creates the workspace itself.
+     */
+    const needsWorkspaceName =
+        !organizations.isLoading &&
+        !organizations.isError &&
+        options.length === 0;
+
+    const schema = useMemo(
+        () => buildRegisterSchema(needsWorkspaceName),
+        [needsWorkspaceName],
+    );
+
     const {
+        control,
         register,
         handleSubmit,
         reset,
         formState: { errors, isSubmitting },
     } = useForm<RegisterFormValues>({
-        resolver: zodResolver(registerSchema),
-        defaultValues: EMPTY,
+        resolver: zodResolver(schema),
+        defaultValues: EMPTY_REGISTER_FORM,
     });
 
-    const busy = isSubmitting || mutation.isPending;
+    const busy = isSubmitting || mutation.isPending || createOrganization.isPending;
 
-    const options = organizations.data ?? [];
-    const hasOptions = options.length > 0;
+    /*
+     * Read live because the meter moves while the field is being typed.
+     * `useWatch` rather than the form's `watch`: it subscribes to this one
+     * field, and it is a hook the React rules can reason about. Display only —
+     * the rules that decide whether the form submits stay in the schema.
+     */
+    const password = useWatch({ control, name: "password" });
 
     async function onSubmit(values: RegisterFormValues) {
         try {
+            /*
+             * Two calls, in order, when no workspace exists yet: make one, then
+             * put the account inside it. The slug is derived rather than typed —
+             * name and slug are the same idea in different cases, and asking for
+             * both would only invite a mismatch.
+             */
+            let organizationId = values.organizationId;
+
+            if (needsWorkspaceName) {
+                const name = values.organizationName.trim();
+
+                const created = await createOrganization.mutateAsync({
+                    name,
+                    slug: toOrganizationSlug(name),
+                });
+
+                organizationId = created.id;
+            }
+
             await mutation.mutateAsync({
                 fullName: values.fullName,
                 email: values.email,
                 password: values.password,
                 confirmPassword: values.confirmPassword,
-                organizationId: values.organizationId,
+                organizationId,
             });
 
             toast.success("Account created", {
@@ -81,7 +121,11 @@ export default function RegisterForm({
              * is next. Wipe everything except the address they just used —
              * that one is worth carrying over.
              */
-            reset({ ...EMPTY, password: "", confirmPassword: "" });
+            reset({
+                ...EMPTY_REGISTER_FORM,
+                password: "",
+                confirmPassword: "",
+            });
 
             onRegistered(values.email);
         } catch (error) {
@@ -168,6 +212,32 @@ export default function RegisterForm({
                             Try again
                         </button>
                     </div>
+                ) : needsWorkspaceName ? (
+                    /*
+                     * Nothing to choose, so this asks for a name and the submit
+                     * handler creates the workspace before the account. What used
+                     * to be here only said that a workspace had to exist first,
+                     * with no way to make one from the form.
+                     */
+                    <FormField
+                        label="Workspace name"
+                        htmlFor="register-organization-name"
+                        required
+                        hideLabel
+                        error={errors.organizationName?.message}
+                        hint="This is the first workspace — your account is created inside it."
+                    >
+                        {(aria) => (
+                            <AuthTextField
+                                aria={aria}
+                                icon={Building2}
+                                autoComplete="organization"
+                                placeholder="Workspace name"
+                                disabled={busy}
+                                registered={register("organizationName")}
+                            />
+                        )}
+                    </FormField>
                 ) : (
                     <FormField
                         label="Workspace"
@@ -175,11 +245,6 @@ export default function RegisterForm({
                         required
                         hideLabel
                         error={errors.organizationId?.message}
-                        hint={
-                            !organizations.isLoading &&
-                            !hasOptions &&
-                            "No workspaces exist yet — one has to be created before you can sign up."
-                        }
                     >
                         {(aria) => (
                             <AuthSelectField
@@ -191,9 +256,7 @@ export default function RegisterForm({
                                 <option value="" disabled>
                                     {organizations.isLoading
                                         ? "Loading workspaces…"
-                                        : hasOptions
-                                          ? "Choose a workspace"
-                                          : "No workspaces available"}
+                                        : "Choose a workspace"}
                                 </option>
 
                                 {options.map((organization) => (
@@ -216,6 +279,7 @@ export default function RegisterForm({
                     hideLabel
                     error={errors.password?.message}
                     hint="At least 8 characters, with an uppercase letter, a lowercase letter and a number."
+                    under={<PasswordStrengthMeter value={password} />}
                 >
                     {(aria) => (
                         <AuthPasswordField
@@ -254,7 +318,9 @@ export default function RegisterForm({
                     {busy ? (
                         <>
                             <Loader2 className="animate-spin" aria-hidden="true" />
-                            Creating account…
+                            {createOrganization.isPending
+                                ? "Creating workspace…"
+                                : "Creating account…"}
                         </>
                     ) : (
                         <>

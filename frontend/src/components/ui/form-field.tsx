@@ -9,6 +9,12 @@ type FormFieldProps = {
   htmlFor: string
   hint?: React.ReactNode
   error?: string | null
+  /**
+   * Extra content below the hint/error line, for a control that has something
+   * live to show — a password strength meter, say. Rendered whether or not the
+   * field is invalid, unlike `hint`, which an error replaces.
+   */
+  under?: React.ReactNode
   /** Renders the asterisk and marks the control `aria-required`. */
   required?: boolean
   /** Prints a quiet "(optional)" beside the label. */
@@ -51,6 +57,7 @@ export function FormField({
   htmlFor,
   hint,
   error,
+  under,
   required,
   optional,
   hideLabel,
@@ -119,6 +126,8 @@ export function FormField({
           </p>
         )
       )}
+
+      {under}
     </div>
   )
 }

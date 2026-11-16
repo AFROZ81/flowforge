@@ -223,19 +223,29 @@ npm run dev
 Open **http://localhost:5173**. Keep that port: the CORS policy allows exactly that origin,
 and the hub URL is this value with the trailing `/api` stripped.
 
-### 6. First workspace, then your account
+### 6. First account — and the workspace it needs
 
-Registration requires an `organizationId`, so **a new database has nothing to sign up into** —
-the form says so rather than guessing. Create one workspace once, via Swagger
-(`POST /api/Organizations`, no token needed):
+Registration requires an `organizationId`, so **a brand-new database has nothing to
+sign up into**. The form resolves that itself: when the workspace list comes back
+empty it shows a **Workspace name** field in place of the dropdown, creates that
+workspace, and registers you inside it. `GET /api/Organizations/options` and
+`POST /api/Organizations` are both anonymous, which is what lets a signed-out page
+chain the two.
 
-```json
-{ "name": "My Company", "slug": "my-company", "description": null }
+Choose **Create account** on http://localhost:5173 and fill it in. Identity requires
+8+ characters with a digit, an uppercase and a lowercase letter; emails are unique.
+Once the workspace exists the field is a dropdown again for everyone after you, and
+you land on the dashboard — add a project, then a board, and the five default
+columns are created for you.
+
+To make the workspace by hand instead — a headless box, or you would rather use the
+API — `POST /api/Organizations` takes no token:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://localhost:5045/api/Organizations `
+  -ContentType "application/json" `
+  -Body '{"name":"My Company","slug":"my-company","description":null}'
 ```
-
-Then choose **Create account** on the client. Identity requires 8+ characters with a digit,
-an uppercase and a lowercase letter; emails are unique. You land on the dashboard — add a
-project, then a board, and the five default columns are created for you.
 
 ---
 
@@ -409,7 +419,7 @@ node tools/drawio-fit.mjs   # reports labels that overflow their shape, and boxe
 
 | Symptom | Cause and fix |
 | --- | --- |
-| Sign-up says there are no workspaces | No organization yet — `POST /api/Organizations` via Swagger, then retry |
+| Sign-up asks for a workspace name instead of a dropdown | Normal on a fresh database — nothing exists to choose yet, so the form creates the workspace for you |
 | `database update` applies nothing | Migrations are git-ignored; add `InitialCreate` first |
 | CORS errors in the browser | The API allows only `http://localhost:5173`; free that port or edit `AllowFrontend` |
 | "Failed to determine the https port for redirect" | Harmless on the `http` profile; use `--launch-profile https` for TLS |
@@ -429,7 +439,7 @@ Recorded so nobody searches the code for a thing that does not exist.
 | --- | --- |
 | No role-based authorization | `[Authorize]` only — no roles or policies anywhere, despite older docs claiming otherwise |
 | Validation failures return 500 | `ValidationBehavior` throws `FluentValidation.ValidationException`, unmapped by `ExceptionMiddleware`, so an invalid payload gives the generic 500 instead of 400 with field errors |
-| Anonymous organization create | Anyone reaching the API can `POST /api/Organizations`; fine locally, not beyond |
+| Anonymous organization create | Anyone reaching the API can `POST /api/Organizations` — the sign-up form relies on it to bootstrap the first workspace, which is fine locally and not beyond |
 | Search is API-only | `GET /api/Search/workitems` exists; there is no search UI |
 | Entity events have no listener | `WorkItem*` and `Comment*` broadcasts are produced and never consumed; live sync is a refetch today |
 | Typing indicators are backend-only | Hub methods exist; the client neither invokes nor subscribes |
@@ -438,7 +448,7 @@ Recorded so nobody searches the code for a thing that does not exist.
 | No tests or CI | No test project and no pipeline. The safety net today is `npm run build` (runs `tsc -b`), `npm run lint`, a clean `dotnet build`, and exercising the change by hand against the API |
 | Migrations and uploads uncommitted | Local state by design; a fresh clone regenerates its migration |
 | `docs/` is stale | Still describes the v0.7.0 backend-only state (frontend "in progress", attachments/labels/checklists "planned") |
-| No Docker, caching, jobs, email | Platform work not started |
+| No Docker, caching, jobs, email | Platform work not started. The hosting plan — one free MonsterASP.NET site serving API and SPA from the same origin — is [docs/Deployment.md](docs/Deployment.md) |
 
 ---
 
@@ -455,6 +465,7 @@ This README is the current state; treat `docs/` as background reading until refr
 | [docs/API.md](docs/API.md) | conventions, authentication, responses, errors |
 | [docs/Realtime.md](docs/Realtime.md) | hub, events, notifications, presence |
 | [docs/Development.md](docs/Development.md) | setup, conventions, workflow |
+| [docs/Deployment.md](docs/Deployment.md) | going live at $0: one MonsterASP.NET free site serving API and SPA from the same origin |
 | [docs/Roadmap.md](docs/Roadmap.md) · [docs/Changelog.md](docs/Changelog.md) | milestones and release history |
 | [docs/Diagrams/](docs/Diagrams) | architecture, authentication, aggregates (draw.io) |
 | [LICENSE](LICENSE) | the MIT terms the project is released under |

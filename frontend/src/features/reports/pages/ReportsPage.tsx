@@ -799,7 +799,6 @@ const ReportsPage = () => {
         isPending,
         isFetching,
         error: loadError,
-        dataUpdatedAt,
         refetch,
     } = useQuery(reportQueryOptions(report, days));
 
@@ -839,11 +838,6 @@ const ReportsPage = () => {
         ? listRows
         : ((data ?? []) as ProductivityPoint[]);
 
-    const rowCount =
-        report === "work-items"
-            ? ((data as WorkItemSummary | undefined)?.total ?? 0)
-            : rows.length;
-
     const error = loadError
         ? "The report could not be loaded. Please try again."
         : exportError;
@@ -877,19 +871,6 @@ const ReportsPage = () => {
                 return <ProductivityReport data={rows as ProductivityPoint[]} />;
         }
     };
-
-    const metadata = [
-        "Scope: entire workspace",
-        report === "productivity" ? `Last ${days} days` : "All time",
-        dataUpdatedAt > 0
-            ? `Prepared ${new Date(dataUpdatedAt).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-              })}`
-            : null,
-    ]
-        .filter(Boolean)
-        .join("  ·  ");
 
     return (
         <AppLayout>
@@ -927,7 +908,12 @@ const ReportsPage = () => {
                         </Button>
                     </>
                 }
-                toolbar={
+                /*
+                 * On the heading line, not under it: the switcher chooses which
+                 * report the page is showing, so it reads as part of the title
+                 * rather than as a filter bar belonging to the first section.
+                 */
+                center={
                     <PillNav
                         ariaLabel="Reports"
                         active={report}
@@ -952,12 +938,17 @@ const ReportsPage = () => {
              * they run across the top of the document rather than down a second
              * rail beside the application sidebar.
              *
-             * The rhythm is deliberately wider than the 16px inside a summary
-             * row: a section has to sit further from its neighbour than a
+             * The 16px above this block is the gap between the heading row and
+             * the page's content. It used to be supplied by the switcher living
+             * in the header's toolbar slot; now the switcher is on the heading
+             * line, so the separation is stated here instead of inherited.
+             *
+             * The rhythm inside is deliberately wider than the 16px within a
+             * summary row: a section has to sit further from its neighbour than a
              * figure sits from the next figure, or the summary stops reading as
              * a group of four and becomes a fifth table.
              */}
-            <div className="flex min-w-0 flex-col gap-5 lg:gap-6">
+            <div className="mt-4 flex min-w-0 flex-col gap-5 lg:gap-6">
                 {error ? (
                     <div
                         role="alert"
@@ -976,17 +967,14 @@ const ReportsPage = () => {
                     </div>
                 ) : null}
 
-                {/* The open report: its name and parameters, above its sections. */}
-                <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-                    <div className="min-w-0">
-                        <h2 className="text-lg font-semibold text-foreground">
-                            {REPORT_LABEL[report]}
-                        </h2>
-                        <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                            {metadata}
-                            {isPending ? null : `  ·  ${formatNumber(rowCount)} rows`}
-                        </p>
-                    </div>
+                {/* The open report, named. It needs no caption under it: the pill
+                     above says which report this is, every table carries its own
+                     totals in a footer row, and the period control holds the only
+                     parameter that varies. */}
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                    <h2 className="min-w-0 text-lg font-semibold text-foreground">
+                        {REPORT_LABEL[report]}
+                    </h2>
 
                     <div className="flex flex-wrap items-center gap-2">
                         {report === "productivity" ? (
