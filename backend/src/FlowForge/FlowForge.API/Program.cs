@@ -9,6 +9,16 @@ using FlowForge.API.Hubs;
 using FlowForge.API.SignalR;
 using FlowForge.API.Services.Realtime;
 using FlowForge.Application.Services.Realtime;
+using FlowForge.Application.Services.Webhooks;
+using FlowForge.Infrastructure.Services.Webhooks;
+using FlowForge.Infrastructure.BackgroundJobs;
+using FlowForge.Infrastructure.Services;
+using FlowForge.Application.Services.BackgroundJobs;
+using FlowForge.Application.Services.AuditLogs;
+using FlowForge.Infrastructure.Services.AuditLogs;
+using FlowForge.Application.Interfaces;
+
+using System.Text.Json.Serialization;
 
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -26,10 +36,22 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 
+using FlowForge.Domain.Enums;
+
 using Serilog;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+// ============================================================
+// KESTREL
+// ============================================================
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5045);
+});
 
 
 // ============================================================
@@ -47,7 +69,11 @@ builder.Host.UseSerilog();
 // SERVICES
 // ============================================================
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 
 // ============================================================
@@ -90,8 +116,7 @@ builder.Services.AddSwaggerGen(options =>
         {
             Title = "FlowForge API",
             Version = "v1",
-            Description =
-                "FlowForge Project Management Platform API"
+            Description = "FlowForge Project Management Platform API"
         }
     );
 
@@ -100,12 +125,10 @@ builder.Services.AddSwaggerGen(options =>
         new Microsoft.OpenApi.Models.OpenApiSecurityScheme
         {
             Name = "Authorization",
-            Type =
-                Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
             Scheme = "bearer",
             BearerFormat = "JWT",
-            In =
-                Microsoft.OpenApi.Models.ParameterLocation.Header,
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
             Description = "Enter JWT token"
         }
     );
@@ -116,17 +139,12 @@ builder.Services.AddSwaggerGen(options =>
             {
                 new Microsoft.OpenApi.Models.OpenApiSecurityScheme
                 {
-                    Reference =
-                        new Microsoft.OpenApi.Models.OpenApiReference
-                        {
-                            Type =
-                                Microsoft.OpenApi.Models.ReferenceType
-                                    .SecurityScheme,
-
-                            Id = "Bearer"
-                        }
+                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    {
+                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
                 },
-
                 Array.Empty<string>()
             }
         }
@@ -151,6 +169,39 @@ builder.Services.AddScoped<
     IRealtimeNotifier,
     SignalRNotifier
 >();
+
+
+// ============================================================
+// WEBHOOK SERVICES
+// ============================================================
+
+builder.Services.AddScoped<IWebhookService, WebhookService>();
+builder.Services.AddScoped<IWebhookDispatcher, WebhookDispatcher>();
+builder.Services.AddHostedService<WebhookDispatcher>();
+
+
+// ============================================================
+// DOMAIN EVENT DISPATCHER
+// ============================================================
+
+builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+
+
+// ============================================================
+// BACKGROUND JOBS
+// ============================================================
+
+builder.Services.AddScoped<ReminderJob>();
+builder.Services.AddScoped<OverdueDetectionJob>();
+builder.Services.AddScoped<ExportJobProcessor>();
+builder.Services.AddHostedService<ScheduledJobRunner>();
+
+
+// ============================================================
+// AUDIT LOG SERVICES
+// ============================================================
+
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 
 // ============================================================
@@ -239,7 +290,7 @@ builder.Services
                             context.HttpContext.Request.Path;
 
 
-                        /*
+                        /* 
                          * =================================================
                          * SIGNALR CONNECTION
                          * =================================================
@@ -266,7 +317,7 @@ builder.Services
                         }
 
 
-                        /*
+                        /* 
                          * =================================================
                          * AUTHORIZATION HEADER
                          * =================================================
@@ -368,7 +419,32 @@ builder.Services
 // AUTHORIZATION
 // ============================================================
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        "RequireAdmin",
+        policy => policy.RequireClaim(ClaimTypes.Role, UserRole.Admin.ToString())
+    );
+
+    options.AddPolicy(
+        "RequireMember",
+        policy => policy.RequireClaim(
+            ClaimTypes.Role,
+            UserRole.Admin.ToString(),
+            UserRole.Member.ToString()
+        )
+    );
+
+    options.AddPolicy(
+        "RequireViewer",
+        policy => policy.RequireClaim(
+            ClaimTypes.Role,
+            UserRole.Admin.ToString(),
+            UserRole.Member.ToString(),
+            UserRole.Viewer.ToString()
+        )
+    );
+});
 
 
 // ============================================================
@@ -433,6 +509,9 @@ builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(
         typeof(ApplicationAssemblyReference).Assembly
+    );
+    cfg.RegisterServicesFromAssembly(
+        typeof(FlowForge.Infrastructure.DependencyInjection.InfrastructureServiceCollection).Assembly
     );
 });
 
@@ -504,7 +583,7 @@ builder.Services.AddRateLimiter(options =>
         >(
             httpContext =>
             {
-                /*
+                /* 
                  * =================================================
                  * IMPORTANT
                  * =================================================
@@ -543,7 +622,7 @@ builder.Services.AddRateLimiter(options =>
                             _ =>
                                 new FixedWindowRateLimiterOptions
                                 {
-                                    /*
+                                    /* 
                                      * Normal authenticated
                                      * application usage.
                                      */
@@ -562,7 +641,7 @@ builder.Services.AddRateLimiter(options =>
                 }
 
 
-                /*
+                /* 
                  * =================================================
                  * ANONYMOUS USERS
                  * =================================================
@@ -584,7 +663,7 @@ builder.Services.AddRateLimiter(options =>
                         _ =>
                             new FixedWindowRateLimiterOptions
                             {
-                                /*
+                                /* 
                                  * Anonymous requests should be
                                  * considerably more restricted.
                                  */
@@ -592,9 +671,7 @@ builder.Services.AddRateLimiter(options =>
                                 PermitLimit = 30,
 
                                 Window =
-                                    TimeSpan.FromMinutes(
-                                        1
-                                    ),
+                                    TimeSpan.FromMinutes(1),
 
                                 QueueLimit = 0,
 
@@ -630,9 +707,41 @@ builder.Services.AddRateLimiter(options =>
                             PermitLimit = 5,
 
                             Window =
-                                TimeSpan.FromMinutes(
-                                    1
-                                ),
+                                TimeSpan.FromMinutes(1),
+
+                            QueueLimit = 0,
+
+                            AutoReplenishment =
+                                true
+                        }
+                );
+        }
+    );
+
+    // ========================================================
+    // ORGANIZATION CREATION RATE LIMITER
+    // ========================================================
+
+    options.AddPolicy(
+        "OrgCreationPolicy",
+        httpContext =>
+        {
+            var ip =
+                httpContext.Connection
+                    .RemoteIpAddress?
+                    .ToString()
+                ?? "unknown";
+
+            return RateLimitPartition
+                .GetFixedWindowLimiter(
+                    $"org-create:{ip}",
+                    _ =>
+                        new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+
+                            Window =
+                                TimeSpan.FromHours(1),
 
                             QueueLimit = 0,
 
@@ -680,8 +789,7 @@ builder.Services.Configure<
 >(
     options =>
     {
-        options.Level =
-            CompressionLevel.Fastest;
+        options.Level = CompressionLevel.Fastest;
     }
 );
 
@@ -691,8 +799,7 @@ builder.Services.Configure<
 >(
     options =>
     {
-        options.Level =
-            CompressionLevel.Fastest;
+        options.Level = CompressionLevel.Fastest;
     }
 );
 
@@ -710,7 +817,9 @@ builder.Services.AddCors(
             {
                 policy
                     .WithOrigins(
-                        "http://localhost:5173"
+                        "http://localhost:5173",
+                        "http://localhost:5174",
+                        "http://localhost:5175"
                     )
                     .AllowAnyHeader()
                     .AllowAnyMethod()
@@ -801,6 +910,7 @@ app.UseResponseCompression();
 // The rate limiter uses the authenticated user's UserId
 // to create the correct rate-limit partition.
 //
+//
 
 app.UseAuthentication();
 
@@ -814,6 +924,7 @@ app.UseAuthentication();
 // HttpContext.User
 //
 // and therefore correctly identify the authenticated user.
+//
 //
 
 app.UseRateLimiter();
@@ -867,6 +978,7 @@ app.MapHealthChecks(
 );
 
 app.MapFallbackToFile("index.html");
+
 
 // ============================================================
 // RUN

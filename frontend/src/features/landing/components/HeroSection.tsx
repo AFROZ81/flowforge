@@ -99,12 +99,19 @@ export default function HeroSection() {
                     {...enter(0.18)}
                     className="mt-7 flex flex-wrap items-center gap-3"
                 >
-                    <Button render={<Link to="/login?mode=register" />}>
+                    <Button
+                        nativeButton={false}
+                        render={<Link to="/login?mode=register" />}
+                    >
                         Create an account
                         <ArrowRight aria-hidden="true" />
                     </Button>
 
-                    <Button variant="outline" render={<Link to="/login" />}>
+                    <Button
+                        nativeButton={false}
+                        variant="outline"
+                        render={<Link to="/login" />}
+                    >
                         Sign in
                     </Button>
                 </motion.div>

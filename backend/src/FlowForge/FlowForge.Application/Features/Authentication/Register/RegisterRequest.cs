@@ -14,4 +14,9 @@ public sealed class RegisterRequest
     public required string ConfirmPassword { get; init; }
 
     public Guid OrganizationId { get; init; }
+
+    /// <summary>
+    /// Invitation token for account creation that immediately accepts an invitation.
+    /// </summary>
+    public string? InvitationToken { get; init; }
 }

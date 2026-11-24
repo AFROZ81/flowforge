@@ -3,4 +3,5 @@
   <Project Path="FlowForge.Application/FlowForge.Application.csproj" Id="e348b8f2-7fe1-4e72-8277-13ec53d97c2d" />
   <Project Path="FlowForge.Domain/FlowForge.Domain.csproj" />
   <Project Path="FlowForge.Infrastructure/FlowForge.Infrastructure.csproj" Id="d35fa32e-5f26-47e4-8bbf-85398cb4cafb" />
+  <Project Path="FlowForge.Tests/FlowForge.Tests.csproj" Id="a1b2c3d4-e5f6-7890-abcd-ef1234567890" />
 </Solution>

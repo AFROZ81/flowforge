@@ -61,7 +61,16 @@ public sealed class AssignWorkItemCommandHandler : IRequestHandler<AssignWorkIte
         if (assignee is null)
             throw new NotFoundException("User not found.");
 
-        if (assignee.OrganizationId != currentUser.OrganizationId)
+        // Check if assignee is a member of the current user's organization
+        var isMember = await _context.OrganizationUsers
+            .AsNoTracking()
+            .AnyAsync(
+                ou =>
+                    ou.UserId == assignee.Id &&
+                    ou.OrganizationId == currentUser.OrganizationId,
+                cancellationToken);
+
+        if (!isMember)
             throw new BadRequestException(
                 "The selected user does not belong to this organization.");
 

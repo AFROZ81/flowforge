@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "react-router";
 
@@ -7,10 +6,9 @@ import { Card } from "@/components/ui/card";
 
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
+import { flipFace, enter, baseTransition } from "@/lib/motion";
 
 type Mode = "signin" | "register";
-
-const EASE = [0.32, 0.72, 0, 1] as const;
 
 /**
  * One card, two faces.
@@ -69,11 +67,11 @@ export default function AuthCard() {
         goTo("signin");
     };
 
+    const face = flipFace();
+
     return (
         <motion.div
-            initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: EASE }}
+            {...enter(0)}
             className="w-full max-w-[25rem] sm:max-w-[27rem]"
             style={{ perspective: "1200px" }}
         >
@@ -81,17 +79,10 @@ export default function AuthCard() {
                 <motion.div
                     key={mode}
                     ref={cardRef}
-                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: -90 }}
-                    animate={
-                        reduceMotion
-                            ? { opacity: 1 }
-                            : { opacity: 1, rotateY: 0 }
-                    }
-                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: 90 }}
-                    transition={{
-                        duration: reduceMotion ? 0 : 0.26,
-                        ease: EASE,
-                    }}
+                    initial={reduceMotion ? { opacity: 0 } : face.initial}
+                    animate={reduceMotion ? { opacity: 1 } : face.animate}
+                    exit={reduceMotion ? { opacity: 0 } : face.exit}
+                    transition={baseTransition(reduceMotion ? 0 : 0.26)}
                 >
                     <Card className="gap-0 rounded-2xl p-6 shadow-xl backdrop-blur-xl sm:p-8">
                         {mode === "register" ? (

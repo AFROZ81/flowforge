@@ -22,7 +22,6 @@ type SectionDefinition = {
     id: SettingsSection;
     label: string;
     title: string;
-    description?: string;
 };
 
 const SECTIONS: SectionDefinition[] = [
@@ -121,17 +120,8 @@ export default function SettingsPage() {
 
                 <section
                     aria-label={active.title}
-                    className="min-h-[50vh] space-y-4"
+                    className="min-h-[50vh]"
                 >
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b pb-3">
-                        <h2 className="text-lg font-semibold text-foreground">
-                            {active.title}
-                        </h2>
-                        <p className="text-xs text-muted-foreground">
-                            {active.description}
-                        </p>
-                    </div>
-
                     {section === "general" ? <GeneralSettings /> : null}
                     {section === "members" ? <MembersSettings /> : null}
                     {section === "labels" ? <LabelManagement /> : null}

@@ -13,13 +13,16 @@ export interface RegisterRequest {
     email: string;
     password: string;
     confirmPassword: string;
-    /** The workspace the new account is created in. */
-    organizationId: string;
+    /** The workspace the new account is created in. Not used for invitation registration. */
+    organizationId?: string;
+    invitationToken?: string;
 }
 
 export interface RegisterResponse {
     userId: string;
     message: string;
+    accessToken?: string;
+    expiresAtUtc?: string;
 }
 
 /**

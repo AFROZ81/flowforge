@@ -4,17 +4,18 @@ import { createRoot } from "react-dom/client";
 import "../index.css";
 
 import App from "./App";
-import { Providers } from "./providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { registerPwa } from "@/lib/pwa";
 
-createRoot(document.getElementById("root")!).render(
+const root = createRoot(document.getElementById("root")!);
+
+root.render(
     <StrictMode>
-        <Providers>
-            {/* One provider for the whole tree — the collapsed rail,
-                the top bar and every icon button share its timing. */}
-            <TooltipProvider>
-                <App />
-            </TooltipProvider>
-        </Providers>
+        <TooltipProvider>
+            <App />
+        </TooltipProvider>
     </StrictMode>
 );
+
+/* Register the PWA service worker after the app mounts. */
+registerPwa();

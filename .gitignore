@@ -1,31 +1,76 @@
-# Build
+# Build output
 bin/
 obj/
+dist/
+dist-ssr/
+*.tsbuildinfo
 
-# Visual Studio
+# Visual Studio / publish profiles
 .vs/
 *.user
 *.suo
+*.pubxml
+*.pubxml.user
 
-# VS Code / Windsurf
+# Local editors and agent workspaces
 .vscode/
+.idea/
+.qoder/
+.kilo/
 
 # Node
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Test and coverage output
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+.cache/
+.turbo/
 
 # Environment
 .env
 .env.*
 !.env.example
+!frontend/.env.production
 
 # Logs
 *.log
+logs/
+Logs/
 
+# Local planning notes and generated demo data
+Essentials/
+tools/seed/seed-state.json
+tools/seed/backdate.sql
+
+# Local publish output and runtime storage
 backend/src/FlowForge/publish/
 backend/src/FlowForge/FlowForge.API/Storage/
+
+# Local databases, certificates, and secret files
+*.db
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+*.pfx
+*.pem
+*.key
+
+# Editor backups and temporary files
+*.bak
+*.tmp
+*.temp
+*.orig
+*.rej
 
 # OS
 Thumbs.db
 .DS_Store
-
-Logs/

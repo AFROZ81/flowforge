@@ -2,6 +2,7 @@ using FlowForge.API.Hubs;
 using FlowForge.Application.Services.Realtime;
 using FlowForge.Application.Services.Presence;
 using FlowForge.Application.Common.Constants;
+using FlowForge.Domain.Enums;
 
 using Microsoft.AspNetCore.SignalR;
 
@@ -71,6 +72,21 @@ public sealed class SignalRNotifier : IRealtimeNotifier
                 {
                     BoardId = boardId,
                     Users = users
+                },
+                cancellationToken);
+    }
+
+    public async Task NotifyRoleChangedAsync(Guid userId, Guid organizationId, UserRole newRole, CancellationToken cancellationToken = default)
+    {
+        await _hubContext.Clients
+            .Group($"user:{userId}")
+            .SendAsync(
+                "RoleChanged",
+                new
+                {
+                    UserId = userId,
+                    OrganizationId = organizationId,
+                    Role = newRole.ToString()
                 },
                 cancellationToken);
     }

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Columns3 } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import ColumnCard from "./ColumnCard";
+import { useBoardKeyboard } from "../hooks/useBoardKeyboard";
 
 type WorkItem = {
     id: string;
@@ -130,6 +131,140 @@ export default function ColumnGrid({
         });
     };
 
+    const {
+        focus,
+        handleKeyDown,
+        setColumnFocus,
+        setCardFocus,
+    } = useBoardKeyboard({
+        columns: localColumns,
+        actions: {
+            onOpenWorkItem: (workItemId) => {
+                window.dispatchEvent(
+                    new CustomEvent("flowforge:open-work-item", {
+                        detail: { workItemId },
+                    })
+                );
+            },
+            onEditWorkItem: (workItemId) => {
+                window.dispatchEvent(
+                    new CustomEvent("flowforge:edit-work-item", {
+                        detail: { workItemId },
+                    })
+                );
+            },
+            onOpenComments: (workItemId) => {
+                window.dispatchEvent(
+                    new CustomEvent("flowforge:open-comments", {
+                        detail: { workItemId },
+                    })
+                );
+            },
+            onOpenLabels: (workItemId) => {
+                window.dispatchEvent(
+                    new CustomEvent("flowforge:open-labels", {
+                        detail: { workItemId },
+                    })
+                );
+            },
+            onSetDueDate: (workItemId) => {
+                window.dispatchEvent(
+                    new CustomEvent("flowforge:set-due-date", {
+                        detail: { workItemId },
+                    })
+                );
+            },
+            onToggleComplete: (workItemId, status) => {
+                window.dispatchEvent(
+                    new CustomEvent("flowforge:toggle-complete", {
+                        detail: { workItemId, status },
+                    })
+                );
+            },
+        },
+    });
+
+    /*
+     * Attach the keyboard handler to the document so it fires regardless of
+     * which element holds DOM focus. React focus state drives routing; the
+     * handler itself ignores editable inputs.
+     */
+    useEffect(() => {
+        document.addEventListener(
+            "keydown",
+            handleKeyDown as EventListener
+        );
+
+        /*
+         * When a user clicks a column header or card, keyboard focus follows
+         * so arrow-key navigation keeps working from that spot.
+         */
+        const onFocusColumn = (
+            event: CustomEvent<{ columnId: string }>
+        ) => {
+            const index = localColumns.findIndex(
+                (c) => c.id === event.detail.columnId
+            );
+            if (index !== -1) {
+                setColumnFocus(index);
+            }
+        };
+
+        const onFocusCard = (
+            event: CustomEvent<{ columnId: string; workItemId: string }>
+        ) => {
+            const columnIndex = localColumns.findIndex(
+                (c) => c.id === event.detail.columnId
+            );
+            if (columnIndex === -1) {
+                return;
+            }
+            const column = localColumns[columnIndex];
+            const activeItems = [
+                ...column.workItems,
+            ]
+                .filter((item) => !item.isArchived)
+                .sort(
+                    (a, b) => a.displayOrder - b.displayOrder
+                );
+            const cardIndex = activeItems.findIndex(
+                (item) => item.id === event.detail.workItemId
+            );
+            if (cardIndex !== -1) {
+                setCardFocus(columnIndex, cardIndex);
+            }
+        };
+
+        window.addEventListener(
+            "flowforge:focus-column",
+            onFocusColumn as EventListener
+        );
+        window.addEventListener(
+            "flowforge:focus-card",
+            onFocusCard as EventListener
+        );
+
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener(
+                "flowforge:focus-column",
+                onFocusColumn as EventListener
+            );
+            window.removeEventListener(
+                "flowforge:focus-card",
+                onFocusCard as EventListener
+            );
+        };
+    }, [handleKeyDown, localColumns, setColumnFocus, setCardFocus]);
+
+    const isColumnFocused = (index: number) =>
+        focus?.kind === "column" && focus.columnIndex === index;
+
+    const focusedCardIndex = (columnIndex: number) =>
+        focus?.kind === "card" && focus.columnIndex === columnIndex
+            ? focus.cardIndex
+            : null;
+
     if (localColumns.length === 0) {
         return (
             <div className="rounded-xl border border-border bg-card shadow-xs">
@@ -151,10 +286,12 @@ export default function ColumnGrid({
          * column per row instead of a sideways scroll.
          */
         <div
+            tabIndex={-1}
             className="
                 grid gap-4
                 grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))]
                 lg:gap-5
+                outline-none
             "
         >
             {[...localColumns]
@@ -163,13 +300,19 @@ export default function ColumnGrid({
                         a.displayOrder -
                         b.displayOrder
                 )
-                .map((column) => (
+                .map((column, columnIndex) => (
                     <ColumnCard
                         key={column.id}
                         column={column}
                         columns={localColumns}
                         onOptimisticMove={
                             handleOptimisticMove
+                        }
+                        isColumnFocused={
+                            isColumnFocused(columnIndex)
+                        }
+                        focusedCardIndex={
+                            focusedCardIndex(columnIndex)
                         }
                     />
                 ))}

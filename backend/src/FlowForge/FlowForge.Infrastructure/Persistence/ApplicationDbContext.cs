@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Common.Base;
 using FlowForge.Application.Common.Models;
+using FlowForge.Domain.Events;
+using FlowForge.Application.Interfaces;
 
 namespace FlowForge.Infrastructure.Persistence;
 
@@ -16,13 +18,16 @@ namespace FlowForge.Infrastructure.Persistence;
 public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IApplicationDbContext
 {
     private readonly ICurrentUserService _currentUser;
+    private readonly IDomainEventDispatcher _domainEventDispatcher;
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
-        ICurrentUserService currentUser)
+        ICurrentUserService currentUser,
+        IDomainEventDispatcher domainEventDispatcher)
         : base(options)
     {
         _currentUser = currentUser;
+        _domainEventDispatcher = domainEventDispatcher;
     }
 
     public DbSet<Organization> Organizations => Set<Organization>();
@@ -51,21 +56,104 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
 
     public DbSet<WorkItemHistory> WorkItemHistories => Set<WorkItemHistory>();
 
+    public DbSet<OrganizationUser> OrganizationUsers => Set<OrganizationUser>();
+
+    public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
+
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
+    public DbSet<OrganizationInvitation> OrganizationInvitations => Set<OrganizationInvitation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
-        modelBuilder.Entity<ApplicationUser>()
-            .HasOne(u => u.Organization)
+        modelBuilder.Entity<OrganizationUser>()
+            .HasKey(ou => new { ou.UserId, ou.OrganizationId });
+
+        modelBuilder.Entity<OrganizationUser>()
+            .HasOne(ou => ou.Organization)
+            .WithMany(o => o.Users)
+            .HasForeignKey(ou => ou.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<WebhookSubscription>()
+            .HasKey(w => w.Id);
+
+        modelBuilder.Entity<WebhookSubscription>()
+            .HasIndex(w => new { w.OrganizationId, w.IsActive });
+
+        modelBuilder.Entity<WebhookSubscription>()
+            .Property(w => w.EventTypes)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<AuditLog>()
+            .HasKey(a => a.Id);
+
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => new { a.OrganizationId, a.CreatedAt });
+
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => new { a.OrganizationId, a.Type });
+
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => new { a.OrganizationId, a.ActorId });
+
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => new { a.OrganizationId, a.TargetEntityId });
+
+        modelBuilder.Entity<AuditLog>()
+            .Property(a => a.OldValuesJson)
+            .HasMaxLength(4000);
+
+        modelBuilder.Entity<AuditLog>()
+            .Property(a => a.NewValuesJson)
+            .HasMaxLength(4000);
+
+        modelBuilder.Entity<AuditLog>()
+            .Property(a => a.MetadataJson)
+            .HasMaxLength(4000);
+
+        modelBuilder.Entity<OrganizationInvitation>()
+            .HasKey(oi => oi.Id);
+
+        modelBuilder.Entity<OrganizationInvitation>()
+            .HasIndex(oi => oi.Token)
+            .IsUnique();
+
+        modelBuilder.Entity<OrganizationInvitation>()
+            .HasIndex(oi => new { oi.OrganizationId, oi.Email });
+
+        modelBuilder.Entity<OrganizationInvitation>()
+            .HasIndex(oi => oi.ExpiresAt);
+
+        modelBuilder.Entity<OrganizationInvitation>()
+            .HasOne(oi => oi.Organization)
             .WithMany()
-            .HasForeignKey(u => u.OrganizationId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(oi => oi.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // InvitedByUser and AcceptedByUser are configured via foreign keys only
+        // Navigation properties are not defined on the domain entity to avoid cross-layer dependency
+        modelBuilder.Entity<OrganizationInvitation>()
+            .HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(oi => oi.InvitedByUserId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired();
+
+        modelBuilder.Entity<OrganizationInvitation>()
+            .HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(oi => oi.AcceptedByUserId)
+            .OnDelete(DeleteBehavior.SetNull)
+            .IsRequired(false);
     }
 
-    public override async Task<int> SaveChangesAsync(
-    CancellationToken cancellationToken = default)
+public override async Task<int> SaveChangesAsync(
+        CancellationToken cancellationToken = default)
     {
         var entries = ChangeTracker
             .Entries<EntityBase>();
@@ -108,26 +196,46 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
             }
         }
 
-        return await base.SaveChangesAsync(cancellationToken);
+        var result = await base.SaveChangesAsync(cancellationToken);
+
+        // Dispatch domain events after successful save
+        var entitiesWithEvents = ChangeTracker
+            .Entries<EntityBase>()
+            .Where(e => e.Entity.DomainEvents.Any())
+            .Select(e => e.Entity)
+            .ToList();
+
+        foreach (var entity in entitiesWithEvents)
+        {
+            var events = entity.DomainEvents.ToList();
+            entity.ClearDomainEvents();
+
+            foreach (var domainEvent in events)
+            {
+                await _domainEventDispatcher.DispatchAsync(domainEvent, cancellationToken);
+            }
+        }
+
+        return result;
     }
 
     public async Task<List<OrganizationUserLookup>>
         GetOrganizationUsersAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
-        return await Users
+        return await OrganizationUsers
             .AsNoTracking()
-            .Where(x =>
-                x.OrganizationId ==
-                organizationId)
-            .OrderBy(x => x.FullName)
-            .Select(x =>
-                new OrganizationUserLookup
+            .Where(ou => ou.OrganizationId == organizationId)
+            .Join(
+                Users.AsNoTracking(),
+                ou => ou.UserId,
+                u => u.Id,
+                (ou, u) => new OrganizationUserLookup
                 {
-                    Id = x.Id,
-                    FullName = x.FullName,
-                    Email = x.Email
+                    Id = u.Id,
+                    FullName = u.FullName,
+                    Email = u.Email
                 })
-            .ToListAsync(
-                cancellationToken);
+            .OrderBy(x => x.FullName)
+            .ToListAsync(cancellationToken);
     }
 }

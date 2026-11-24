@@ -1,12 +1,15 @@
 import {
     createBrowserRouter,
     Navigate,
+    Outlet,
 } from "react-router";
 
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import PublicRoute from "@/routes/PublicRoute";
+import { Providers } from "@/app/providers";
 
 import LoginPage from "@/features/auth/pages/LoginPage";
+import AcceptInvitationPage from "@/features/auth/pages/AcceptInvitationPage";
 
 import LandingPage from "@/features/landing/pages/LandingPage";
 
@@ -19,7 +22,11 @@ import BoardDetailsPage from "@/features/boards/pages/BoardDetailsPage";
 
 import ReportsPage from "@/features/reports/pages/ReportsPage";
 
+import NotificationsPage from "@/features/notifications/pages/NotificationsPage";
+
 import SettingsPage from "@/features/settings/pages/SettingsPage";
+import AuditLogsPage from "@/features/audit-logs/pages/AuditLogsPage";
+import AdminRoute from "@/routes/AdminRoute";
 
 
 /* =========================================================
@@ -41,143 +48,185 @@ import SettingsPage from "@/features/settings/pages/SettingsPage";
 
 export const router =
     createBrowserRouter([
-
-        /* =================================================
-           PUBLIC ROUTES
-           ================================================= */
-
         {
             element:
-                <PublicRoute />,
+                <Providers>
+                    <Outlet />
+                </Providers>,
 
             children: [
-
-                /* -----------------------------------------
-                   LANDING
-                   ----------------------------------------- */
+                /* =================================================
+                   PUBLIC ROUTES
+                   ================================================= */
 
                 {
-                    index: true,
-
                     element:
-                        <LandingPage />,
+                        <PublicRoute />,
+
+                    children: [
+
+                        /* -----------------------------------------
+                           LANDING
+                           ----------------------------------------- */
+
+                        {
+                            index: true,
+
+                            element:
+                                <LandingPage />,
+                        },
+
+
+                        /* -----------------------------------------
+                           LOGIN
+                           ----------------------------------------- */
+
+                        {
+                            path: "/login",
+
+                            element:
+                                <LoginPage />,
+                        },
+
+
+                        /* -----------------------------------------
+                           ACCEPT INVITATION
+                           ----------------------------------------- */
+
+                        {
+                            path: "/accept-invitation",
+
+                            element:
+                                <AcceptInvitationPage />,
+                        },
+
+                    ],
                 },
 
 
-                /* -----------------------------------------
-                   LOGIN
-                   ----------------------------------------- */
+                /* =================================================
+                   PROTECTED ROUTES
+                   ================================================= */
 
                 {
-                    path: "/login",
+                    element:
+                        <ProtectedRoute />,
+
+                    children: [
+
+                        /* -----------------------------------------
+                           DASHBOARD
+                           ----------------------------------------- */
+
+                        {
+                            path: "/dashboard",
+
+                            element:
+                                <DashboardPage />,
+                        },
+
+
+                        /* -----------------------------------------
+                           PROJECTS
+                           ----------------------------------------- */
+
+                        {
+                            path: "/projects",
+
+                            element:
+                                <ProjectsPage />,
+                        },
+
+
+                        /* -----------------------------------------
+                           PROJECT DETAILS
+                           ----------------------------------------- */
+
+                        {
+                            path:
+                                "/projects/:id",
+
+                            element:
+                                <ProjectDetailsPage />,
+                        },
+
+
+                        /* -----------------------------------------
+                           BOARD DETAILS
+                           ----------------------------------------- */
+
+                        {
+                            path:
+                                "/projects/:projectId/boards/:boardId",
+
+                            element:
+                                <BoardDetailsPage />,
+                        },
+
+
+                        /* -----------------------------------------
+                           NOTIFICATIONS
+                           ----------------------------------------- */
+
+                        {
+                            path: "/notifications",
+
+                            element:
+                                <NotificationsPage />,
+                        },
+
+
+                        /* -----------------------------------------
+                           REPORTS
+                           ----------------------------------------- */
+
+                        {
+                            path: "/reports",
+
+                            element:
+                                <ReportsPage />,
+                        },
+
+
+                        /* -----------------------------------------
+                           SETTINGS
+                           ----------------------------------------- */
+
+                        {
+                            path: "/settings",
+
+                            element:
+                                <SettingsPage />,
+                        },
+
+                        {
+                            element: <AdminRoute />,
+                            children: [
+                                {
+                                    path: "/audit-logs",
+                                    element: <AuditLogsPage />,
+                                },
+                            ],
+                        },
+
+                    ],
+                },
+
+
+                /* =================================================
+                   FALLBACK
+                   ================================================= */
+
+                {
+                    path: "*",
 
                     element:
-                        <LoginPage />,
+                        <Navigate
+                            to="/"
+                            replace
+                        />,
                 },
 
             ],
         },
-
-
-        /* =================================================
-           PROTECTED ROUTES
-           ================================================= */
-
-        {
-            element:
-                <ProtectedRoute />,
-
-            children: [
-
-                /* -----------------------------------------
-                   DASHBOARD
-                   ----------------------------------------- */
-
-                {
-                    path: "/dashboard",
-
-                    element:
-                        <DashboardPage />,
-                },
-
-
-                /* -----------------------------------------
-                   PROJECTS
-                   ----------------------------------------- */
-
-                {
-                    path: "/projects",
-
-                    element:
-                        <ProjectsPage />,
-                },
-
-
-                /* -----------------------------------------
-                   PROJECT DETAILS
-                   ----------------------------------------- */
-
-                {
-                    path:
-                        "/projects/:id",
-
-                    element:
-                        <ProjectDetailsPage />,
-                },
-
-
-                /* -----------------------------------------
-                   BOARD DETAILS
-                   ----------------------------------------- */
-
-                {
-                    path:
-                        "/projects/:projectId/boards/:boardId",
-
-                    element:
-                        <BoardDetailsPage />,
-                },
-
-
-                /* -----------------------------------------
-                   REPORTS
-                   ----------------------------------------- */
-
-                {
-                    path: "/reports",
-
-                    element:
-                        <ReportsPage />,
-                },
-
-
-                /* -----------------------------------------
-                   SETTINGS
-                   ----------------------------------------- */
-
-                {
-                    path: "/settings",
-
-                    element:
-                        <SettingsPage />,
-                },
-
-            ],
-        },
-
-
-        /* =================================================
-           FALLBACK
-           ================================================= */
-
-        {
-            path: "*",
-
-            element:
-                <Navigate
-                    to="/"
-                    replace
-                />,
-        },
-
     ]);

@@ -1,5 +1,6 @@
 using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Common.Responses;
+using FluentValidation;
 using Microsoft.Extensions.Logging;
 
 namespace FlowForge.API.Middlewares;
@@ -36,6 +37,7 @@ public sealed class ExceptionMiddleware
         context.Response.StatusCode = exception switch
         {
             BadRequestException => StatusCodes.Status400BadRequest,
+            ValidationException => StatusCodes.Status400BadRequest,
             UnauthorizedException => StatusCodes.Status401Unauthorized,
             ForbiddenException => StatusCodes.Status403Forbidden,
             NotFoundException => StatusCodes.Status404NotFound,
@@ -46,6 +48,7 @@ public sealed class ExceptionMiddleware
         var message = exception switch
         {
             BadRequestException
+            or ValidationException
             or UnauthorizedException
             or ForbiddenException
             or NotFoundException
@@ -55,7 +58,11 @@ public sealed class ExceptionMiddleware
             _ => "An unexpected error occurred. Please contact support if the problem persists."
         };
 
-        var response = ApiResponse<object>.FailureResponse(message);
+        var validationErrors = exception is ValidationException ve
+            ? ve.Errors.Select(e => e.ErrorMessage)
+            : null;
+
+        var response = ApiResponse<object>.FailureResponse(message, validationErrors);
 
         response.TraceId = context.TraceIdentifier;
 

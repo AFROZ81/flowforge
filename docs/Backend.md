@@ -1,209 +1,111 @@
-# ⚙️ Backend
+# Backend
 
-## Overview
+## Solution structure
 
-The FlowForge backend is built with **ASP.NET Core** using a feature-first approach based on **Clean Architecture**, **CQRS**, and **Vertical Slice Architecture**.
-
-Each project has a single responsibility, making the solution modular, scalable, and easy to maintain.
-
----
-
-# Solution Structure
-
-```
-backend
-│
-├── src
-│   ├── FlowForge.API
-│   ├── FlowForge.Application
-│   ├── FlowForge.Domain
-│   └── FlowForge.Infrastructure
-│
-├── tests
-│
-└── FlowForge.sln
+```text
+backend/src/FlowForge
+├── FlowForge.API
+├── FlowForge.Application
+├── FlowForge.Domain
+├── FlowForge.Infrastructure
+├── FlowForge.Tests
+└── FlowForge.slnx
 ```
 
----
+## Projects
 
-# Projects
+| Project | Responsibility |
+| --- | --- |
+| `FlowForge.API` | Controllers, authentication/authorization, middleware, SignalR hub, Swagger, dependency composition. |
+| `FlowForge.Application` | CQRS features, handlers, validators, DTOs, business rules, and service contracts. |
+| `FlowForge.Domain` | Entities, enums, domain events, and domain behavior. |
+| `FlowForge.Infrastructure` | EF Core, Identity, SMTP, local/blob storage implementations, webhook delivery, background jobs, and SignalR implementation. |
+| `FlowForge.Tests` | xUnit regression tests. |
 
-## FlowForge.API
+## Request lifecycle
 
-The entry point of the application.
+1. The controller receives the request and establishes transport-level identity.
+2. Authorization policies and organization claims are evaluated.
+3. MediatR sends a command or query to its handler.
+4. `ValidationBehavior` runs registered validators.
+5. The handler enforces business rules and calls infrastructure contracts.
+6. EF Core persists changes and stamps audit fields.
+7. Recorded domain events are dispatched after save.
+8. The controller returns the result.
+9. `ExceptionMiddleware` converts known exceptions to consistent JSON errors.
 
-Responsibilities:
+## Authentication
 
-- HTTP API endpoints
-- Authentication & Authorization
-- Middleware
-- Dependency Injection
-- Swagger
-- SignalR Hubs
+- ASP.NET Core Identity stores users and password hashes.
+- JWT access tokens are issued at login, refresh, organization switch, and invitation acceptance.
+- `TokenService` includes the active organization, all organization ids, and active role.
+- `CurrentUserService` reconstructs an `AuthenticatedUser` from claims.
+- Anonymous first-run organization creation and public organization options remain available.
+- Invitation validation and acceptance are anonymous; the token identifies the invitation.
 
-The API project contains minimal business logic and acts as the communication layer between clients and the application.
+## Invitation registration
 
----
+`POST /api/Auth/register` supports two modes:
 
-## FlowForge.Application
+- **Normal registration:** requires `organizationId` and creates the initial membership.
+- **Invitation registration:** requires `invitationToken`; validates the token, expiry, acceptance state, and email match; creates the account; accepts the invitation through MediatR; and returns an access token.
 
-The core of the application.
+For relational databases, invitation registration and acceptance share a transaction so a failed acceptance does not leave a partial account.
 
-Responsibilities:
+## Infrastructure services
 
-- Commands
-- Queries
-- Handlers
-- Validators
-- DTOs
-- Business Rules
-- Application Services
+| Service | Implementation | Notes |
+| --- | --- | --- |
+| `IAuthService` | `AuthService` | Registration, login, refresh. |
+| `ICurrentUserService` | `CurrentUserService` | Claims-to-user context. |
+| `IUserLookupService` | `UserLookupService` | Identity lookups for handlers. |
+| `IEmailService` | `SmtpEmailService` | Invitation delivery and SMTP diagnostics. |
+| `IAuditLogService` | `AuditLogService` | Explicit audit entries, filters, pagination, statistics. |
+| `IWebhookService` | `WebhookService` | Subscription CRUD and test delivery. |
+| `IWebhookDispatcher` | `WebhookDispatcher` | In-memory queue and hosted delivery worker. |
+| `IFileStorageProvider` | `LocalFileStorageService` | Active provider registration. |
+| Attachment storage | attachment local storage service | Writes under `FlowForge.API/Storage/Attachments`. |
 
-This project contains the application's use cases and coordinates interactions between the domain and infrastructure.
+`AzureBlobStorageService` exists as an alternative provider but is not registered by default; its presigned-url credential handling is still placeholder code.
 
----
+## Validation and errors
 
-## FlowForge.Domain
+FluentValidation validators are discovered from the Application assembly. Known failures map as follows:
 
-Contains the business model.
+| Exception | Status |
+| --- | --- |
+| `BadRequestException` / `ValidationException` | 400 |
+| `UnauthorizedException` | 401 |
+| `ForbiddenException` | 403 |
+| `NotFoundException` | 404 |
+| `ConflictException` | 409 |
+| Unhandled exception | 500 |
 
-Responsibilities:
+Validation responses include an `errors` array. Unexpected failures return a generic message and a `traceId`.
 
-- Entities
-- Enums
-- Value Objects
-- Domain Constants
+## Background work
 
-The Domain project is independent of all other projects and contains no infrastructure or framework-specific code.
+`Program.cs` registers:
 
----
+- `WebhookDispatcher` as a hosted queue worker.
+- `ScheduledJobRunner` as a hosted service.
+- `ReminderJob`, `OverdueDetectionJob`, and `ExportJobProcessor` as scoped jobs.
 
-## FlowForge.Infrastructure
+Current scheduler limitations:
 
-Contains all external implementations.
+- The runner checks every minute, but `IsTimeToRun` currently always returns true.
+- Reminder and overdue jobs therefore run on every check rather than on their commented cron schedules.
+- Export processing is not invoked by the runner.
+- Excel/PDF export generation is placeholder output; CSV generation is implemented.
 
-Responsibilities:
+Treat this as demo scheduling, not a production cron system.
 
-- Entity Framework Core
-- SQL Server
-- Authentication Services
-- SignalR Services
-- Logging
-- External Integrations
+## Testing
 
-Infrastructure implements the interfaces defined in the Application layer.
+From the repository root:
 
----
-
-# Feature Organization
-
-Features are organized independently rather than by technical layers.
-
-Example:
-
-```
-Features
-│
-├── Authentication
-├── Organizations
-├── Projects
-├── Boards
-├── Columns
-├── WorkItems
-├── Comments
-└── Notifications
-```
-
-Each feature contains everything required for that feature, including commands, queries, validators, handlers, and supporting classes.
-
----
-
-# Request Lifecycle
-
-Every request follows the same flow.
-
-```
-Client
-
-↓
-
-API Endpoint
-
-↓
-
-MediatR
-
-↓
-
-Command / Query
-
-↓
-
-Handler
-
-↓
-
-Business Rules
-
-↓
-
-Database
-
-↓
-
-Response
+```powershell
+dotnet test backend/src/FlowForge/FlowForge.Tests/FlowForge.Tests.csproj
 ```
 
-For realtime operations, SignalR events are published after successful database updates.
-
----
-
-# Dependency Injection
-
-Application services are registered through dependency injection, allowing implementations to be replaced without changing business logic.
-
-Examples include:
-
-- Current User Service
-- Notification Service
-- Realtime Notifier
-- Online User Tracker
-- Board Presence Tracker
-
-This keeps the application loosely coupled and easy to test.
-
----
-
-# Validation
-
-Request validation is handled using **FluentValidation**.
-
-Each command or query can define its own validator, ensuring invalid requests are rejected before reaching business logic.
-
----
-
-# Logging
-
-FlowForge uses **Serilog** for structured logging.
-
-Logging is used throughout the application for:
-
-- Request tracking
-- Authentication events
-- Errors
-- Realtime events
-- Diagnostics
-
----
-
-# Testing
-
-The solution includes a dedicated **tests** project for automated testing.
-
-Business logic is designed to remain independent from infrastructure, making it easier to write unit and integration tests.
-
----
-
-# Summary
-
-The backend is organized around features rather than technical layers, keeping business logic isolated from infrastructure while making the application easier to extend, maintain, and test.
+The current suite contains 21 tests covering exception mapping, SMTP behavior, invitation creation, duplicate/rate-limit rules, invitation registration and acceptance, role assignment, and link generation.

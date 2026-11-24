@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FlowForge.API.Controllers;
 
-[Authorize]
+[Authorize(Policy = "RequireViewer")]
 [ApiController]
 [Route("api/[controller]")]
 public sealed class ColumnsController : ControllerBase
@@ -23,6 +23,7 @@ public sealed class ColumnsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Create(CreateColumnCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(command, cancellationToken);
@@ -52,6 +53,7 @@ public sealed class ColumnsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Update(Guid id, UpdateColumnCommand command, CancellationToken cancellationToken)
     {
         if (id != command.Id)
@@ -65,6 +67,7 @@ public sealed class ColumnsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/archive")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Archive(Guid id, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -78,6 +81,7 @@ public sealed class ColumnsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/restore")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Restore(Guid id, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(

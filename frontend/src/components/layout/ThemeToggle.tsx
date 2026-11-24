@@ -3,7 +3,6 @@ import { useRef, useState, type ReactNode } from "react";
 import {
     AnimatePresence,
     motion,
-    useReducedMotion,
 } from "framer-motion";
 import { useTheme } from "next-themes";
 import { Palette } from "lucide-react";
@@ -11,6 +10,9 @@ import { Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PillGroup from "@/components/ui/pill-group";
 import { cn } from "@/lib/utils";
+import {
+    slideUp,
+} from "@/lib/motion";
 import {
     THEMES,
     parseStoredTheme,
@@ -22,8 +24,6 @@ import ThemeSwatch from "./ThemeSwatch";
 const SYSTEM_VALUE: ThemePreference = "system";
 
 const GROUP_ID = "theme-options";
-
-const EASE = [0.32, 0.72, 0, 1] as const;
 
 /**
  * The theme switch, folded into one button until it is opened.
@@ -47,7 +47,6 @@ const EASE = [0.32, 0.72, 0, 1] as const;
  */
 export default function ThemeToggle({ className }: { className?: string }) {
     const { theme, setTheme } = useTheme();
-    const reduceMotion = useReducedMotion();
 
     const [open, setOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -86,14 +85,10 @@ export default function ThemeToggle({ className }: { className?: string }) {
                 {open ? (
                     <motion.div
                         key={GROUP_ID}
-                        initial={reduceMotion ? false : { opacity: 0, x: -6 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={
-                            reduceMotion
-                                ? { opacity: 0 }
-                                : { opacity: 0, x: -6 }
-                        }
-                        transition={{ duration: 0.2, ease: EASE }}
+                        {...slideUp({
+                            duration: 0.2,
+                            distance: 6,
+                        })}
                         className="min-w-0"
                     >
                         <PillGroup

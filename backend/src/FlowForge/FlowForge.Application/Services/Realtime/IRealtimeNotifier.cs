@@ -1,4 +1,5 @@
 using FlowForge.Application.Services.Presence;
+using FlowForge.Domain.Enums;
 
 namespace FlowForge.Application.Services.Realtime;
 
@@ -15,4 +16,6 @@ public interface IRealtimeNotifier
     Task NotifyBoardAsync(Guid boardId, string eventName, object payload, CancellationToken cancellationToken = default);
 
     Task NotifyBoardPresenceChangedAsync(Guid boardId, IReadOnlyCollection<BoardViewer> users, CancellationToken cancellationToken = default);
+
+    Task NotifyRoleChangedAsync(Guid userId, Guid organizationId, UserRole newRole, CancellationToken cancellationToken = default);
 }

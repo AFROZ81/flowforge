@@ -1,123 +1,146 @@
-# 🌐 API
+# API
 
 ## Overview
 
-FlowForge exposes a RESTful API built with **ASP.NET Core**. The API serves as the communication layer between client applications and the backend, handling authentication, validation, business operations, and realtime collaboration.
+FlowForge exposes an ASP.NET Core REST API at `api/[controller]`. Swagger is available in Development and is the executable reference for request and response models.
 
-Interactive API documentation is available through **Swagger** during development.
+- Local API: `http://localhost:5045/api`
+- Production API: `https://flowforge-app.runasp.net/api`
+- SignalR hub: `/hubs/notifications`
 
----
+JSON enum values are serialized as strings, such as `"Member"` and `"Active"`.
 
-# API Design
+## Authentication
 
-The API follows standard REST principles.
+JWT bearer tokens are required for protected endpoints:
 
-- Resource-based endpoints
-- Appropriate HTTP methods
-- JSON request and response bodies
-- Stateless communication
-- Consistent status codes
-
-Each endpoint delegates business logic to the Application layer through MediatR, keeping controllers lightweight and focused on request handling.
-
----
-
-# Authentication
-
-Authentication is implemented using **JSON Web Tokens (JWT)**.
-
-After a successful login, clients receive a JWT access token that must be included in subsequent requests.
-
-```
+```http
 Authorization: Bearer <access_token>
 ```
 
-Protected endpoints require a valid token before access is granted.
+Tokens include the user id, active organization, all organization ids, active role, email, and display name.
 
----
+### Auth endpoints
 
-# Authorization
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/Auth/register` | Normal workspace registration or invitation registration. |
+| `POST` | `/api/Auth/login` | Email/password login. |
+| `POST` | `/api/Auth/refresh` | Issue a fresh token for the current identity. |
 
-FlowForge uses role and organization-based authorization.
+Normal registration requires `organizationId`. Invitation registration instead sends `invitationToken`; the server validates that the email matches the invitation, creates the account, accepts the invitation, and returns `accessToken` and `expiresAtUtc`.
 
-Requests are validated to ensure users can only access resources belonging to their own organization.
+### Organization switching
 
-Authorization is enforced before business logic is executed.
+`POST /api/Organizations/switch` validates membership in the requested organization and returns a new token with that organization active.
 
----
+## Authorization
 
-# Request Processing
+Policies are registered in `Program.cs`:
 
-A typical API request follows this flow.
+- `RequireAdmin`
+- `RequireMember`
+- `RequireViewer`
 
-```
-HTTP Request
-      │
-      ▼
-Controller
-      │
-      ▼
-MediatR
-      │
-      ▼
-Command / Query Handler
-      │
-      ▼
-Business Rules
-      │
-      ▼
-Database
-      │
-      ▼
-HTTP Response
-```
+Most resource access is scoped to the active organization in the token. Admin-only surfaces include audit logs and member/settings management.
 
-Realtime events are published through SignalR after successful state changes when applicable.
+## Response formats
 
----
+The API uses a mix of:
 
-# Validation
+- bare DTOs and lists from many MediatR endpoints
+- `ApiResponse<T>` envelopes from authentication
+- paged results for audit logs
+- file responses for exports and attachment downloads
 
-Incoming requests are validated using **FluentValidation** before reaching the application logic.
+Client helpers normalize the known envelope and bare-payload cases.
 
-Invalid requests return descriptive validation errors without executing business operations.
+Errors use a common shape with `success`, `message`, `traceId`, and optional `errors`.
 
----
+## Status codes
 
-# Error Handling
+| Status | Meaning |
+| --- | --- |
+| 200 | Successful read/update/acceptance. |
+| 201 | Resource created. |
+| 204 | Successful delete/revoke/removal. |
+| 400 | Invalid request, validation failure, or invalid lifecycle transition. |
+| 401 | Missing, invalid, or expired authentication. |
+| 403 | Authenticated but not allowed. |
+| 404 | Resource or invitation token not found. |
+| 409 | Duplicate invitation, existing member/email, rate limit, or resend cooldown. |
+| 410 | Reserved for expired invitation responses in controller metadata; current handler uses 400 for expiry. |
+| 429 | Request rate limit exceeded. |
+| 500 | Unexpected server error. |
 
-The API uses centralized exception handling to provide consistent error responses.
+## Invitations
 
-Common HTTP status codes include:
+### Endpoints
 
-| Status | Description |
-|---------|-------------|
-| **200 OK** | Request completed successfully. |
-| **201 Created** | Resource created successfully. |
-| **400 Bad Request** | Validation or request error. |
-| **401 Unauthorized** | Authentication required or invalid token. |
-| **403 Forbidden** | Access denied. |
-| **404 Not Found** | Requested resource does not exist. |
-| **500 Internal Server Error** | Unexpected server error. |
+| Method | Route | Access | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/Invitations` | Admin | Create an invitation. |
+| `GET` | `/api/Invitations` | Authenticated | List current-organization invitations. |
+| `DELETE` | `/api/Invitations/{id}` | Admin | Revoke an invitation. |
+| `POST` | `/api/Invitations/{id}/resend` | Admin | Rotate token, extend expiry, retry email. |
+| `GET` | `/api/Invitations/validate?token=…` | Anonymous | Read invitation details without accepting. |
+| `POST` | `/api/Invitations/accept` | Anonymous | Accept using a token. |
+| `GET` | `/api/Invitations/smtp-diagnostics` | Admin | Test SMTP connectivity without sending to a recipient. |
 
----
+### Creation rules
 
-# API Documentation
+- Only organization admins can invite.
+- The email is trimmed and normalized.
+- Existing organization members are rejected.
+- A pending invitation is one that is not deleted, not accepted, unexpired, in the same organization, and email-equivalent.
+- Each admin may create at most 10 invitations per hour.
+- The invitation record is persisted before email delivery.
+- SMTP failure does not delete the invitation; delivery status becomes `Failed` and the admin can resend.
 
-Swagger is integrated into the application for interactive API exploration and testing.
+### Acceptance rules
 
-It provides:
+- Tokens are secure, random, and unique.
+- Standard expiry is seven days.
+- Resend rotates the token, extends expiry, and enforces a five-minute cooldown.
+- Acceptance creates the membership with the invited role and marks the invitation accepted.
+- Invitation registration wraps account creation and acceptance in one relational transaction.
+- A successful acceptance returns a JWT for the invited organization.
 
-- Available endpoints
-- Request models
-- Response models
-- Authentication support
-- Endpoint testing
+### Link configuration
 
-Swagger serves as the primary API reference, eliminating the need to manually document every endpoint.
+New and resent invitations use `Frontend:BaseUrl`:
 
----
+- Development: `http://localhost:5173`
+- Production: `https://flowforge-app.runasp.net`
+- Override: `Frontend__BaseUrl`
 
-# Summary
+Previously emailed links do not change; resend to generate a link with the current configuration.
 
-The FlowForge API is designed to be lightweight, secure, and consistent. Controllers remain minimal by delegating business logic to the Application layer, while authentication, validation, and error handling are applied consistently across the application.
+## Audit logs
+
+`GET /api/AuditLogs` supports pagination, date range, type, actor, target, sensitivity, text search, and sorting. `GET /api/AuditLogs/statistics` returns totals and breakdowns. Both require `RequireAdmin` and are scoped to the active organization.
+
+## Webhooks
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/Webhooks` | List active-organization subscriptions. |
+| `POST` | `/api/Webhooks` | Create a subscription. |
+| `PUT` | `/api/Webhooks/{id}` | Update a subscription. |
+| `DELETE` | `/api/Webhooks/{id}` | Soft-delete a subscription. |
+| `POST` | `/api/Webhooks/{id}/test` | Send a signed test payload. |
+
+Automatic domain-event publishing is not connected yet; test delivery is the currently usable path.
+
+## Rate limits and correlation
+
+- 600 requests/minute per authenticated user
+- 30 requests/minute per anonymous IP
+- 5 login requests/minute per IP
+- 5 organization-creation requests/hour per IP
+
+Rejections return 429 and `Retry-After: 60`. `X-Correlation-ID` is accepted inbound, echoed, and attached to logs and error responses.
+
+## CORS
+
+Development allows `http://localhost:5173`, `:5174`, and `:5175`. Production is designed as one same-origin site, so no wildcard CORS origin is required.

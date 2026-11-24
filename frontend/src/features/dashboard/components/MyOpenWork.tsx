@@ -69,6 +69,14 @@ function matches(item: WorkItemBrief, filter: Filter): boolean {
 const HEAD_CELL =
     "sticky top-0 z-10 bg-card shadow-[inset_0_-1px_0_var(--border)]";
 
+function itemHref(item: WorkItemBrief): string {
+    return `/projects/${item.projectId}/boards/${item.boardId}`;
+}
+
+function railClass(priority: string): string {
+    return PRIORITY_RAIL[priority] ?? "bg-border";
+}
+
 /**
  * The list behind the figures above it.
  *
@@ -77,12 +85,11 @@ const HEAD_CELL =
  * count is somebody's workload, so on a busy account it grew past every other
  * card and left the whole right rail standing in empty background.
  *
- * From xl the row the page puts it in has a definite height, so the pane fills
- * that and the ceiling is lifted; below the breakpoint the page is one column
- * with no row to match, and `max-h` is what keeps a long queue from turning into
- * a very tall card on a phone. `min-h` is not decoration: a flex item with a
- * zero basis and no floor collapses to nothing inside an auto-height card, which
- * would leave the table laid out over a pane of no height at all.
+ * Two presentations of the same rows. From `lg` up it is the fixed-layout
+ * table the wide card has room for. Below `lg` a four-column table cannot fit
+ * a phone without panning sideways, so the rows become a stacked card list -
+ * title and meta on top, status / priority / due on their own line - which reads
+ * top-to-bottom with no horizontal scroll at all.
  *
  * The note counts against the true total, not the loaded window - the snapshot
  * returns at most a hundred rows while the figures above it are computed over
@@ -167,102 +174,161 @@ export default function MyOpenWork({
                     className="py-6"
                 />
             ) : (
-                /* Fixed layout with stated proportions. An auto layout grows
-                   the table to the natural width of the longest title, which
-                   pushed the Due column clean out of a 745px card and left the
-                   table scrolling inside its own border - truncation only
-                   bites when the column already has a width to truncate to.
-
-                   Four columns, not five: the project had its own, which left
-                   the title a third of the card and truncated nine rows out of
-                   ten. The project key now rides in the subline beside the
-                   board, which is where a reader already looks for it, and the
-                   title gets half the width. */
-                <Table
-                    className="w-full min-w-[38rem] table-fixed"
-                    containerClassName="
-                        max-h-[26rem] min-h-[16rem] flex-1 overflow-x-auto overflow-y-auto
-                        xl:max-h-none
-                    "
-                >
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className={cn("w-[50%]", HEAD_CELL)}>
-                                Work item
-                            </TableHead>
-                            <TableHead className={cn("w-[18%]", HEAD_CELL)}>
-                                Status
-                            </TableHead>
-                            <TableHead className={cn("w-[16%]", HEAD_CELL)}>
-                                Priority
-                            </TableHead>
-                            <TableHead
-                                className={cn("w-[16%] text-right", HEAD_CELL)}
-                            >
-                                Due
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <>
+                    {/* Mobile / narrow: a stacked card list, no horizontal scroll. */}
+                    <ul className="max-h-[26rem] min-h-[12rem] flex-1 divide-y divide-border overflow-y-auto lg:hidden">
                         {rows.map((item) => (
-                            <TableRow key={item.id}>
-                                <TableCell className="relative py-3 pr-3 pl-5">
+                            <li key={item.id}>
+                                <Link
+                                    to={itemHref(item)}
+                                    title={item.title}
+                                    className="
+                                        group relative flex gap-3 px-4 py-3
+                                        outline-none transition-colors hover:bg-surface-muted
+                                        focus-visible:ring-[3px] focus-visible:ring-ring/40
+                                    "
+                                >
                                     <span
                                         aria-hidden="true"
                                         className={cn(
-                                            "absolute top-2.5 bottom-2.5 left-1.5 w-[3px] rounded-full",
-                                            PRIORITY_RAIL[item.priority] ??
-                                                "bg-border"
+                                            "absolute top-3 bottom-3 left-1.5 w-[3px] rounded-full",
+                                            railClass(item.priority)
                                         )}
                                     />
-                                    <Link
-                                        to={`/projects/${item.projectId}/boards/${item.boardId}`}
-                                        title={item.title}
-                                        className="
-                                            group block min-w-0 rounded-sm
-                                            outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40
-                                        "
-                                    >
-                                        <span className="block truncate font-medium group-hover:underline">
-                                            {item.title}
-                                        </span>
-                                        <span className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+
+                                    <div className="min-w-0 flex-1 pl-1.5">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <span className="min-w-0 flex-1 truncate text-sm font-medium group-hover:underline">
+                                                {item.title}
+                                            </span>
+
+                                            {item.dueDate ? (
+                                                <DueDateChip
+                                                    dueDate={item.dueDate}
+                                                    prefix={null}
+                                                    className="shrink-0"
+                                                />
+                                            ) : null}
+                                        </div>
+
+                                        <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                                             <span className="shrink-0 rounded bg-surface-sunken px-1 py-px font-mono text-[10px] font-semibold tracking-[0.04em] uppercase tabular-nums">
                                                 {item.projectKey}
                                             </span>
                                             <span className="truncate">
                                                 {item.boardName}
                                             </span>
-                                        </span>
-                                    </Link>
-                                </TableCell>
-                                <TableCell>
-                                    <WorkItemStatusBadge status={item.status} />
-                                </TableCell>
-                                <TableCell>
-                                    {/* Full label, not the compact form: the table
-                                        pans rather than squeezes, so the word fits. */}
-                                    <WorkItemPriorityBadge
-                                        priority={item.priority}
-                                    />
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    {item.dueDate ? (
-                                        <DueDateChip
-                                            dueDate={item.dueDate}
-                                            prefix={null}
-                                            className="justify-end"
-                                        />
-                                    ) : (
-                                        <span className="text-xs text-muted-foreground/60">
-                                            No due date
-                                        </span>
-                                    )}
-                                </TableCell>
-                            </TableRow>
+                                        </div>
+
+                                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                            <WorkItemStatusBadge
+                                                status={item.status}
+                                            />
+                                            <WorkItemPriorityBadge
+                                                priority={item.priority}
+                                                compact
+                                            />
+                                        </div>
+                                    </div>
+                                </Link>
+                            </li>
                         ))}
-                    </TableBody>
-                </Table>
+                    </ul>
+
+                    {/* Wide: the fixed-layout table the two-column card has room for.
+                        An auto layout grows the table to the natural width of the
+                        longest title, which pushed the Due column out of the card;
+                        truncation only bites when the column already has a width. */}
+                    <div className="hidden min-h-0 flex-1 lg:flex lg:flex-col">
+                        <Table
+                            className="w-full min-w-[38rem] table-fixed"
+                            containerClassName="
+                                max-h-[26rem] min-h-[16rem] flex-1 overflow-y-auto
+                                xl:max-h-none
+                            "
+                        >
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className={cn("w-[50%]", HEAD_CELL)}>
+                                        Work item
+                                    </TableHead>
+                                    <TableHead className={cn("w-[18%]", HEAD_CELL)}>
+                                        Status
+                                    </TableHead>
+                                    <TableHead className={cn("w-[16%]", HEAD_CELL)}>
+                                        Priority
+                                    </TableHead>
+                                    <TableHead
+                                        className={cn(
+                                            "w-[16%] text-right",
+                                            HEAD_CELL
+                                        )}
+                                    >
+                                        Due
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {rows.map((item) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell className="relative py-3 pr-3 pl-5">
+                                            <span
+                                                aria-hidden="true"
+                                                className={cn(
+                                                    "absolute top-2.5 bottom-2.5 left-1.5 w-[3px] rounded-full",
+                                                    railClass(item.priority)
+                                                )}
+                                            />
+                                            <Link
+                                                to={itemHref(item)}
+                                                title={item.title}
+                                                className="
+                                                    group block min-w-0 rounded-sm
+                                                    outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40
+                                                "
+                                            >
+                                                <span className="block truncate font-medium group-hover:underline">
+                                                    {item.title}
+                                                </span>
+                                                <span className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                                                    <span className="shrink-0 rounded bg-surface-sunken px-1 py-px font-mono text-[10px] font-semibold tracking-[0.04em] uppercase tabular-nums">
+                                                        {item.projectKey}
+                                                    </span>
+                                                    <span className="truncate">
+                                                        {item.boardName}
+                                                    </span>
+                                                </span>
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>
+                                            <WorkItemStatusBadge status={item.status} />
+                                        </TableCell>
+                                        <TableCell>
+                                            {/* Full label, not the compact form: the table
+                                                pans rather than squeezes, so the word fits. */}
+                                            <WorkItemPriorityBadge
+                                                priority={item.priority}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {item.dueDate ? (
+                                                <DueDateChip
+                                                    dueDate={item.dueDate}
+                                                    prefix={null}
+                                                    className="justify-end"
+                                                />
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground/60">
+                                                    No due date
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </>
             )}
         </DataSection>
     );

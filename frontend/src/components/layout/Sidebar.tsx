@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/auth.store";
 
 type SidebarProps = {
   collapsed: boolean;
@@ -109,6 +110,14 @@ export default function Sidebar({
 }: SidebarProps) {
   const isDrawer = variant === "drawer";
   const showCollapsed = isDrawer ? false : collapsed;
+  const isAdmin =
+    useAuthStore((state) => state.user?.role?.toLowerCase() === "admin");
+  const visibleSections = NAV_SECTIONS
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !item.adminOnly || isAdmin),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <div
@@ -141,7 +150,7 @@ export default function Sidebar({
         aria-label="Primary"
         className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-4"
       >
-        {NAV_SECTIONS.map((section, sectionIndex) => (
+        {visibleSections.map((section, sectionIndex) => (
           <div
             key={section.label ?? section.items[0]?.href ?? sectionIndex}
             className={cn(sectionIndex > 0 && "mt-6")}

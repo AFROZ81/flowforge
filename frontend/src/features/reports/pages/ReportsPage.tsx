@@ -112,20 +112,82 @@ function ofTotal(value: number, total: number): number {
     return total > 0 ? (value / total) * 100 : 0;
 }
 
+/**
+ * A rounded axis scale for the productivity chart: picks a "nice" step so the
+ * tick labels read as clean numbers (…10, 20, 50…) rather than 23.7, and returns
+ * the ticks bottom-up from 0 to a ceiling at or above `maxValue`.
+ */
+function niceScale(maxValue: number, tickCount = 4): { max: number; ticks: number[] } {
+    if (maxValue <= 0) {
+        return { max: 4, ticks: [0, 1, 2, 3, 4] };
+    }
+
+    const roughStep = maxValue / tickCount;
+    const power = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const normalized = roughStep / power;
+    const niceNormalized =
+        normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+    const step = niceNormalized * power;
+
+    const max = Math.ceil(maxValue / step) * step;
+
+    const ticks: number[] = [];
+    for (let value = 0; value <= max + step / 1000; value += step) {
+        ticks.push(Math.round(value));
+    }
+
+    return { max, ticks };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Building blocks                                                            */
 /* -------------------------------------------------------------------------- */
 
+type Tone = "primary" | "success" | "warning" | "danger" | "muted";
+
+const TONE_FILL: Record<Tone, string> = {
+    primary: "bg-primary",
+    success: "bg-success",
+    warning: "bg-warning",
+    danger: "bg-destructive",
+    muted: "bg-muted-foreground/40",
+};
+
+/** Colour a count by its meaning — danger only reads as danger when non-zero. */
+function toneValueClass(tone: Tone, value: number): string | undefined {
+    if (tone === "danger") {
+        return value > 0 ? "text-destructive" : undefined;
+    }
+    if (tone === "warning") {
+        return value > 0 ? "text-warning" : undefined;
+    }
+    if (tone === "success") {
+        return "text-success";
+    }
+    return undefined;
+}
+
 /** Bar plus its percentage, so a column can be read at a glance and exactly. */
-function Share({ value, total }: { value: number; total: number }) {
-    const percentage = ofTotal(value, total);
+function Share({
+    value,
+    total,
+    tone = "primary",
+}: {
+    value: number;
+    total: number;
+    tone?: Tone;
+}) {
+    const percentage = Math.min(100, Math.max(0, ofTotal(value, total)));
 
     return (
         <div className="flex min-w-28 items-center gap-2">
             <div className="h-1.5 flex-1 rounded-full bg-foreground/10">
                 <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${Math.min(100, percentage)}%` }}
+                    className={cn(
+                        "h-full rounded-full transition-[width] duration-500 ease-out",
+                        TONE_FILL[tone]
+                    )}
+                    style={{ width: `${percentage}%` }}
                 />
             </div>
             <span className="w-11 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
@@ -143,14 +205,18 @@ const NUMERIC_CELL = "text-right tabular-nums";
 /* -------------------------------------------------------------------------- */
 
 function WorkItemsReport({ data }: { data: WorkItemSummary }) {
-    const measures: { label: string; value: number }[] = [
-        { label: "Assigned", value: data.assigned },
-        { label: "Unassigned", value: data.unassigned },
-        { label: "Active", value: data.active },
-        { label: "Completed", value: data.completed },
-        { label: "Blocked", value: data.blocked },
-        { label: "Overdue", value: data.overdue },
-        { label: "Archived", value: data.archived },
+    const measures: { label: string; value: number; tone: Tone }[] = [
+        { label: "Assigned", value: data.assigned, tone: "primary" },
+        {
+            label: "Unassigned",
+            value: data.unassigned,
+            tone: data.unassigned > 0 ? "warning" : "primary",
+        },
+        { label: "Active", value: data.active, tone: "primary" },
+        { label: "Completed", value: data.completed, tone: "success" },
+        { label: "Blocked", value: data.blocked, tone: "danger" },
+        { label: "Overdue", value: data.overdue, tone: "danger" },
+        { label: "Archived", value: data.archived, tone: "muted" },
     ];
 
     return (
@@ -162,6 +228,8 @@ function WorkItemsReport({ data }: { data: WorkItemSummary }) {
                         label: "Completion",
                         value: formatPercentage(ofTotal(data.completed, data.total)),
                         tone: "success",
+                        share: ofTotal(data.completed, data.total) / 100,
+                        caption: `${formatNumber(data.completed)} of ${formatNumber(data.total)}`,
                     },
                     {
                         label: "Blocked",
@@ -200,13 +268,19 @@ function WorkItemsReport({ data }: { data: WorkItemSummary }) {
                                 <TableCell className="font-medium">
                                     {measure.label}
                                 </TableCell>
-                                <TableCell className={NUMERIC_CELL}>
+                                <TableCell
+                                    className={cn(
+                                        NUMERIC_CELL,
+                                        toneValueClass(measure.tone, measure.value)
+                                    )}
+                                >
                                     {formatNumber(measure.value)}
                                 </TableCell>
                                 <TableCell>
                                     <Share
                                         value={measure.value}
                                         total={data.total}
+                                        tone={measure.tone}
                                     />
                                 </TableCell>
                             </TableRow>
@@ -257,14 +331,20 @@ function ProjectsReport({ data }: { data: ProjectSummary[] }) {
                 ]}
             />
 
-            <DataSection number={1} title="Project delivery">
+            <DataSection
+                number={1}
+                title="Project delivery"
+                note="Completion is completed work items over each project's total"
+            >
                 <Table className="min-w-[40rem]">
                     <TableHeader>
                         <TableRow>
                             <TableHead>Project</TableHead>
                             <TableHead className={NUMERIC_HEAD}>Items</TableHead>
                             <TableHead className={NUMERIC_HEAD}>Active</TableHead>
-                            <TableHead className={NUMERIC_HEAD}>Completed</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>
+                                Completed
+                            </TableHead>
                             <TableHead className={NUMERIC_HEAD}>Blocked</TableHead>
                             <TableHead>Completion</TableHead>
                         </TableRow>
@@ -272,7 +352,10 @@ function ProjectsReport({ data }: { data: ProjectSummary[] }) {
                     <TableBody>
                         {data.map((project) => (
                             <TableRow key={project.projectId}>
-                                <TableCell className="max-w-64 truncate font-medium">
+                                <TableCell
+                                    className="max-w-64 truncate font-medium"
+                                    title={project.projectName}
+                                >
                                     {project.projectName}
                                 </TableCell>
                                 <TableCell className={NUMERIC_CELL}>
@@ -281,22 +364,27 @@ function ProjectsReport({ data }: { data: ProjectSummary[] }) {
                                 <TableCell className={NUMERIC_CELL}>
                                     {formatNumber(project.active)}
                                 </TableCell>
-                                <TableCell className={NUMERIC_CELL}>
+                                <TableCell
+                                    className={cn(
+                                        NUMERIC_CELL,
+                                        "text-success"
+                                    )}
+                                >
                                     {formatNumber(project.completed)}
                                 </TableCell>
-                                <TableCell className={NUMERIC_CELL}>
-                                    {project.blocked > 0 ? (
-                                        <span className="text-destructive">
-                                            {formatNumber(project.blocked)}
-                                        </span>
-                                    ) : (
-                                        "0"
+                                <TableCell
+                                    className={cn(
+                                        NUMERIC_CELL,
+                                        project.blocked > 0 && "text-destructive"
                                     )}
+                                >
+                                    {formatNumber(project.blocked)}
                                 </TableCell>
                                 <TableCell>
                                     <Share
                                         value={project.completed}
                                         total={project.total}
+                                        tone="success"
                                     />
                                 </TableCell>
                             </TableRow>
@@ -311,16 +399,22 @@ function ProjectsReport({ data }: { data: ProjectSummary[] }) {
                             <TableCell className={NUMERIC_CELL}>
                                 {formatNumber(totals.active)}
                             </TableCell>
-                            <TableCell className={NUMERIC_CELL}>
+                            <TableCell className={cn(NUMERIC_CELL, "text-success")}>
                                 {formatNumber(totals.completed)}
                             </TableCell>
-                            <TableCell className={NUMERIC_CELL}>
+                            <TableCell
+                                className={cn(
+                                    NUMERIC_CELL,
+                                    totals.blocked > 0 && "text-destructive"
+                                )}
+                            >
                                 {formatNumber(totals.blocked)}
                             </TableCell>
                             <TableCell>
                                 <Share
                                     value={totals.completed}
                                     total={totals.total}
+                                    tone="success"
                                 />
                             </TableCell>
                         </TableRow>
@@ -347,7 +441,10 @@ function TeamReport({ data }: { data: AssigneeSummary[] }) {
         <>
             <FigureStrip
                 figures={[
-                    { label: "Members with work", value: formatNumber(data.length) },
+                    {
+                        label: "Members with work",
+                        value: formatNumber(data.length),
+                    },
                     { label: "Assigned", value: formatNumber(totals.assigned) },
                     {
                         label: "Completed",
@@ -362,14 +459,22 @@ function TeamReport({ data }: { data: AssigneeSummary[] }) {
                 ]}
             />
 
-            <DataSection number={1} title="Workload by member">
+            <DataSection
+                number={1}
+                title="Workload by member"
+                note="Assigned, active and completed counts per person"
+            >
                 <Table className="min-w-[44rem]">
                     <TableHeader>
                         <TableRow>
                             <TableHead>Member</TableHead>
-                            <TableHead className={NUMERIC_HEAD}>Assigned</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>
+                                Assigned
+                            </TableHead>
                             <TableHead className={NUMERIC_HEAD}>Active</TableHead>
-                            <TableHead className={NUMERIC_HEAD}>Completed</TableHead>
+                            <TableHead className={NUMERIC_HEAD}>
+                                Completed
+                            </TableHead>
                             <TableHead className={NUMERIC_HEAD}>Blocked</TableHead>
                             <TableHead className={NUMERIC_HEAD}>Overdue</TableHead>
                         </TableRow>
@@ -379,7 +484,11 @@ function TeamReport({ data }: { data: AssigneeSummary[] }) {
                             <TableRow key={member.userId}>
                                 <TableCell>
                                     <div className="flex min-w-0 items-center gap-2.5">
-                                        <Avatar name={member.fullName} size="sm" />
+                                        <Avatar
+                                            name={member.fullName}
+                                            size="sm"
+                                            decorative
+                                        />
                                         <span className="min-w-0">
                                             <span className="block truncate font-medium">
                                                 {member.fullName}
@@ -396,26 +505,26 @@ function TeamReport({ data }: { data: AssigneeSummary[] }) {
                                 <TableCell className={NUMERIC_CELL}>
                                     {formatNumber(member.active)}
                                 </TableCell>
-                                <TableCell className={NUMERIC_CELL}>
+                                <TableCell
+                                    className={cn(NUMERIC_CELL, "text-success")}
+                                >
                                     {formatNumber(member.completed)}
                                 </TableCell>
-                                <TableCell className={NUMERIC_CELL}>
-                                    {member.blocked > 0 ? (
-                                        <span className="text-destructive">
-                                            {formatNumber(member.blocked)}
-                                        </span>
-                                    ) : (
-                                        "0"
+                                <TableCell
+                                    className={cn(
+                                        NUMERIC_CELL,
+                                        member.blocked > 0 && "text-destructive"
                                     )}
+                                >
+                                    {formatNumber(member.blocked)}
                                 </TableCell>
-                                <TableCell className={NUMERIC_CELL}>
-                                    {member.overdue > 0 ? (
-                                        <span className="text-destructive">
-                                            {formatNumber(member.overdue)}
-                                        </span>
-                                    ) : (
-                                        "0"
+                                <TableCell
+                                    className={cn(
+                                        NUMERIC_CELL,
+                                        member.overdue > 0 && "text-destructive"
                                     )}
+                                >
+                                    {formatNumber(member.overdue)}
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -429,13 +538,23 @@ function TeamReport({ data }: { data: AssigneeSummary[] }) {
                             <TableCell className={NUMERIC_CELL}>
                                 {formatNumber(totals.active)}
                             </TableCell>
-                            <TableCell className={NUMERIC_CELL}>
+                            <TableCell className={cn(NUMERIC_CELL, "text-success")}>
                                 {formatNumber(totals.completed)}
                             </TableCell>
-                            <TableCell className={NUMERIC_CELL}>
+                            <TableCell
+                                className={cn(
+                                    NUMERIC_CELL,
+                                    totals.blocked > 0 && "text-destructive"
+                                )}
+                            >
                                 {formatNumber(totals.blocked)}
                             </TableCell>
-                            <TableCell className={NUMERIC_CELL}>
+                            <TableCell
+                                className={cn(
+                                    NUMERIC_CELL,
+                                    totals.overdue > 0 && "text-destructive"
+                                )}
+                            >
                                 {formatNumber(totals.overdue)}
                             </TableCell>
                         </TableRow>
@@ -468,7 +587,11 @@ function LabelsReport({ data }: { data: LabelUsage[] }) {
                 ]}
             />
 
-            <DataSection number={1} title="Label usage">
+            <DataSection
+                number={1}
+                title="Label usage"
+                note="Share is of all label applications across work items"
+            >
                 <Table className="min-w-[24rem]">
                     <TableHeader>
                         <TableRow>
@@ -489,7 +612,10 @@ function LabelsReport({ data }: { data: LabelUsage[] }) {
                                                     label.color || undefined,
                                             }}
                                         />
-                                        <span className="truncate font-medium">
+                                        <span
+                                            className="truncate font-medium"
+                                            title={label.name}
+                                        >
                                             {label.name}
                                         </span>
                                     </div>
@@ -536,7 +662,19 @@ function ProductivityReport({ data }: { data: ProductivityPoint[] }) {
         0
     );
 
+    const { max: axisMax, ticks } = niceScale(peak);
     const net = totals.completed - totals.created;
+
+    /*
+     * Always show a date axis. For wide ranges every column would collide, so
+     * the labels thin out to a readable interval while the first and last day
+     * stay anchored — you can always tell what span the chart covers and roughly
+     * where a bar sits in it, instead of a single "first – last" caption.
+     */
+    const labelEvery = Math.ceil(data.length / 8);
+    const showLabel = (index: number) =>
+        index % labelEvery === 0 ||
+        index === data.length - 1;
 
     return (
         <>
@@ -560,101 +698,156 @@ function ProductivityReport({ data }: { data: ProductivityPoint[] }) {
             <DataSection
                 number={1}
                 title="Daily activity"
-                note="Bars are scaled to the busiest day"
+                note="Items created and completed per day; hover a column for exact counts"
             >
-                <Table className="min-w-[28rem]">
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead className={NUMERIC_HEAD}>Created</TableHead>
-                            <TableHead className={NUMERIC_HEAD}>Completed</TableHead>
-                            <TableHead className={NUMERIC_HEAD}>Net</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {data.map((point) => {
-                            const dayNet = point.completed - point.created;
+                <div className="p-4 sm:p-5">
+                    <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className="size-2.5 rounded-sm bg-primary"
+                            />
+                            Created
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className="size-2.5 rounded-sm bg-success"
+                            />
+                            Completed
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className="size-2.5 rounded-sm bg-destructive"
+                            />
+                            Completed on a net-negative day
+                        </span>
+                    </div>
 
-                            return (
-                                <TableRow key={point.date}>
-                                    <TableCell className="whitespace-nowrap font-medium tabular-nums">
-                                        {formatDate(point.date)}
-                                    </TableCell>
-                                    <TableCell className={NUMERIC_CELL}>
-                                        <Scaled
-                                            value={point.created}
-                                            peak={peak}
-                                        />
-                                    </TableCell>
-                                    <TableCell className={NUMERIC_CELL}>
-                                        <Scaled
-                                            value={point.completed}
-                                            peak={peak}
-                                            emphasis
-                                        />
-                                    </TableCell>
-                                    <TableCell
-                                        className={cn(
-                                            NUMERIC_CELL,
-                                            dayNet > 0 && "text-success",
-                                            dayNet < 0 && "text-destructive"
-                                        )}
+                    <div className="flex gap-3">
+                        {/* Y axis: numeric scale with a unit caption */}
+                        <div className="flex flex-col">
+                            <div className="mb-1.5 h-3 text-[10px] leading-none text-muted-foreground">
+                                items
+                            </div>
+                            <div className="relative h-52 w-9 shrink-0">
+                                {ticks.map((tick) => (
+                                    <span
+                                        key={tick}
+                                        className="absolute right-0 -translate-y-1/2 text-[10px] tabular-nums text-muted-foreground"
+                                        style={{
+                                            top: `${100 - (tick / axisMax) * 100}%`,
+                                        }}
                                     >
-                                        {dayNet > 0 ? "+" : ""}
-                                        {formatNumber(dayNet)}
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
-                    </TableBody>
-                    <TableFooter>
-                        <TableRow>
-                            <TableCell>Total</TableCell>
-                            <TableCell className={NUMERIC_CELL}>
-                                {formatNumber(totals.created)}
-                            </TableCell>
-                            <TableCell className={NUMERIC_CELL}>
-                                {formatNumber(totals.completed)}
-                            </TableCell>
-                            <TableCell className={NUMERIC_CELL}>
-                                {net > 0 ? "+" : ""}
-                                {formatNumber(net)}
-                            </TableCell>
-                        </TableRow>
-                    </TableFooter>
-                </Table>
+                                        {formatNumber(tick)}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Plot */}
+                        <div className="min-w-0 flex-1">
+                            <div className="relative h-52">
+                                {/* Gridlines at each tick */}
+                                <div
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-0"
+                                >
+                                    {ticks.map((tick) => (
+                                        <div
+                                            key={tick}
+                                            className={cn(
+                                                "absolute inset-x-0 border-t",
+                                                tick === 0
+                                                    ? "border-border"
+                                                    : "border-dashed border-border-subtle"
+                                            )}
+                                            style={{
+                                                top: `${100 - (tick / axisMax) * 100}%`,
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+
+                                {/* Bars */}
+                                <div className="absolute inset-0 overflow-x-auto">
+                                    <div
+                                        className="flex h-full items-end gap-1"
+                                        style={{
+                                            minWidth: `${Math.max(data.length, 1) * 1.4}rem`,
+                                        }}
+                                    >
+                                        {data.map((point) => {
+                                            const dayNet =
+                                                point.completed - point.created;
+
+                                            return (
+                                                <div
+                                                    key={point.date}
+                                                    role="img"
+                                                    aria-label={`${formatDate(point.date)}: ${point.created} created, ${point.completed} completed, net ${dayNet}`}
+                                                    title={`${formatDate(point.date)} · ${point.created} created · ${point.completed} completed · net ${dayNet > 0 ? "+" : ""}${dayNet}`}
+                                                    className="group relative flex h-full flex-1 items-end justify-center gap-0.5 rounded-sm px-0.5 transition-colors hover:bg-foreground/[0.04]"
+                                                >
+                                                    <div
+                                                        className="w-1/2 max-w-2.5 rounded-t-sm bg-primary/85 transition-colors group-hover:bg-primary"
+                                                        style={{
+                                                            height: `${(point.created / axisMax) * 100}%`,
+                                                            minHeight:
+                                                                point.created > 0
+                                                                    ? 2
+                                                                    : 0,
+                                                        }}
+                                                    />
+                                                    <div
+                                                        className={cn(
+                                                            "w-1/2 max-w-2.5 rounded-t-sm transition-colors",
+                                                            dayNet < 0
+                                                                ? "bg-destructive/80 group-hover:bg-destructive"
+                                                                : "bg-success/85 group-hover:bg-success"
+                                                        )}
+                                                        style={{
+                                                            height: `${(point.completed / axisMax) * 100}%`,
+                                                            minHeight:
+                                                                point.completed >
+                                                                0
+                                                                    ? 2
+                                                                    : 0,
+                                                        }}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* X axis: date ticks, always present, thinned for range */}
+                            <div className="mt-2 overflow-x-auto">
+                                <div
+                                    className="flex gap-1"
+                                    style={{
+                                        minWidth: `${Math.max(data.length, 1) * 1.4}rem`,
+                                    }}
+                                >
+                                    {data.map((point, index) => (
+                                        <div
+                                            key={point.date}
+                                            className="h-3 flex-1 text-center text-[10px] leading-none whitespace-nowrap text-muted-foreground"
+                                        >
+                                            {showLabel(index)
+                                                ? formatDate(point.date)
+                                                : null}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </DataSection>
         </>
-    );
-}
-
-/** A number with a bar behind it, sized against the series peak rather than 100%. */
-function Scaled({
-    value,
-    peak,
-    emphasis = false,
-}: {
-    value: number;
-    peak: number;
-    emphasis?: boolean;
-}) {
-    return (
-        <div className="flex items-center justify-end gap-2">
-            <div className="h-1.5 w-16 rounded-full bg-foreground/10">
-                <div
-                    className={cn(
-                        "h-full rounded-full",
-                        emphasis ? "bg-success" : "bg-primary/60"
-                    )}
-                    style={{
-                        width: `${peak > 0 ? Math.min(100, (value / peak) * 100) : 0}%`,
-                    }}
-                />
-            </div>
-            <span className="w-8 text-right tabular-nums">
-                {formatNumber(value)}
-            </span>
-        </div>
     );
 }
 
@@ -1086,6 +1279,8 @@ function Loading() {
                     </div>
                 ))}
             </div>
+
+            {/* Mirrors the table the reports render once loaded. */}
             <div className="overflow-hidden rounded-xl border bg-card">
                 <div className="border-b px-4 py-3">
                     <Skeleton className="h-4 w-40" />
@@ -1093,7 +1288,7 @@ function Loading() {
                 {Array.from({ length: 6 }).map((_, index) => (
                     <div
                         key={index}
-                        className="flex items-center gap-4 border-b px-4 py-3 last:border-b-0"
+                        className="flex items-center gap-4 border-b px-4 py-3.5 last:border-b-0"
                     >
                         <Skeleton className="h-4 w-2/5" />
                         <Skeleton className="h-4 flex-1 opacity-70" />

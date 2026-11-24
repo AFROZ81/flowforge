@@ -28,6 +28,11 @@ public sealed class RegisterValidator : AbstractValidator<RegisterRequest>
 
         RuleFor(x => x.OrganizationId)
             .NotEqual(Guid.Empty)
-            .WithMessage("Organization is required.");
+            .WithMessage("Organization is required.")
+            .When(x => string.IsNullOrWhiteSpace(x.InvitationToken));
+
+        RuleFor(x => x.InvitationToken)
+            .MaximumLength(256)
+            .When(x => !string.IsNullOrWhiteSpace(x.InvitationToken));
     }
 }

@@ -1,6 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json;
 using FlowForge.Application.Features.Authentication.CurrentUser;
 using FlowForge.Application.Services.Authentication;
+using FlowForge.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 
 namespace FlowForge.Infrastructure.Services.Authentication;
@@ -60,12 +63,37 @@ public sealed class CurrentUserService : ICurrentUserService
             return null;
         }
 
+        // Parse organizationIds claim
+        var orgIdsClaim = user.FindFirst("orgIds")?.Value;
+        var organizationIds = new List<Guid>();
+        if (!string.IsNullOrWhiteSpace(orgIdsClaim))
+        {
+            try
+            {
+                organizationIds = JsonSerializer.Deserialize<List<Guid>>(orgIdsClaim) ?? new List<Guid>();
+            }
+            catch
+            {
+                // Ignore parsing errors
+            }
+        }
+
+        // Parse role claim
+        var roleClaim = user.FindFirst(ClaimTypes.Role)?.Value;
+        var role = UserRole.Member;
+        if (!string.IsNullOrWhiteSpace(roleClaim) && Enum.TryParse<UserRole>(roleClaim, out var parsedRole))
+        {
+            role = parsedRole;
+        }
+
         return new AuthenticatedUser
         {
             UserId = Guid.Parse(userId),
             Email = user.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty,
             FullName = user.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty,
-            OrganizationId = Guid.Parse(organizationId)
+            OrganizationId = Guid.Parse(organizationId),
+            OrganizationIds = organizationIds,
+            Role = role
         };
     }
 }

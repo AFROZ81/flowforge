@@ -19,7 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FlowForge.API.Controllers;
 
-[Authorize]
+[Authorize(Policy = "RequireViewer")]
 [ApiController]
 [Route("api/[controller]")]
 public sealed class WorkItemsController : ControllerBase
@@ -34,6 +34,7 @@ public sealed class WorkItemsController : ControllerBase
     #region Commands
 
     [HttpPost]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Create(CreateWorkItemCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(command, cancellationToken);
@@ -41,6 +42,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/rename")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Rename(Guid id, RenameWorkItemCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -54,6 +56,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/edit")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Edit(Guid id, [FromBody] EditWorkItemCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -67,6 +70,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/move")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Move(Guid id, MoveWorkItemCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -80,6 +84,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/complete")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Complete(Guid id, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -93,6 +98,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/block")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Block(Guid id, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -106,6 +112,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/activate")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -119,6 +126,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/archive")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Archive(Guid id, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -132,6 +140,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/restore")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Restore(Guid id, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -186,6 +195,7 @@ public sealed class WorkItemsController : ControllerBase
 
     
     [HttpPatch("{workItemId:guid}/assign/{userId:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Assign(Guid workItemId, Guid userId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -200,6 +210,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{workItemId:guid}/unassign")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Unassign(Guid workItemId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(

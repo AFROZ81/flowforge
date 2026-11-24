@@ -79,6 +79,11 @@ type PresenceUserPayload = {
     UserId?: string;
 };
 
+type TypingUser = {
+    userId: string;
+    userName: string;
+};
+
 
 type PresenceContextValue = {
 
@@ -122,6 +127,24 @@ type PresenceContextValue = {
     ) => Promise<void>;
 
     isBoardConnected: boolean;
+
+
+    /* =====================================================
+       TYPING INDICATORS
+       ===================================================== */
+
+    typingUsers:
+        Record<
+            string,
+            TypingUser[]
+        >;
+
+
+    /* =====================================================
+       IDLE DETECTION
+       ===================================================== */
+
+    isAway: boolean;
 };
 
 
@@ -407,6 +430,30 @@ export default function PresenceProvider({
 
 
     /* =====================================================
+       TYPING INDICATORS
+        ===================================================== */
+
+    const [typingUsers, setTypingUsers] =
+        useState<
+            Record<
+                string,
+                TypingUser[]
+            >
+        >({});
+
+
+    /* =====================================================
+       IDLE DETECTION
+       ===================================================== */
+
+    const [isAway, setIsAway] = useState(false);
+
+    const idleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+
+    /* =====================================================
        BOARD PRESENCE
        ===================================================== */
 
@@ -460,6 +507,14 @@ export default function PresenceProvider({
         useRef<string | null>(
             accessToken
         );
+
+    const typingTimeoutRefs =
+        useRef<
+            Record<
+                string,
+                ReturnType<typeof setTimeout> | null
+            >
+        >({});
 
 
     useEffect(() => {
@@ -680,10 +735,13 @@ export default function PresenceProvider({
 
                                 return users;
 
-                            },
-                            []
-                        );
+            },
+            []
+        );
 
+    /* =====================================================
+       BOARD PRESENCE
+       ===================================================== */
 
                     const uniqueUsers =
                         Array.from(
@@ -1401,6 +1459,495 @@ export default function PresenceProvider({
 
 
                 /* =============================================
+                   TYPING STARTED
+                   ============================================= */
+
+                connection.on(
+                    "TypingStarted",
+                    (
+                        payload: {
+                            BoardId?: string;
+                            boardId?: string;
+
+                            WorkItemId?: string;
+                            workItemId?: string;
+
+                            UserId?: string;
+                            userId?: string;
+
+                            UserName?: string;
+                            userName?: string;
+                        }
+                    ) => {
+
+                        if (
+                            !isMountedRef.current
+                        ) {
+                            return;
+                        }
+
+
+                        const boardId =
+                            payload.BoardId ??
+                            payload.boardId;
+
+                        const workItemId =
+                            payload.WorkItemId ??
+                            payload.workItemId;
+
+                        const userId =
+                            payload.UserId ??
+                            payload.userId;
+
+                        const userName =
+                            payload.UserName ??
+                            payload.userName ??
+                            "Unknown User";
+
+
+                        if (
+                            !boardId ||
+                            !workItemId ||
+                            !userId
+                        ) {
+                            return;
+                        }
+
+
+                        const key =
+                            `${boardId}:${workItemId}`;
+
+                        const normalizedUserId =
+                            normalizeUserId(userId);
+
+                        if (
+                            normalizedUserId
+                        ) {
+
+                            setTypingUsers(
+                                current => {
+
+                                    const existing =
+                                        current[key] ?? [];
+
+                                    if (
+                                        existing.some(
+                                            u =>
+                                                normalizeUserId(
+                                                    u.userId
+                                                ) ===
+                                                normalizedUserId
+                                        )
+                                    ) {
+
+                                        return current;
+                                    }
+
+                                    return {
+                                        ...current,
+
+                                        [key]: [
+                                            ...existing,
+
+                                            {
+                                                userId,
+
+                                                userName,
+                                            },
+                                        ],
+                                    };
+                                }
+                            );
+
+                            const existingTimeout =
+                                typingTimeoutRefs.current[key];
+
+                            if (
+                                existingTimeout
+                            ) {
+                                clearTimeout(
+                                    existingTimeout
+                                );
+                            }
+
+                            typingTimeoutRefs.current[key] =
+                                setTimeout(
+                                    () => {
+
+                                        const removeKey =
+                                            `${boardId}:${workItemId}`;
+
+                                        const existingRemoveTimeout =
+                                            typingTimeoutRefs.current[removeKey];
+
+                                        if (
+                                            existingRemoveTimeout
+                                        ) {
+                                            clearTimeout(
+                                                existingRemoveTimeout
+                                            );
+
+                                            typingTimeoutRefs.current[removeKey] =
+                                                null;
+                                        }
+
+                                        setTypingUsers(
+                                            current => {
+
+                                                const existingRemove =
+                                                    current[removeKey] ?? [];
+
+                                                const filtered =
+                                                    existingRemove.filter(
+                                                        u =>
+                                                            normalizeUserId(
+                                                                u.userId
+                                                            ) !==
+                                                            normalizeUserId(
+                                                                userId
+                                                            )
+                                                    );
+
+                                                if (
+                                                    filtered.length === 0
+                                                ) {
+
+                                                    const {
+                                                        [removeKey]: _removed,
+
+                                                        ...rest
+                                                    } = current;
+
+                                                    return rest;
+                                                }
+
+                                                return {
+                                                    ...current,
+
+                                                    [removeKey]: filtered,
+                                                };
+                                            }
+                                        );
+                                    },
+
+                                    3000
+                                );
+                        }
+
+
+                        window.dispatchEvent(
+                            new CustomEvent(
+                                "flowforge:typing-started",
+
+                                {
+                                    detail: {
+
+                                        boardId,
+
+                                        workItemId,
+
+                                        userId,
+
+                                        userName,
+                                    },
+                                }
+                            )
+                        );
+                    }
+                );
+
+
+                /* =============================================
+                   TYPING STOPPED
+                   ============================================= */
+
+                connection.on(
+                    "TypingStopped",
+                    (
+                        payload: {
+                            BoardId?: string;
+                            boardId?: string;
+
+                            WorkItemId?: string;
+                            workItemId?: string;
+
+                            UserId?: string;
+                            userId?: string;
+                        }
+                    ) => {
+
+                        if (
+                            !isMountedRef.current
+                        ) {
+                            return;
+                        }
+
+
+                        const boardId =
+                            payload.BoardId ??
+                            payload.boardId;
+
+                        const workItemId =
+                            payload.WorkItemId ??
+                            payload.workItemId;
+
+                        const userId =
+                            payload.UserId ??
+                            payload.userId;
+
+
+                        if (
+                            !boardId ||
+                            !workItemId ||
+                            !userId
+                        ) {
+                            return;
+                        }
+
+
+                        const removeKey =
+                            `${boardId}:${workItemId}`;
+
+                        const existingRemoveTimeout =
+                            typingTimeoutRefs.current[removeKey];
+
+                        if (
+                            existingRemoveTimeout
+                        ) {
+                            clearTimeout(
+                                existingRemoveTimeout
+                            );
+
+                            typingTimeoutRefs.current[removeKey] =
+                                null;
+                        }
+
+                        setTypingUsers(
+                            current => {
+
+                                const existingRemove =
+                                    current[removeKey] ?? [];
+
+                                const filtered =
+                                    existingRemove.filter(
+                                        u =>
+                                            normalizeUserId(
+                                                u.userId
+                                            ) !==
+                                            normalizeUserId(
+                                                userId
+                                            )
+                                    );
+
+                                if (
+                                    filtered.length === 0
+                                ) {
+
+                                    const {
+                                        [removeKey]: _removed,
+
+                                        ...rest
+                                    } = current;
+
+                                    return rest;
+                                }
+
+                                return {
+                                    ...current,
+
+                                    [removeKey]: filtered,
+                                };
+                            }
+                        );
+
+
+                        window.dispatchEvent(
+                            new CustomEvent(
+                                "flowforge:typing-stopped",
+
+                                {
+                                    detail: {
+
+                                        boardId,
+
+                                        workItemId,
+
+                                        userId,
+                                    },
+                                }
+                            )
+                        );
+                    }
+                );
+
+
+                /* =============================================
+                   WORK ITEM EVENTS
+                   ============================================= */
+
+                const dispatchWorkItemEvent =
+                    (
+                        eventName: string,
+                        payload: unknown
+                    ) => {
+
+                        if (
+                            !isMountedRef.current
+                        ) {
+                            return;
+                        }
+
+                        window.dispatchEvent(
+                            new CustomEvent(
+                                `flowforge:${eventName.toLowerCase()}`,
+
+                                {
+                                    detail: payload,
+                                }
+                            )
+                        );
+                    };
+
+
+                connection.on(
+                    "WorkItemCreated",
+                    payload =>
+                        dispatchWorkItemEvent(
+                            "WorkItemCreated",
+
+                            payload
+                        )
+                );
+
+                connection.on(
+                    "WorkItemUpdated",
+                    payload =>
+                        dispatchWorkItemEvent(
+                            "WorkItemUpdated",
+
+                            payload
+                        )
+                );
+
+                connection.on(
+                    "WorkItemMoved",
+                    payload =>
+                        dispatchWorkItemEvent(
+                            "WorkItemMoved",
+                            payload
+                        )
+                );
+
+                connection.on(
+                    "WorkItemDeleted",
+                    payload =>
+                        dispatchWorkItemEvent(
+                            "WorkItemDeleted",
+
+                            payload
+                        )
+                );
+
+
+                /* =============================================
+                   COMMENT EVENTS
+                   ============================================= */
+
+                const dispatchCommentEvent =
+                    (
+                        eventName: string,
+                        payload: unknown
+                    ) => {
+
+                        if (
+                            !isMountedRef.current
+                        ) {
+                            return;
+                        }
+
+
+                        window.dispatchEvent(
+                            new CustomEvent(
+                                `flowforge:${eventName.toLowerCase()}`,
+
+                                {
+                                    detail: payload,
+                                }
+                            )
+                        );
+                    };
+
+
+                connection.on(
+                    "CommentAdded",
+                    payload =>
+                        dispatchCommentEvent(
+                            "CommentAdded",
+
+                            payload
+                        )
+                );
+
+                connection.on(
+                    "CommentUpdated",
+                    payload =>
+                        dispatchCommentEvent(
+                            "CommentUpdated",
+
+                            payload
+                        )
+                );
+
+                connection.on(
+                    "CommentDeleted",
+                    payload =>
+                        dispatchCommentEvent(
+                            "CommentDeleted",
+
+                            payload
+                        )
+                );
+
+                /* =============================================
+                   ROLE CHANGED
+                   ============================================= */
+
+                connection.on(
+                    "RoleChanged",
+                    async (payload: { UserId: string; OrganizationId: string; Role: string }) => {
+                        if (!isMountedRef.current) {
+                            return;
+                        }
+
+                        console.log("Presence: role changed:", payload);
+
+                        // If this is the current user, refresh their token
+                        if (payload.UserId === authenticatedUserId) {
+                            try {
+                                const response = await fetch(`${API_BASE_URL}/Auth/refresh`, {
+                                    method: "POST",
+                                    headers: {
+                                        Authorization: `Bearer ${accessTokenRef.current}`,
+                                        "Content-Type": "application/json",
+                                    },
+                                });
+
+                                if (response.ok) {
+                                    const result = await response.json();
+                                    if (result.success && result.data?.accessToken) {
+                                        useAuthStore.getState().login(result.data.accessToken, result.data.expiresAtUtc);
+                                        console.log("Presence: token refreshed after role change");
+                                    }
+                                }
+                            } catch (error) {
+                                console.error("Presence: failed to refresh token after role change:", error);
+                            }
+                        }
+                    }
+                );
+
+
+                /* =============================================
                    RECONNECTED
                    ============================================= */
 
@@ -1955,6 +2502,172 @@ export default function PresenceProvider({
         );
 
 
+    /* =====================================================
+       IDLE DETECTION
+       ===================================================== */
+
+    useEffect(() => {
+
+        if (!isAuthenticated) {
+            return;
+        }
+
+        const resetIdle = () => {
+
+            if (
+                idleTimeoutRef.current
+            ) {
+                clearTimeout(
+                    idleTimeoutRef.current
+                );
+            }
+
+            if (
+                isAway
+            ) {
+                setIsAway(false);
+            }
+        };
+
+        const setIdle = () => {
+
+            if (
+                !isAway
+            ) {
+                setIsAway(true);
+            }
+        };
+
+        window.addEventListener(
+            "mousemove",
+            resetIdle,
+            { passive: true }
+        );
+
+        window.addEventListener(
+            "keydown",
+            resetIdle,
+            { passive: true }
+        );
+
+        window.addEventListener(
+            "scroll",
+            resetIdle,
+            { passive: true }
+        );
+
+        window.addEventListener(
+            "click",
+            resetIdle,
+            { passive: true }
+        );
+
+        window.addEventListener(
+            "touchstart",
+            resetIdle,
+            { passive: true }
+        );
+
+        idleTimeoutRef.current =
+            setTimeout(
+                setIdle,
+                IDLE_TIMEOUT_MS
+            );
+
+        return () => {
+
+            window.removeEventListener(
+                "mousemove",
+                resetIdle
+            );
+
+            window.removeEventListener(
+                "keydown",
+                resetIdle
+            );
+
+            window.removeEventListener(
+                "scroll",
+                resetIdle
+            );
+
+            window.removeEventListener(
+                "click",
+                resetIdle
+            );
+
+            window.removeEventListener(
+                "touchstart",
+                resetIdle
+            );
+
+            if (
+                idleTimeoutRef.current
+            ) {
+                clearTimeout(
+                    idleTimeoutRef.current
+                );
+            }
+        };
+    }, [
+        isAuthenticated,
+        isAway,
+    ]);
+
+
+    /* =====================================================
+       CROSS-TAB PRESENCE SYNC
+       ===================================================== */
+
+    useEffect(() => {
+
+        if (
+            typeof BroadcastChannel ===
+            "undefined"
+        ) {
+            return;
+        }
+
+        const channel =
+            new BroadcastChannel(
+                "flowforge-presence"
+            );
+
+        channel.onmessage = (
+            event: MessageEvent<{
+                type: "join-board" | "leave-board";
+                boardId: string;
+            }>
+        ) => {
+
+            const {
+                type,
+                boardId,
+            } = event.data;
+
+            if (
+                type === "join-board"
+            ) {
+                void joinBoard(boardId);
+            }
+
+            if (
+                type === "leave-board"
+            ) {
+                void leaveBoard(boardId);
+            }
+        };
+
+        return () => {
+
+            channel.close();
+        };
+    }, [
+        joinBoard,
+        leaveBoard,
+    ]);
+
+
     /* =========================================================
        CONTEXT VALUE
        ========================================================= */
@@ -1981,6 +2694,10 @@ export default function PresenceProvider({
                 leaveBoard,
 
                 isBoardConnected,
+
+                typingUsers,
+
+                isAway,
             }),
             [
                 presence,
@@ -1993,6 +2710,8 @@ export default function PresenceProvider({
                 joinBoard,
                 leaveBoard,
                 isBoardConnected,
+                typingUsers,
+                isAway,
             ]
         );
 

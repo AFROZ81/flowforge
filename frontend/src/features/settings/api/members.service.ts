@@ -1,26 +1,65 @@
 import api from "@/lib/api";
 
-export interface WorkspaceMember {
-    id: string;
+export type UserRole = "Admin" | "Member" | "Viewer";
+
+export type UserRoleNumber = 1 | 2 | 3;
+
+export interface MemberResponse {
+    userId: string;
+    email: string;
     fullName: string;
-    email: string | null;
+    role: UserRole;
+    joinedAt: string;
+    isCurrentUser: boolean;
 }
 
-/**
- * The people in this workspace.
- *
- * `GET /api/Users` takes no identifier: the handler reads the organization from
- * the caller's token, so a client cannot ask for somebody else's workspace. The
- * endpoint answers inside the application's `{ success, message, data }`
- * envelope, and a missing list is treated as empty rather than thrown at.
- */
-async function getOrganizationUsers(): Promise<WorkspaceMember[]> {
-    const response = await api.get("/Users");
-    const data = response.data?.data;
+export interface GetMembersResponse {
+    userId: string;
+    email: string;
+    fullName: string;
+    role: UserRoleNumber;
+    joinedAt: string;
+    isCurrentUser: boolean;
+}
 
-    return Array.isArray(data) ? (data as WorkspaceMember[]) : [];
+export interface ChangeMemberRoleRequest {
+    role: UserRole;
+}
+
+export interface ChangeMemberRoleResponse {
+    userId: string;
+    role: UserRole;
+    updatedAt: string;
+}
+
+async function getMembers(organizationId: string): Promise<GetMembersResponse[]> {
+    const response = await api.get(`/Organizations/${organizationId}/members`);
+    const data = response.data;
+
+    return Array.isArray(data) ? (data as GetMembersResponse[]) : [];
+}
+
+async function changeMemberRole(
+    organizationId: string,
+    userId: string,
+    role: UserRoleNumber
+): Promise<ChangeMemberRoleResponse> {
+    const response = await api.put(`/Organizations/${organizationId}/members/${userId}/role`, { role });
+    const data = response.data;
+
+    if (!data) {
+        throw new Error("Failed to change member role");
+    }
+
+    return data as ChangeMemberRoleResponse;
+}
+
+async function removeMember(organizationId: string, userId: string): Promise<void> {
+    await api.delete(`/Organizations/${organizationId}/members/${userId}`);
 }
 
 export const membersService = {
-    getOrganizationUsers,
+    getMembers,
+    changeMemberRole,
+    removeMember,
 };

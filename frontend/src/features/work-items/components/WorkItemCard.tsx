@@ -64,6 +64,8 @@ type Props = {
     item: WorkItem;
     users?: OrganizationUser[];
     onClick?: () => void;
+    /** Whether this card currently holds keyboard focus. */
+    isFocused?: boolean;
 };
 
 /*
@@ -76,6 +78,7 @@ export default function WorkItemCard({
     item,
     users = [],
     onClick,
+    isFocused = false,
 }: Props) {
     const [
         commentsOpen,
@@ -221,12 +224,13 @@ export default function WorkItemCard({
                 role={onClick ? "button" : undefined}
                 tabIndex={onClick ? 0 : undefined}
                 aria-label={onClick ? item.title : undefined}
-                className="
-                    cursor-pointer gap-0 rounded-xl border-border p-3 shadow-xs
-                    transition-[transform,box-shadow,border-color] duration-(--transition-normal)
-                    ease-(--ease-standard) hover:-translate-y-px hover:border-border-strong hover:shadow-sm
-                    focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring
-                "
+                aria-current={isFocused ? "true" : undefined}
+                data-focus={isFocused}
+                className={
+                    isFocused
+                        ? "cursor-pointer gap-0 rounded-xl border-primary p-3 shadow-xs ring-2 ring-ring/60 outline-2 outline-offset-2 outline-ring z-10 shadow-lg transition-[transform,box-shadow,border-color] duration-(--transition-normal) ease-(--ease-standard) hover:-translate-y-px hover:border-primary hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        : "cursor-pointer gap-0 rounded-xl border-border p-3 shadow-xs transition-[transform,box-shadow,border-color] duration-(--transition-normal) ease-(--ease-standard) hover:-translate-y-px hover:border-border-strong hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                }
             >
 
                 {/* =================================

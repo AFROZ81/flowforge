@@ -1,195 +1,118 @@
-# 🏗 Architecture
+# Architecture
 
 ## Overview
 
-FlowForge is designed as a modern, scalable project management platform following **Clean Architecture**, **CQRS (Command Query Responsibility Segregation)**, and **Vertical Slice Architecture**.
+FlowForge follows **Clean Architecture**, **CQRS**, and **Vertical Slice Architecture**. Business rules stay in the Application and Domain layers; ASP.NET Core, EF Core, Identity, SMTP, SignalR, storage, and webhook delivery remain infrastructure concerns.
 
-The primary goal is to keep the application modular, maintainable, testable, and easy to extend as new features are introduced.
+## Projects
 
-Rather than organizing code by technical layers (Controllers, Services, Repositories), FlowForge organizes application logic around individual features, allowing each feature to evolve independently while maintaining a consistent architecture.
+```text
+Browser / PWA
+   │ REST + SignalR
+   ▼
+FlowForge.API
+   │ Controllers, middleware, hubs, composition root
+   ▼
+FlowForge.Application ─────────► FlowForge.Domain
+        ▲                           ▲
+        │ implements contracts      │
+FlowForge.Infrastructure ──────────┘
+        │
+        ▼
+   SQL Server
 
----
-
-# Design Principles
-
-The architecture is based on the following principles:
-
-- Separation of concerns
-- Single responsibility
-- Dependency inversion
-- Feature-first organization
-- Domain-driven design concepts
-- Realtime-first collaboration
-
-These principles help keep business logic independent from infrastructure and external technologies.
-
----
-
-# Architecture Overview
-
-```
-                 Client Applications
-          (React, Mobile, Future Clients)
-                       │
-                       ▼
-                ASP.NET Core API
-                       │
-              Authentication & Middleware
-                       │
-                       ▼
-                 Application Layer
-              (CQRS + Business Logic)
-                ▲                  │
-                │                  ▼
-           Domain Layer      Infrastructure Layer
-                │                  │
-                └──────────► SQL Server
-                               SignalR
-                               Logging
-                               External Services
+FlowForge.Tests
+   └── xUnit tests for handlers, services, and middleware
 ```
 
----
+The solution file is `backend/src/FlowForge/FlowForge.slnx`. The test project is `backend/src/FlowForge/FlowForge.Tests`.
 
-# Clean Architecture
+## Dependency rule
 
-FlowForge follows Clean Architecture to ensure business rules remain independent from frameworks, databases, and user interfaces.
+- `Domain` has no project dependencies.
+- `Application` depends on `Domain` and declares infrastructure contracts.
+- `Infrastructure` implements those contracts and depends on `Application` and `Domain`.
+- `API` composes both layers and contains transport concerns.
+- `FlowForge.Tests` references the application projects for isolated tests.
 
-The solution is divided into four main projects.
+## Request flow
 
-| Layer | Responsibility |
-|--------|----------------|
-| **API** | HTTP endpoints, middleware, authentication and request handling. |
-| **Application** | Business logic, CQRS handlers, validation and application services. |
-| **Domain** | Core business entities, enums and domain rules. |
-| **Infrastructure** | Database access, SignalR, logging and external integrations. |
-
-Dependencies always point inward, ensuring that business logic remains independent of implementation details.
-
----
-
-# Vertical Slice Architecture
-
-Instead of grouping code by controllers, services and repositories, FlowForge groups application logic by feature.
-
-Example:
-
-```
-Features
-│
-├── Projects
-├── Boards
-├── Columns
-├── WorkItems
-├── Comments
-└── Notifications
+```text
+HTTP request
+  → Controller
+  → Authentication / authorization
+  → IMediator.Send
+  → ValidationBehavior
+  → Command or query handler
+  → Domain rules + infrastructure services
+  → EF Core SaveChanges
+  → Domain-event dispatch
+  → HTTP result
+  → ExceptionMiddleware on failure
 ```
 
-Each feature contains its own commands, queries, validators and handlers, making the codebase easier to navigate and maintain.
+`ValidationBehavior` runs registered FluentValidation validators. `ExceptionMiddleware` maps domain exceptions to HTTP responses, including `ValidationException` to 400 with an `errors` array and `ConflictException` to 409.
 
----
+## Identity and organization scoping
 
-# CQRS
+A user can belong to multiple organizations through `OrganizationUser`. JWTs carry:
 
-FlowForge separates operations into two categories.
+- `NameIdentifier` — user id
+- `organizationId` — active organization
+- `orgIds` — all organization ids for the user
+- `ClaimTypes.Role` — role in the active organization
+- email and display-name claims
 
-### Commands
+`CurrentUserService` reconstructs this context for handlers. Organization switching validates membership and issues a new token with the selected organization and its role. Most resource queries derive organization scope from the token rather than trusting a route id.
 
-Commands modify application state.
+## Vertical slices
 
-Examples:
+Each operation owns a folder under `Features/<area>/<verb>`. Examples:
 
-- Create Project
-- Create Board
-- Move Work Item
-- Add Comment
+- `Organizations/Invitations/Create`
+- `Organizations/Invitations/Accept`
+- `Organizations/Members/ChangeRole`
+- `AuditLogs/GetAuditLogs`
+- `Webhooks/CreateWebhook`
 
-### Queries
+A slice contains its request/command, handler, validator when needed, and response DTO. Controllers stay thin.
 
-Queries retrieve data without modifying it.
+## Domain events
 
-Examples:
+Entities can record domain events. `ApplicationDbContext.SaveChangesAsync` dispatches recorded events after a successful save through `IDomainEventDispatcher`.
 
-- Get Board
-- Get Projects
-- Get Work Items
-- Get Comments
+Current boundary:
 
-This separation keeps request handling simple, predictable and easier to test.
+- Event contracts and a dispatcher exist.
+- No concrete `IDomainEventHandler<T>` implementations are currently registered.
+- Audit entries are written explicitly by services/handlers where coverage exists.
+- The webhook queue and hosted dispatcher exist, but domain-event-to-webhook publishing is not wired yet.
 
----
+## Frontend structure
 
-# Request Flow
-
-A typical request follows this path:
-
-```
-HTTP Request
-      │
-      ▼
-Controller
-      │
-      ▼
-MediatR
-      │
-      ▼
-Command / Query Handler
-      │
-      ▼
-Business Rules
-      │
-      ▼
-Infrastructure
-      │
-      ▼
-Database
-      │
-      ▼
-HTTP Response
+```text
+frontend/src
+├── app             router and providers
+├── layouts         application shell
+├── routes          public, protected, and admin guards
+├── components      shared UI primitives and accessibility helpers
+├── features        api, hooks, components, pages, and types per domain
+├── stores          Zustand auth, AI, and UI state
+├── lib             Axios client, errors, toasts, PWA, motion, formatting
+└── styles          theme tokens
 ```
 
-For realtime features, SignalR notifications are published after successful database updates.
+Key client concerns:
 
----
+- TanStack Query owns server cache and invalidation.
+- Zustand persists auth in `sessionStorage` and AI preferences in local storage.
+- `PresenceProvider` owns the shared SignalR connection.
+- AI inference runs in a Web Worker and is loaded only when used.
+- The Vite PWA plugin generates the manifest and service worker.
 
-# Dependency Flow
+## Testing architecture
 
-Project references follow a strict one-way dependency.
-
-```
-API
- │
- ▼
-Application
- │
- ▼
-Domain
-
-Infrastructure
-      │
-      └────────► Application
-```
-
-The Domain project has no dependency on any other project, allowing business rules to remain isolated from implementation details.
-
----
-
-# Why This Architecture?
-
-This architecture provides several advantages:
-
-- Clear separation of responsibilities
-- Better maintainability
-- Easier testing
-- Feature-based organization
-- Scalable project structure
-- Independent business logic
-- Support for realtime collaboration
-
-It also allows new features to be introduced with minimal impact on the existing codebase.
-
----
-
-# Summary
-
-FlowForge combines Clean Architecture, CQRS and Vertical Slice Architecture to create a modular backend capable of supporting enterprise-scale project management features while remaining easy to understand and extend.
+- Backend: xUnit with EF Core InMemory and fake services for deterministic handler tests.
+- Frontend: Vitest unit tests for AI and utility behavior.
+- Storybook stories cover shared primitives; browser tests are configured separately.
+- No CI pipeline is configured yet, so verification remains a local pre-commit step.

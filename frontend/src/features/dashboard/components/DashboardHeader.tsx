@@ -31,6 +31,14 @@ function clockTime(value: string): string {
         : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function fullDate(date: Date): string {
+    return date.toLocaleDateString([], {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+    });
+}
+
 /**
  * The page's only header.
  *
@@ -45,12 +53,15 @@ export default function DashboardHeader({
     const fullName = useAuthStore((state) => state.user?.fullName?.trim());
     const firstName = fullName ? fullName.split(/\s+/)[0] : "there";
 
+    const now = new Date();
+
     return (
         <PageHeader
-            title={`${partOfDay(new Date().getHours())}, ${firstName}`}
+            eyebrow={fullDate(now)}
+            title={`${partOfDay(now.getHours())}, ${firstName}`}
             description={
                 generatedAtUtc
-                    ? `Updated ${clockTime(generatedAtUtc)}`
+                    ? `Snapshot updated ${clockTime(generatedAtUtc)}`
                     : "Loading your workspace snapshot"
             }
             actions={

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using FlowForge.Domain.Entities;
+using FlowForge.Domain.Enums;
 
 namespace FlowForge.Infrastructure.Identity;
 
@@ -12,5 +13,7 @@ public sealed class ApplicationUser : IdentityUser<Guid>
 
     public Guid OrganizationId { get; set; }
 
-    public Organization Organization { get; set; } = default!;
+    public ICollection<OrganizationUser> OrganizationUsers { get; private set; } = new List<OrganizationUser>();
+
+    public UserRole Role { get; set; } = UserRole.Member;
 }

@@ -1,9 +1,15 @@
-import { useEffect } from "react";
+import {
+    useEffect,
+    useState,
+} from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { toast } from "@/lib/toast";
+import {
+    Loader2,
+    Sparkles,
+} from "lucide-react";
 
 import {
     Dialog,
@@ -28,12 +34,18 @@ import {
 } from "../schemas/createWorkItem.schema";
 
 import { useCreateWorkItem } from "../hooks/useCreateWorkItem";
+import {
+    useAiFlag,
+    AIDraftDialog,
+    type AiDraft,
+} from "@/features/ai";
 
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     columnId: string;
     boardId: string;
+    existingTitles?: string[];
 };
 
 /** Mirrors WorkItemPriority on the server. */
@@ -49,16 +61,25 @@ export default function CreateWorkItemDialog({
     onOpenChange,
     columnId,
     boardId,
+    existingTitles = [],
 }: Props) {
     const queryClient = useQueryClient();
 
     const mutation = useCreateWorkItem();
+
+    const aiEnabled = useAiFlag("draftWithAi");
+
+    const [aiDraftOpen, setAiDraftOpen] = useState(false);
+    const [duplicateWarning, setDuplicateWarning] = useState<string | null>(
+        null
+    );
 
     const {
         register,
         handleSubmit,
         reset,
         setValue,
+        watch,
         formState: { errors, isSubmitting },
     } = useForm<CreateWorkItemForm>({
         resolver: zodResolver(createWorkItemSchema),
@@ -71,9 +92,38 @@ export default function CreateWorkItemDialog({
         },
     });
 
+    const title = watch("title");
+
     useEffect(() => {
         setValue("columnId", columnId);
     }, [columnId, setValue]);
+
+    useEffect(() => {
+        if (!title.trim()) {
+            setDuplicateWarning(null);
+            return;
+        }
+
+        const match = existingTitles.find(
+            (existing) =>
+                existing.toLowerCase() === title.toLowerCase()
+        );
+
+        setDuplicateWarning(
+            match ? `A work item titled "${match}" already exists in this column.` : null
+        );
+    }, [title, existingTitles]);
+
+    const applyAiDraft = (
+        draft: Partial<AiDraft> & { labels: string[] }
+    ) => {
+        setValue("title", draft.title ?? "");
+        setValue("description", draft.description ?? "");
+        if (draft.priority !== undefined) {
+            setValue("priority", draft.priority);
+        }
+        setAiDraftOpen(false);
+    };
 
     const busy = mutation.isPending || isSubmitting;
 
@@ -128,6 +178,11 @@ export default function CreateWorkItemDialog({
                             htmlFor="work-item-title"
                             required
                             error={errors.title?.message}
+                            hint={
+                                duplicateWarning
+                                    ? duplicateWarning
+                                    : "Short, specific summary"
+                            }
                         >
                             {(aria) => (
                                 <Input
@@ -140,6 +195,20 @@ export default function CreateWorkItemDialog({
                                 />
                             )}
                         </FormField>
+
+                        {aiEnabled && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground/80 px-4">
+                                <Sparkles className="size-3.5 shrink-0" />
+                                <button
+                                    type="button"
+                                    onClick={() => setAiDraftOpen(true)}
+                                    disabled={busy}
+                                    className="underline underline-offset-4 hover:text-foreground transition-colors"
+                                >
+                                    Draft with AI
+                                </button>
+                            </div>
+                        )}
 
                         <FormField
                             label="Description"
@@ -219,6 +288,18 @@ export default function CreateWorkItemDialog({
                     </DialogFooter>
                 </form>
             </DialogContent>
+
+            {aiEnabled && (
+                <AIDraftDialog
+                    open={aiDraftOpen}
+                    onOpenChange={setAiDraftOpen}
+                    onDraft={applyAiDraft}
+                    context={{
+                        boardId,
+                        existingTitles,
+                    }}
+                />
+            )}
         </Dialog>
     );
 }

@@ -9,7 +9,7 @@ import {
 
 import {
     toast,
-} from "sonner";
+} from "@/lib/toast";
 
 import {
     Button,

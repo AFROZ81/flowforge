@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Features.Authentication.Login;
 using Microsoft.AspNetCore.RateLimiting;
+using FlowForge.Application.Features.Authentication.CurrentUser;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FlowForge.API.Controllers;
 
@@ -36,5 +38,16 @@ public sealed class AuthController : ControllerBase
         var response = await _authService.LoginAsync(request);
 
         return Ok(ApiResponse<LoginResponse>.SuccessResponse(response, "Login successful."));
+    }
+
+    [HttpPost("refresh")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<LoginResponse>>> RefreshToken()
+    {
+        var user = HttpContext.RequestServices.GetRequiredService<ICurrentUserService>().User;
+
+        var response = await _authService.RefreshTokenAsync(user);
+
+        return Ok(ApiResponse<LoginResponse>.SuccessResponse(response, "Token refreshed successfully."));
     }
 }

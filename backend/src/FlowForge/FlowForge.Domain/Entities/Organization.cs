@@ -1,4 +1,5 @@
 using FlowForge.Domain.Common.Base;
+using FlowForge.Domain.Entities;
 
 namespace FlowForge.Domain.Entities;
 
@@ -19,4 +20,6 @@ public sealed class Organization : EntityBase
     public ICollection<Label> Labels { get; private set; } = new List<Label>();
 
     public ICollection<Notification> Notifications { get; private set; } = new List<Notification>();
+
+    public ICollection<OrganizationUser> Users { get; private set; } = new List<OrganizationUser>();
 }

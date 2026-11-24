@@ -32,6 +32,14 @@ public interface IApplicationDbContext
 
     DbSet<WorkItemHistory> WorkItemHistories { get; }
 
+    DbSet<OrganizationUser> OrganizationUsers { get; }
+
+    DbSet<WebhookSubscription> WebhookSubscriptions { get; }
+
+    DbSet<AuditLog> AuditLogs { get; }
+
+    DbSet<OrganizationInvitation> OrganizationInvitations { get; }
+
     Task<List<OrganizationUserLookup>> GetOrganizationUsersAsync(Guid organizationId, CancellationToken cancellationToken = default);
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

@@ -3,12 +3,12 @@ using FlowForge.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using FlowForge.Infrastructure.Services.Organizations;
-using FlowForge.Application.Services.Organizations;
 using FlowForge.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Infrastructure.Services.Authentication;
+using FlowForge.Application.Services.Organizations;
+using FlowForge.Infrastructure.Services.Organizations;
 using FlowForge.Application.Features.Projects;
 using FlowForge.Application.Features.Boards;
 using FlowForge.Application.Features.Columns;
@@ -35,6 +35,14 @@ using FlowForge.Application.Features.Reminders;
 using FlowForge.Application.Services.Realtime;
 using FlowForge.Application.Services.Presence;
 using FlowForge.Infrastructure.Services.Presence;
+using FlowForge.Application.Services.Storage;
+using FlowForge.Infrastructure.Services.Storage;
+using FlowForge.Application.Services.AuditLogs;
+using FlowForge.Infrastructure.Services.AuditLogs;
+using FlowForge.Application.Services;
+using FlowForge.Infrastructure.Services;
+using StorageLocalFileStorage = FlowForge.Infrastructure.Services.Storage.LocalFileStorageService;
+using AttachmentsLocalFileStorage = FlowForge.Infrastructure.Services.Attachments.LocalFileStorageService;
 
 namespace FlowForge.Infrastructure.DependencyInjection;
 
@@ -47,10 +55,10 @@ public static class InfrastructureServiceCollection
     {
         services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-        services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
-        
+services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+
         services.AddScoped<IOrganizationService, OrganizationService>();
-        
+
         services.AddScoped<IAuthService, AuthService>();
 
         services.AddScoped<ITokenService, TokenService>();
@@ -58,6 +66,8 @@ public static class InfrastructureServiceCollection
         services.AddHttpContextAccessor();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.AddScoped<IUserLookupService, UserLookupService>();
 
         services.AddScoped<ProjectRules>();
 
@@ -81,9 +91,15 @@ public static class InfrastructureServiceCollection
 
         services.AddScoped<IWorkItemOrderingService, WorkItemOrderingService>();
 
-        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped<IFileStorageProvider, StorageLocalFileStorage>();
+
+        services.AddScoped<FlowForge.Application.Services.Attachments.IFileStorageService, AttachmentsLocalFileStorage>();
 
         services.AddScoped<INotificationService, NotificationService>();
+
+        services.AddScoped<IAuditLogService, AuditLogService>();
+
+        services.AddScoped<IEmailService, SmtpEmailService>();
 
         services.AddScoped<IUserService, UserService>();
 

@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using FlowForge.Application.Common.Settings;
 using FlowForge.Application.Features.Authentication.CurrentUser;
 using FlowForge.Application.Services.Authentication;
@@ -30,6 +31,8 @@ public sealed class TokenService : ITokenService
             new(ClaimTypes.Name, user.FullName),
             new(ClaimTypes.Email, user.Email),
             new("organizationId", user.OrganizationId.ToString()),
+            new("orgIds", JsonSerializer.Serialize(user.OrganizationIds)),
+            new(ClaimTypes.Role, user.Role.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

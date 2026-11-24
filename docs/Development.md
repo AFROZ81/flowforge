@@ -1,123 +1,139 @@
-# 🛠 Development
+# Development
 
-## Overview
+## Prerequisites
 
-This document provides the basic information required to set up and contribute to the FlowForge project.
-
----
-
-# Prerequisites
-
-Before running the project, ensure the following tools are installed:
-
-- .NET SDK
-- SQL Server
-- Visual Studio 2022 (or later)
+- .NET SDK 10
+- Node.js 22 LTS or newer
+- SQL Server instance, LocalDB, or Express
 - Git
-- Node.js *(required for the frontend)*
+- `dotnet-ef` for migration commands
+- `sqlcmd` only for the optional demo-data backdate script
 
----
+## Repository structure
 
-# Repository Structure
-
-```
+```text
 FlowForge
-│
-├── backend
-│   ├── src
-│   ├── tests
-│   └── FlowForge.sln
-│
+├── backend/src/FlowForge
+│   ├── FlowForge.API
+│   ├── FlowForge.Application
+│   ├── FlowForge.Domain
+│   ├── FlowForge.Infrastructure
+│   ├── FlowForge.Tests
+│   └── FlowForge.slnx
 ├── frontend
-│
-└── docs
+├── docs
+└── tools
 ```
 
----
+## Backend setup
 
-# Backend Setup
+1. Configure SQL Server in user secrets or environment variables.
+2. Apply the committed migrations.
+3. Set a strong JWT signing key.
+4. Run the API with the `http` launch profile.
 
-1. Clone the repository.
-2. Open `FlowForge.sln`.
-3. Configure the SQL Server connection string.
-4. Apply the latest database migrations.
-5. Run the API project.
+```powershell
+cd backend/src/FlowForge/FlowForge.API
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=<instance>;Database=FlowForgeDb;Trusted_Connection=True;TrustServerCertificate=True;"
+dotnet user-secrets set "Jwt:Key" "<at least 32 random characters>"
 
-Swagger will be available after the application starts.
+cd ../..
+dotnet ef database update --project FlowForge.Infrastructure --startup-project FlowForge.API
+dotnet run --project FlowForge.API --launch-profile http
+```
 
----
+Swagger: `http://localhost:5045/swagger`
+Health: `http://localhost:5045/health`
 
-# Frontend Setup
+## Frontend setup
 
-The frontend is built with React and is maintained as a separate application.
+Create `frontend/.env`:
 
-After installation:
+```ini
+VITE_API_URL=http://localhost:5045/api
+```
 
-1. Install dependencies.
-2. Configure the API base URL.
-3. Start the development server.
+Then:
 
----
+```powershell
+cd frontend
+npm install
+npm run dev
+```
 
-# Database
+Open `http://localhost:5173`.
 
-Database schema changes are managed using Entity Framework Core migrations.
+## Environment-specific invitation links
 
-When modifying entities:
+`appsettings.Development.json` overrides the frontend URL to localhost. `appsettings.json` defaults to the production site.
 
-1. Update the domain model.
-2. Create a new migration.
-3. Apply the migration.
-4. Verify the database schema.
+```text
+Development → http://localhost:5173
+Production  → https://flowforge-app.runasp.net
+Override    → Frontend__BaseUrl
+```
 
----
+## Email configuration
 
-# Coding Guidelines
+SMTP settings fall back to `Email:*` in configuration. Environment variables take precedence:
 
-To keep the project consistent:
+```text
+SMTP_HOST
+SMTP_PORT
+SMTP_USER
+SMTP_PASS          (or SMTP_KEY)
+SMTP_FROM_EMAIL
+SMTP_FROM_NAME
+SMTP_TIMEOUT_SECONDS
+SMTP_ENABLE_SSL
+```
 
-- Follow Clean Architecture principles.
-- Organize code by feature.
-- Keep controllers lightweight.
-- Place business logic inside handlers.
-- Validate requests using FluentValidation.
-- Use dependency injection for services.
-- Keep domain models independent of infrastructure.
+Without SMTP configuration, invitations are still persisted with `EmailStatus = Failed` and can be resent after configuration is fixed. Admins can check connectivity at `GET /api/Invitations/smtp-diagnostics`.
 
----
+## Database workflow
 
-# Branching
+Migrations are committed. After changing the model:
 
-When working on new features:
+```powershell
+cd backend/src/FlowForge
+dotnet ef migrations add <Name> --project FlowForge.Infrastructure --startup-project FlowForge.API
+dotnet ef database update --project FlowForge.Infrastructure --startup-project FlowForge.API
+```
 
-- Create a feature branch.
-- Commit changes with meaningful messages.
-- Open a pull request after testing.
+Do not hand-edit generated designer files or the model snapshot.
 
-Keep commits focused and avoid mixing unrelated changes.
+## Verification commands
 
----
+```powershell
+# Backend
+dotnet build backend/src/FlowForge/FlowForge.slnx
+dotnet test backend/src/FlowForge/FlowForge.Tests/FlowForge.Tests.csproj
 
-# Testing
+# Frontend
+npm --prefix frontend run build
+npm --prefix frontend run lint
+npm --prefix frontend exec -- vitest run --project unit --root frontend
+npm --prefix frontend run storybook
+```
 
-Before submitting changes:
+The backend suite currently has 21 tests. Frontend unit tests cover the local AI feature and supporting utilities.
 
-- Ensure the solution builds successfully.
-- Run available tests.
-- Verify database migrations.
-- Test affected API endpoints.
-- Verify realtime features when applicable.
+## Coding conventions
 
----
+- Keep controllers thin.
+- Put each operation in a feature/verb folder.
+- Validate requests with FluentValidation.
+- Use organization scope from claims, not untrusted route data.
+- Keep infrastructure behind Application contracts.
+- Use the shared Axios client on the client; do not use relative `fetch` calls for API endpoints.
+- Reuse design tokens and shared UI primitives.
+- Update docs when endpoints, configuration, schema, or behavior changes.
 
-# Documentation
+## Pull-request checklist
 
-Whenever a significant architectural or functional change is introduced, update the relevant documentation inside the `docs` directory.
-
-Keeping the documentation current helps future contributors understand the project more easily.
-
----
-
-# Summary
-
-FlowForge is designed to be modular and easy to contribute to. Following the project's architectural patterns and development workflow helps maintain a consistent and scalable codebase.
+- Solution and frontend build successfully.
+- Backend and frontend tests pass.
+- New migrations are included and applied locally.
+- Invitation/email flows are exercised when affected.
+- Realtime behavior is checked with two browsers when affected.
+- Relevant docs and the root README are updated.

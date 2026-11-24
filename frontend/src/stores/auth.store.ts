@@ -7,6 +7,8 @@ import {
     createJSONStorage,
 } from "zustand/middleware";
 
+import api from "@/lib/api";
+
 
 /* =========================================================
    USER
@@ -17,6 +19,8 @@ export type AuthUser = {
     fullName: string | null;
     email: string | null;
     organizationId: string | null;
+    organizationIds: string[];
+    role: string | null;
 };
 
 
@@ -35,6 +39,8 @@ type AuthState = {
         token: string,
         expires: string
     ) => void;
+
+    switchOrganization: (organizationId: string) => Promise<void>;
 
     logout: () => void;
 };
@@ -127,6 +133,33 @@ function getClaim(
 }
 
 
+function getClaimArray(
+    payload: Record<string, unknown>,
+    keys: string[]
+): string[] {
+
+    for (const key of keys) {
+
+        const value =
+            payload[key];
+
+        if (
+            typeof value === "string" &&
+            value.trim().length > 0
+        ) {
+
+            try {
+                return JSON.parse(value.trim());
+            } catch {
+                return value.trim().split(",").map(s => s.trim());
+            }
+        }
+    }
+
+    return [];
+}
+
+
 /* =========================================================
    USER FROM JWT
    ========================================================= */
@@ -145,6 +178,8 @@ function getUserFromToken(
             fullName: null,
             email: null,
             organizationId: null,
+            organizationIds: [],
+            role: null,
         };
     }
 
@@ -196,12 +231,32 @@ function getUserFromToken(
             ]
         );
 
+    const organizationIds =
+        getClaimArray(
+            payload,
+            [
+                "orgIds",
+                "OrgIds",
+            ]
+        );
+
+    const role =
+        getClaim(
+            payload,
+            [
+                "role",
+                "Role",
+                "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+            ]
+        );
 
     return {
         id,
         fullName,
         email,
         organizationId,
+        organizationIds,
+        role,
     };
 }
 
@@ -215,7 +270,7 @@ export const useAuthStore =
 
         persist(
 
-            (set) => ({
+            (set, get) => ({
 
                 accessToken:
                     null,
@@ -270,6 +325,57 @@ export const useAuthStore =
 
 
                 /* =============================================
+                   SWITCH ORGANIZATION
+                   ============================================= */
+
+                switchOrganization: async (
+                    organizationId: string
+                ) => {
+
+                    const { accessToken } =
+                        get();
+
+                    if (!accessToken) {
+                        throw new Error(
+                            "No access token available."
+                        );
+                    }
+
+                    const response =
+                        await api.post(
+                            "/Organizations/switch",
+                            { organizationId },
+                            {
+                                headers: {
+                                    Authorization:
+                                        `Bearer ${accessToken}`,
+                                },
+                            }
+                        );
+
+                    const {
+                        accessToken: newToken,
+                        expiresAtUtc,
+                    } = response.data.data;
+
+                    const user =
+                        getUserFromToken(
+                            newToken
+                        );
+
+                    set({
+                        accessToken:
+                            newToken,
+
+                        expiresAtUtc,
+
+                        user,
+
+                    });
+                },
+
+
+                /* =============================================
                    LOGOUT
                    ============================================= */
 
@@ -295,28 +401,15 @@ export const useAuthStore =
                             null,
 
                     });
-
                 },
 
             }),
-
-
             /* =================================================
                PERSISTENCE
                ================================================= */
-
             {
                 name:
                     "flowforge-auth",
-
-                /*
-                 * IMPORTANT:
-                 *
-                 * sessionStorage survives page refreshes.
-                 *
-                 * Unlike localStorage, it does not permanently
-                 * remember the login across browser sessions.
-                 */
 
                 storage:
                     createJSONStorage(
@@ -324,6 +417,5 @@ export const useAuthStore =
                             sessionStorage
                     ),
             }
-
         )
     );

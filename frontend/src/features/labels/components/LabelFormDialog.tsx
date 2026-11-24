@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 
 import {
     Dialog,
@@ -12,7 +12,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { LabelSwatch } from "./LabelSwatch";
+import { cn } from "@/lib/utils";
+import {
+    LABEL_COLOR_PALETTE,
+    LabelSwatch,
+    LabelSwatchTile,
+} from "./LabelSwatch";
 
 import type {
     CreateLabelRequest,
@@ -90,23 +95,69 @@ function LabelForm({
                     autoComplete="off"
                     disabled={isSubmitting}
                     aria-invalid={Boolean(nameError)}
+                    aria-describedby={nameError ? "label-name-error" : undefined}
                 />
 
                 {nameError && (
-                    <p role="alert" className="text-xs font-medium text-danger-foreground">
+                    <p
+                        id="label-name-error"
+                        role="alert"
+                        className="text-xs font-medium text-danger-foreground"
+                    >
                         {nameError}
                     </p>
                 )}
             </div>
 
             {/* ---------------- COLOR ---------------- */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
                 <label
                     htmlFor="label-color"
                     className="block text-[13px] font-medium text-foreground"
                 >
                     Color
                 </label>
+
+                {/* Curated swatches — one tap to a harmonious, legible hue.
+                    The native picker + hex field stay for an exact match. */}
+                <div
+                    role="group"
+                    aria-label="Suggested colors"
+                    className="grid grid-cols-8 gap-1.5 sm:grid-cols-8"
+                >
+                    {LABEL_COLOR_PALETTE.map((swatch) => {
+                        const selected =
+                            swatch.toLowerCase() === color.toLowerCase();
+
+                        return (
+                            <button
+                                key={swatch}
+                                type="button"
+                                aria-label={`Use color ${swatch}`}
+                                aria-pressed={selected}
+                                disabled={isSubmitting}
+                                onClick={() => setColor(swatch)}
+                                className={cn(
+                                    "relative flex aspect-square items-center justify-center rounded-lg border transition-all",
+                                    "outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40",
+                                    "disabled:cursor-not-allowed disabled:opacity-60",
+                                    selected
+                                        ? "border-foreground/30 ring-2 ring-ring/40"
+                                        : "border-black/5 hover:scale-[1.08] dark:border-white/10"
+                                )}
+                                style={{ backgroundColor: swatch }}
+                            >
+                                {selected && (
+                                    <Check
+                                        aria-hidden="true"
+                                        className="size-4 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]"
+                                        strokeWidth={3}
+                                    />
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
 
                 <div className="flex items-center gap-2.5">
                     {/* The native picker is the shortest route to an exact color
@@ -116,7 +167,7 @@ function LabelForm({
                         value={/^#[0-9a-f]{6}$/i.test(color) ? color : DEFAULT_COLOR}
                         onChange={(event) => setColor(event.target.value)}
                         disabled={isSubmitting}
-                        aria-label="Pick a color"
+                        aria-label="Pick a custom color"
                         className="
                             size-9 shrink-0 cursor-pointer rounded-lg border border-input
                             bg-transparent p-1
@@ -161,16 +212,30 @@ function LabelForm({
             </div>
 
             {/* ---------------- PREVIEW ---------------- */}
-            <div className="rounded-lg border border-border-subtle bg-surface-muted p-3">
-                <p className="mb-2 text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+            <div className="rounded-xl border border-border-subtle bg-surface-muted/60 p-3.5">
+                <p className="mb-2.5 text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
                     Preview
                 </p>
 
-                <LabelSwatch
-                    name={trimmed || "Label"}
-                    color={color}
-                    dot
-                />
+                <div className="flex items-center gap-3">
+                    <LabelSwatchTile
+                        color={color}
+                        size="lg"
+                    />
+
+                    <div className="min-w-0">
+                        <LabelSwatch
+                            name={trimmed || "Label"}
+                            color={color}
+                            size="lg"
+                            dot
+                            className="max-w-full"
+                        />
+                        <p className="mt-1.5 truncate text-xs text-muted-foreground">
+                            {description.trim() || "No description"}
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <DialogFooter>

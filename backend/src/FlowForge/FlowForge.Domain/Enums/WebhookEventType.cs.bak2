@@ -1,0 +1,47 @@
+﻿namespace FlowForge.Domain.Enums;
+
+/// <summary>
+/// Types of events that can trigger webhooks.
+/// </summary>
+public enum WebhookEventType
+{
+    WorkItemCreated = 1,
+    WorkItemUpdated = 2,
+    WorkItemMoved = 3,
+    WorkItemDeleted = 4,
+    WorkItemCompleted = 5,
+    WorkItemBlocked = 6,
+    WorkItemActivated = 7,
+    WorkItemAssigned = 8,
+    WorkItemUnassigned = 9,
+    WorkItemArchived = 10,
+    WorkItemRestored = 11,
+    CommentAdded = 12,
+    CommentUpdated = 13,
+    CommentDeleted = 14,
+    ProjectCreated = 15,
+    ProjectUpdated = 16,
+    ProjectArchived = 17,
+    ProjectRestored = 18,
+    BoardCreated = 19,
+    BoardUpdated = 20,
+    BoardArchived = 21,
+    BoardRestored = 22,
+    ColumnCreated = 23,
+    ColumnUpdated = 24,
+    ColumnArchived = 25,
+    ColumnRestored = 26,
+    CommentCreated = 27,
+    CommentUpdated = 28,
+    CommentDeleted = 29,
+    AttachmentAdded = 30,
+    AttachmentRemoved = 31,
+    LabelAssigned = 32,
+    LabelRemoved = 33,
+    ChecklistItemCompleted = 34,
+    ChecklistItemUncompleted = 35,
+    WatcherAdded = 36,
+    WatcherRemoved = 37,
+    ReminderSet = 38,
+    ReminderRemoved = 39,
+}

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ListPlus, Plus } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -13,6 +13,8 @@ import WorkItemCard from "@/features/work-items/components/WorkItemCard";
 import ArchivedWorkItems from "@/features/work-items/components/ArchivedWorkItems";
 
 import { useMoveWorkItem } from "@/features/work-items/hooks/useMoveWorkItem";
+import { useCompleteWorkItem } from "@/features/work-items/hooks/useCompleteWorkItem";
+import { useActivateWorkItem } from "@/features/work-items/hooks/useActivateWorkItem";
 import { useOrganizationUsers } from "@/features/work-items/hooks/useOrganizationUsers";
 
 type WorkItem = {
@@ -43,6 +45,10 @@ type Props = {
         destinationColumnId: string,
         destinationIndex: number
     ) => void;
+    /** Whether this column's header currently holds keyboard focus. */
+    isColumnFocused: boolean;
+    /** Index of the focused card within this column, or null. */
+    focusedCardIndex: number | null;
 };
 
 type DragData = {
@@ -56,6 +62,8 @@ export default function ColumnCard({
     column,
     columns,
     onOptimisticMove,
+    isColumnFocused,
+    focusedCardIndex,
 }: Props) {
     const { boardId } = useParams();
 
@@ -85,6 +93,9 @@ export default function ColumnCard({
         data: users = [],
     } = useOrganizationUsers();
 
+    const completeMutation = useCompleteWorkItem();
+    const activateMutation = useActivateWorkItem();
+
     /*
      * Active work items only.
      *
@@ -105,14 +116,103 @@ export default function ColumnCard({
 
     /*
      * ==========================================
+     * KEYBOARD FOCUS
+     * ==========================================
+     */
+
+    const setColumnFocus = useCallback(() => {
+        window.dispatchEvent(
+            new CustomEvent("flowforge:focus-column", {
+                detail: { columnId: column.id },
+            })
+        );
+    }, [column.id]);
+
+    const setCardFocus = useCallback(
+        (workItemId: string) => {
+            window.dispatchEvent(
+                new CustomEvent("flowforge:focus-card", {
+                    detail: { columnId: column.id, workItemId },
+                })
+            );
+        },
+        [column.id]
+    );
+
+    /*
+     * Open the work-item details dialog for a card in this column.
+     */
+    const openWorkItem = useCallback(
+        (workItemId: string) => {
+            if (
+                !activeWorkItems.some(
+                    (item) => item.id === workItemId
+                )
+            ) {
+                return;
+            }
+
+            setSelectedWorkItemId(workItemId);
+            setDetailsOpen(true);
+        },
+        [activeWorkItems]
+    );
+
+    /*
+     * Wire the board keyboard actions (dispatched from ColumnGrid) to the
+     * real column-level handlers. ColumnGrid owns keyboard focus state, but
+     * this column owns the dialogs and mutations for its own cards.
+     */
+    useEffect(() => {
+        const onOpenWorkItem = (
+            event: CustomEvent<{ workItemId: string }>
+        ) => {
+            openWorkItem(event.detail.workItemId);
+        };
+
+        const onToggleComplete = (
+            event: CustomEvent<{ workItemId: string; status: number }>
+        ) => {
+            const item = activeWorkItems.find(
+                (i) => i.id === event.detail.workItemId
+            );
+
+            if (!item) {
+                return;
+            }
+
+            if (event.detail.status === 2) {
+                completeMutation.mutate(item.id);
+            } else {
+                activateMutation.mutate(item.id);
+            }
+        };
+
+        window.addEventListener(
+            "flowforge:open-work-item",
+            onOpenWorkItem as EventListener
+        );
+        window.addEventListener(
+            "flowforge:toggle-complete",
+            onToggleComplete as EventListener
+        );
+
+        return () => {
+            window.removeEventListener(
+                "flowforge:open-work-item",
+                onOpenWorkItem as EventListener
+            );
+            window.removeEventListener(
+                "flowforge:toggle-complete",
+                onToggleComplete as EventListener
+            );
+        };
+    }, [activeWorkItems, completeMutation, activateMutation, openWorkItem]);
+
+    /*
+     * ==========================================
      * DRAG START
      * ==========================================
-     *
-     * This was the missing piece.
-     *
-     * The WorkItemCard has draggable=true,
-     * but the workItemId was never placed into
-     * dataTransfer.
      */
     const handleDragStart = (
         event: React.DragEvent,
@@ -127,10 +227,6 @@ export default function ColumnCard({
             JSON.stringify(dragData)
         );
 
-        /*
-         * Also store a plain-text fallback.
-         * This is useful for browser compatibility.
-         */
         event.dataTransfer.setData(
             "text/plain",
             workItemId
@@ -148,9 +244,7 @@ export default function ColumnCard({
     };
 
     /*
-     * ==========================================
      * READ DRAG DATA
-     * ==========================================
      */
     const readDragData = (
         event: React.DragEvent
@@ -174,9 +268,7 @@ export default function ColumnCard({
     };
 
     /*
-     * ==========================================
      * FIND SOURCE COLUMN
-     * ==========================================
      */
     const findSourceColumn = (
         workItemId: string
@@ -192,9 +284,7 @@ export default function ColumnCard({
     };
 
     /*
-     * ==========================================
      * MOVE WORK ITEM
-     * ==========================================
      */
     const moveItem = async (
         workItemId: string,
@@ -234,17 +324,9 @@ export default function ColumnCard({
                     workItemId
             );
 
-        /*
-         * Backend destination index.
-         */
         let backendIndex =
             destinationIndex;
 
-        /*
-         * When moving downward inside the
-         * same column, removing the source item
-         * shifts the destination index by one.
-         */
         if (
             sourceColumn.id ===
                 column.id &&
@@ -255,9 +337,6 @@ export default function ColumnCard({
             backendIndex--;
         }
 
-        /*
-         * Nothing actually changed.
-         */
         if (
             sourceColumn.id ===
                 column.id &&
@@ -267,9 +346,6 @@ export default function ColumnCard({
             return;
         }
 
-        /*
-         * Update UI immediately.
-         */
         onOptimisticMove(
             workItemId,
             column.id,
@@ -308,9 +384,7 @@ export default function ColumnCard({
     };
 
     /*
-     * ==========================================
      * DRAG OVER WORK ITEM
-     * ==========================================
      */
     const handleCardDragOver = (
         event: React.DragEvent,
@@ -340,9 +414,7 @@ export default function ColumnCard({
     };
 
     /*
-     * ==========================================
      * DROP ON WORK ITEM
-     * ==========================================
      */
     const handleCardDrop = async (
         event: React.DragEvent,
@@ -360,9 +432,6 @@ export default function ColumnCard({
             return;
         }
 
-        /*
-         * Don't move an item onto itself.
-         */
         if (
             dragData.workItemId ===
             activeWorkItems[index]?.id
@@ -389,9 +458,7 @@ export default function ColumnCard({
     };
 
     /*
-     * ==========================================
      * DRAG OVER EMPTY/END OF COLUMN
-     * ==========================================
      */
     const handleColumnDragOver = (
         event: React.DragEvent
@@ -407,9 +474,7 @@ export default function ColumnCard({
     };
 
     /*
-     * ==========================================
      * DROP AT END OF COLUMN
-     * ==========================================
      */
     const handleColumnDrop = async (
         event: React.DragEvent
@@ -432,17 +497,12 @@ export default function ColumnCard({
     };
 
     /*
-     * ==========================================
      * OPEN WORK ITEM DETAILS
-     * ==========================================
      */
     const handleWorkItemClick = (
         workItemId: string
     ) => {
-        setSelectedWorkItemId(
-            workItemId
-        );
-
+        setSelectedWorkItemId(workItemId);
         setDetailsOpen(true);
     };
 
@@ -458,9 +518,18 @@ export default function ColumnCard({
                 HEADER
             ================================== */}
 
-            <div className="shrink-0 border-b border-border px-3.5 py-3">
+            <div
+                className="
+                    shrink-0 border-b border-border px-3.5 py-3
+                    flex items-center justify-between gap-3
+                    outline-none
+                "
+                onClick={setColumnFocus}
+                role={isColumnFocused ? "button" : undefined}
+                aria-label={column.name}
+            >
 
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
 
                     <h3 className="flex min-w-0 items-center gap-2 text-[13px] font-semibold tracking-[-0.01em] text-foreground">
                         <StatusDot status={column.name} />
@@ -587,11 +656,16 @@ export default function ColumnCard({
                                             users={
                                                 users
                                             }
-                                            onClick={() =>
+                                            isFocused={
+                                                focusedCardIndex ===
+                                                index
+                                            }
+                                            onClick={() => {
                                                 handleWorkItemClick(
                                                     item.id
-                                                )
-                                            }
+                                                );
+                                                setCardFocus(item.id);
+                                            }}
                                         />
 
                                     </div>
@@ -686,6 +760,9 @@ export default function ColumnCard({
                 }
                 boardId={
                     boardId!
+                }
+                existingTitles={
+                    activeWorkItems.map((item) => item.title)
                 }
             />
 

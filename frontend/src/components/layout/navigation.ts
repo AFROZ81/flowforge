@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  ClipboardList,
   FolderKanban,
   LayoutDashboard,
   type LucideIcon,
@@ -20,6 +21,8 @@ export type NavItem = {
   icon: LucideIcon
   /** NavLink `end` — true for leaf paths so parents don't stay active. */
   end: boolean
+  /** Only shown to workspace administrators. */
+  adminOnly?: boolean
 }
 
 export type NavSection = {
@@ -52,6 +55,13 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: BarChart3,
         end: false,
       },
+      {
+        title: "Audit log",
+        href: "/audit-logs",
+        icon: ClipboardList,
+        end: true,
+        adminOnly: true,
+      },
     ],
   },
 ]
@@ -78,6 +88,7 @@ export type BreadcrumbSegment = {
 const SINGLE_SEGMENT_ROUTES: Record<string, string> = {
   dashboard: "Dashboard",
   reports: "Reports",
+  "audit-logs": "Audit log",
   settings: "Settings",
   projects: "Projects",
 }

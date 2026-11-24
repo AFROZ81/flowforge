@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check, Loader2, Tag } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
     Dialog,

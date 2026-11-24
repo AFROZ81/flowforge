@@ -24,4 +24,5 @@ export type BoardWorkItem = {
     displayOrder: number;
     dueDate?: string;
     isArchived: boolean;
+    assigneeId?: string | null;
 };

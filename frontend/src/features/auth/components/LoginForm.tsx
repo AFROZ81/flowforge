@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Loader2, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";

@@ -1,13 +1,17 @@
+using FlowForge.Domain.Events;
+
 namespace FlowForge.Domain.Common.Base;
 
 /// <summary>
 /// Represents the base class for all domain entities.
-/// Provides identity and audit information shared across the domain.
+/// Provides identity, audit information, and domain event support.
 /// </summary>
 public abstract class EntityBase
 {
+    private readonly List<IDomainEvent> _domainEvents = new();
+
     /// <summary>
-    /// Gets or internal sets the unique identifier of the entity.
+    /// Gets the unique identifier of the entity.
     /// </summary>
     public Guid Id { get; set; }
 
@@ -22,4 +26,25 @@ public abstract class EntityBase
     public bool IsDeleted { get; set; }
 
     public DateTime? DeletedAt { get; set; }
+
+    /// <summary>
+    /// Gets the domain events raised by this entity.
+    /// </summary>
+    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
+    /// <summary>
+    /// Adds a domain event to the entity.
+    /// </summary>
+    protected void AddDomainEvent(IDomainEvent domainEvent)
+    {
+        _domainEvents.Add(domainEvent);
+    }
+
+    /// <summary>
+    /// Clears all domain events from the entity.
+    /// </summary>
+    public void ClearDomainEvents()
+    {
+        _domainEvents.Clear();
+    }
 }

@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FlowForge.API.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Policy = "RequireViewer")]
 [Route("api/[controller]")]
 public sealed class ProjectsController : ControllerBase
 {
@@ -26,6 +26,7 @@ public sealed class ProjectsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "RequireMember")]
     public async Task<ActionResult<ApiResponse<CreateProjectResponse>>> Create(CreateProjectCommand command, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);
@@ -50,6 +51,7 @@ public sealed class ProjectsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Update(Guid id, UpdateProjectCommand command, CancellationToken cancellationToken)
     {
         if (id != command.ProjectId)
@@ -61,6 +63,7 @@ public sealed class ProjectsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/archive")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Archive(Guid id, CancellationToken cancellationToken)
     {
         var command = new ArchiveProjectCommand
@@ -74,6 +77,7 @@ public sealed class ProjectsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/restore")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Restore(
         Guid id,
         CancellationToken cancellationToken)
