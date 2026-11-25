@@ -1,12 +1,8 @@
 import {
-    useCallback,
-    useEffect,
-    useState,
-} from "react";
-
-import {
     Workbox,
 } from "workbox-window";
+
+const SERVICE_WORKER_URL = "/sw-v3.js";
 
 /**
  * Registers the PWA service worker and returns true when registration started.
@@ -24,14 +20,16 @@ export function registerPwa(): boolean {
                 Promise.all(
                     registrations
                         .filter((registration) =>
-                            [
-                                registration.active,
-                                registration.waiting,
-                                registration.installing,
-                            ].some(
-                                (worker) =>
-                                    worker?.scriptURL ===
-                                    new URL("/sw.js", window.location.origin).href
+                            [SERVICE_WORKER_URL, "/sw.js"].some((scriptUrl) =>
+                                [
+                                    registration.active,
+                                    registration.waiting,
+                                    registration.installing,
+                                ].some(
+                                    (worker) =>
+                                        worker?.scriptURL ===
+                                        new URL(scriptUrl, window.location.origin).href
+                                )
                             )
                         )
                         .map((registration) => registration.unregister())
@@ -44,7 +42,7 @@ export function registerPwa(): boolean {
         return false;
     }
 
-    const wb = new Workbox("/sw.js");
+    const wb = new Workbox(SERVICE_WORKER_URL);
 
     wb.addEventListener("installed", (event) => {
         if ((event as { isUpdate: boolean }).isUpdate) {
@@ -67,56 +65,4 @@ export function registerPwa(): boolean {
     });
 
     return true;
-}
-
-/**
- * Whether the app can be installed (standalone PWA). Returns true when the
- * browser fires `beforeinstallprompt`.
- */
-
-type BeforeInstallPrompt = {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
-
-export function usePwaInstallable() {
-    const [installable, setInstallable] =
-        useState<boolean>(false);
-    const [deferredEvent, setDeferredEvent] =
-        useState<BeforeInstallPrompt | null>(null);
-
-    useEffect(() => {
-        const onBeforeInstallPrompt = (
-            event: Event
-        ) => {
-            event.preventDefault();
-            setInstallable(true);
-            setDeferredEvent(event as unknown as BeforeInstallPrompt);
-        };
-
-        window.addEventListener(
-            "beforeinstallprompt",
-            onBeforeInstallPrompt
-        );
-        return () => {
-            window.removeEventListener(
-                "beforeinstallprompt",
-                onBeforeInstallPrompt
-            );
-        };
-    }, []);
-
-    const install = useCallback(async () => {
-        if (!deferredEvent) {
-            return false;
-        }
-
-        deferredEvent.prompt();
-        const { outcome } = await deferredEvent.userChoice;
-        setDeferredEvent(null);
-        setInstallable(false);
-        return outcome === "accepted";
-    }, [deferredEvent]);
-
-    return { installable, install };
 }

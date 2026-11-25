@@ -13,8 +13,14 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), VitePWA({
     registerType: "autoUpdate",
     injectRegister: false,
+    filename: "sw-v3.js",
+    manifestFilename: "manifest-v3.webmanifest",
     workbox: {
+      skipWaiting: true,
+      clientsClaim: true,
+      cleanupOutdatedCaches: true,
       globPatterns: ["**/*.{js,css,woff2,woff,png,svg,ico}"],
+      globIgnores: ["sw.js", "workbox-*.js"],
       runtimeCaching: [{
         urlPattern: /^https?:\/\/.*\/api\/.*/i,
         handler: "NetworkFirst",
@@ -50,25 +56,15 @@ export default defineConfig({
       scope: "/",
       id: "/",
       icons: [{
-        src: "/icons/icon-192.svg",
+        src: "/icons/icon-192-maskable.png?v=3",
         sizes: "192x192",
-        type: "image/svg+xml",
-        purpose: "any"
+        type: "image/png",
+        purpose: "any maskable"
       }, {
-        src: "/icons/icon-512.svg",
+        src: "/icons/icon-512-maskable.png?v=3",
         sizes: "512x512",
-        type: "image/svg+xml",
-        purpose: "any"
-      }, {
-        src: "/icons/icon-192-maskable.svg",
-        sizes: "192x192",
-        type: "image/svg+xml",
-        purpose: "maskable"
-      }, {
-        src: "/icons/icon-512-maskable.svg",
-        sizes: "512x512",
-        type: "image/svg+xml",
-        purpose: "maskable"
+        type: "image/png",
+        purpose: "any maskable"
       }]
     }
   })],

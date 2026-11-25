@@ -17,7 +17,7 @@ public sealed class SmtpEmailServiceTests
 {
     private SmtpEmailService CreateService(params (string Key, string Value)[] settings)
     {
-        var dict = new Dictionary<string, string>
+        var dict = new Dictionary<string, string?>
         {
             ["Email:SmtpHost"] = "",
             ["Email:SmtpPort"] = "587",

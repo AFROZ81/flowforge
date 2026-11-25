@@ -1,8 +1,6 @@
 using FlowForge.Application.Services.BackgroundJobs;
 using FlowForge.Application.Interfaces;
-using FlowForge.Application.Services.BackgroundJobs;
 using FlowForge.Application.Services.Notifications;
-using FlowForge.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

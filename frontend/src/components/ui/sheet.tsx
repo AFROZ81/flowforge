@@ -47,7 +47,7 @@ function SheetContent({
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop
         data-slot="sheet-backdrop"
-        className="fixed inset-0 isolate z-50 bg-foreground/30 duration-200 supports-backdrop-filter:backdrop-blur-[2px] data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
+        className="fixed inset-0 isolate z-50 bg-gradient-to-b from-foreground/30 to-foreground/50 duration-200 supports-backdrop-filter:backdrop-blur-[6px] data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
       />
 
       <DialogPrimitive.Popup

@@ -49,6 +49,7 @@ Logs/
 Essentials/
 tools/seed/seed-state.json
 tools/seed/backdate.sql
+backend/src/FlowForge/production-migrations.sql
 
 # Local publish output and runtime storage
 backend/src/FlowForge/publish/

@@ -78,7 +78,7 @@ public sealed class OverdueDetectionJob
                         workItem.AssigneeId.Value,
                         NotificationType.WorkItemStatusChanged,
                         "Work Item Overdue",
-                        $"Work item \"{workItem.Title}\" was due on {workItem.DueDate.Value:yyyy-MM-dd} and is now overdue.",
+                        $"Work item \"{workItem.Title}\" was due on {workItem.DueDate?.ToString("yyyy-MM-dd") ?? "unknown"} and is now overdue.",
                         workItem.Id,
                         cancellationToken);
                 }

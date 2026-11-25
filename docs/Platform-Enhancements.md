@@ -137,7 +137,7 @@ The active `IFileStorageProvider` and attachment storage service use local disk.
 | Audit logs | Admin-only filterable timeline. |
 | Settings | General, Members, and Labels sections with URL-addressable tabs. |
 | AI drafting | On-device model selection and heuristic fallback. |
-| PWA | Install prompt, offline indicator, manifest, icons, service worker, API/image caching. |
+| PWA | Branded FlowForge icons, offline indicator, manifest, service worker, API/image caching; no custom install prompt. |
 | Motion | Shared animation presets. |
 | Theming | Light, parchment, dark, onyx, and system preference. |
 | Storybook | Stories for Button, Card, and Input primitives. |

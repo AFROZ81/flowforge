@@ -26,7 +26,7 @@ All notable changes are documented here. The current update summarizes the worki
 - Notifications inbox and admin Audit Logs page.
 - Rebuilt General, Members, and Labels settings.
 - Command palette, board keyboard hooks, organization switcher, accessibility announcer, shared toasts, and motion presets.
-- PWA manifest, icons, install prompt, offline indicator, service worker, and runtime caching.
+- PWA manifest, branded FlowForge icons, offline indicator, service worker, and runtime caching.
 - Local on-device AI drafting with Web Worker inference, model selection, deadline, and heuristic fallback.
 - Storybook setup and stories for shared primitives.
 
@@ -47,6 +47,7 @@ All notable changes are documented here. The current update summarizes the worki
 - SignalR client now falls back through WebSockets, SSE, and Long Polling and handles role-change token refresh.
 - Migrations are committed and include RBAC, invitations, audit, webhook, seed, and email-delivery changes.
 - Production configuration removes the previously committed database credentials and fixes the JWT expiry key.
+- Project detail pages keep the description in the header and use a full-width Recent Activity panel without duplicate details or header edit/archive actions.
 
 ## Fixed
 
@@ -58,6 +59,8 @@ All notable changes are documented here. The current update summarizes the worki
 - Expired invitations are excluded from the pending UI list.
 - Email delivery failures are reported as invitation-created-but-not-sent instead of false success.
 - Invitation-list load failures now show a visible retry state.
+- The organization-role correction migration no longer deletes user accounts and maps legacy roles in a single safe update.
+- Removed the custom PWA install prompt and versioned the branded icon URLs to bypass stale mobile caches.
 
 ## Known boundaries
 

@@ -48,6 +48,7 @@ import {
     Download,
     Loader2,
     ShieldCheck,
+    X,
 } from "lucide-react";
 import {
     toast,
@@ -106,7 +107,6 @@ export function AIDraftDialog({
     useEffect(() => {
         if (!open) {
             inFlight.current = false;
-            setBusy(false);
         }
     }, [open]);
 
@@ -215,14 +215,7 @@ export function AIDraftDialog({
     const currentStageIndex = stageIndex(stage);
 
     return (
-        <div
-            className="fixed inset-0 z-[60] flex items-center justify-center"
-            onClick={(event) => {
-                if (event.target === event.currentTarget && !busy) {
-                    onOpenChange(false);
-                }
-            }}
-        >
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
             <div className="relative w-full max-w-md mx-auto rounded-2xl border border-border bg-card shadow-xl p-6 max-h-[90vh] overflow-y-auto">
@@ -251,24 +244,46 @@ export function AIDraftDialog({
                     work-item draft.
                 </p>
 
-                <FormField
-                    label="Prompt"
-                    htmlFor="ai-prompt"
-                    hint="What should this work item cover?"
-                >
-                    {({ id }) => (
-                        <Input
-                            id={id}
-                            value={prompt}
-                            onChange={(event) =>
-                                setPrompt(event.target.value)
-                            }
-                            placeholder="e.g. Fix the login redirect after password reset"
-                            disabled={busy}
-                            autoFocus
-                        />
-                    )}
-                </FormField>
+                <div className="flex items-start gap-2">
+                    <FormField
+                        label="Prompt"
+                        htmlFor="ai-prompt"
+                        hint="What should this work item cover?"
+                        className="min-w-0 flex-1"
+                    >
+                        {({ id }) => (
+                            <Input
+                                id={id}
+                                value={prompt}
+                                onChange={(event) =>
+                                    setPrompt(event.target.value)
+                                }
+                                placeholder="e.g. Fix the login redirect after password reset"
+                                disabled={busy}
+                                autoFocus
+                            />
+                        )}
+                    </FormField>
+
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={generate}
+                        disabled={busy || !prompt.trim()}
+                        className="mt-5 shrink-0"
+                        aria-label={draft ? "Regenerate draft" : "Generate draft"}
+                        title={draft ? "Regenerate draft" : "Generate draft"}
+                    >
+                        {busy ? (
+                            <Loader2 className="size-4 animate-spin" />
+                        ) : draft ? (
+                            <RefreshCw className="size-4" />
+                        ) : (
+                            <Sparkles className="size-4" />
+                        )}
+                    </Button>
+                </div>
 
                 <p className="mt-2 text-xs text-muted-foreground">
                     Runs on this device with an open model. The first use
@@ -461,11 +476,12 @@ export function AIDraftDialog({
                     </div>
                 )}
 
-                <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                <div className="mt-6 flex flex-col gap-2 border-t border-border px-2 pt-4 sm:flex-row sm:items-center sm:justify-end">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={cancel}
+                        className="w-full sm:w-auto"
                     >
                         {busy ? (
                             <span className="flex items-center gap-2">
@@ -474,53 +490,23 @@ export function AIDraftDialog({
                             </span>
                         ) : (
                             <span className="flex items-center gap-2">
-                                <span className="size-4">✕</span>
+                                <X className="size-4" />
                                 Close
                             </span>
                         )}
                     </Button>
 
-                    {!draft && (
+                    {draft && (
                         <Button
                             type="button"
-                            onClick={generate}
-                            disabled={busy || !prompt.trim()}
+                            variant="default"
+                            onClick={applyDraft}
+                            disabled={busy}
+                            className="w-full sm:w-auto"
                         >
-                            {busy ? (
-                                <span className="flex items-center gap-2">
-                                    <Loader2 className="size-4 animate-spin" />
-                                    Working…
-                                </span>
-                            ) : (
-                                <span className="flex items-center gap-2">
-                                    <Sparkles className="size-4" />
-                                    Generate draft
-                                </span>
-                            )}
+                            <CheckCircle2 className="size-4 mr-2" />
+                            Apply to work item
                         </Button>
-                    )}
-
-                    {draft && (
-                        <>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={generate}
-                                disabled={busy || !prompt.trim()}
-                            >
-                                <RefreshCw className="size-4 mr-2" />
-                                Regenerate
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="default"
-                                onClick={applyDraft}
-                                disabled={busy}
-                            >
-                                <CheckCircle2 className="size-4 mr-2" />
-                                Apply to work item
-                            </Button>
-                        </>
                     )}
                 </div>
             </div>

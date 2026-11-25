@@ -59,7 +59,6 @@ export function FormField({
   error,
   under,
   required,
-  optional,
   hideLabel,
   className,
   children,
@@ -95,12 +94,6 @@ export function FormField({
         {required && (
           <span aria-hidden="true" className="text-danger">
             *
-          </span>
-        )}
-
-        {optional && !required && (
-          <span className="text-xs font-normal text-muted-foreground/80">
-            (optional)
           </span>
         )}
       </label>

@@ -444,7 +444,7 @@ public sealed class InvitationEmailHandlerTests
         var ctx = new TestContext("invitation-url");
 
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Frontend:BaseUrl"] = "http://localhost:5173/",
             })

@@ -3,10 +3,27 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { XIcon } from "lucide-react"
 
-function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+function Dialog({ onOpenChange, ...props }: DialogPrimitive.Root.Props) {
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      {...props}
+      disablePointerDismissal
+      onOpenChange={(open, eventDetails) => {
+        if (
+          !open &&
+          eventDetails.reason !== "close-press" &&
+          eventDetails.reason !== "imperative-action"
+        ) {
+          eventDetails.cancel()
+          return
+        }
+
+        onOpenChange?.(open, eventDetails)
+      }}
+    />
+  )
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
@@ -29,7 +46,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-foreground/25 duration-200 supports-backdrop-filter:backdrop-blur-[3px] data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-50 bg-gradient-to-b from-foreground/30 to-foreground/50 duration-200 supports-backdrop-filter:backdrop-blur-[6px] data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
@@ -38,18 +55,15 @@ function DialogOverlay({
 }
 
 /**
- * On phones a centered dialog wastes vertical space and its close button
- * lands far from the thumb, so below `sm` the sheet docks to the bottom
- * edge and grows upward; from `sm` it behaves as a conventional dialog.
+ * On phones a centered dialog wastes vertical space, so below `sm` the
+ * sheet docks to the bottom edge and grows upward; from `sm` it behaves as
+ * a conventional dialog. Dialogs close only through explicit actions.
  */
 function DialogContent({
   className,
   children,
-  showCloseButton = true,
   ...props
-}: DialogPrimitive.Popup.Props & {
-  showCloseButton?: boolean
-}) {
+}: DialogPrimitive.Popup.Props) {
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -57,61 +71,58 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           /* --- mobile: bottom sheet --- */
-          /*
-           * `w-full` is not decorative. Without it a fixed, translated box
-           * shrink-wraps to its content, so `sm:max-w-xl` only sets a ceiling
-           * and every dialog renders a different width depending on what is
-           * inside it. With it, max-width is the width.
-           */
           "fixed inset-x-0 bottom-0 z-50 flex w-full max-h-[92dvh] flex-col gap-4 overflow-y-auto overscroll-contain",
-          "rounded-t-2xl border-t border-border bg-popover pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] px-4",
-          "text-sm text-popover-foreground shadow-xl outline-none",
+          "rounded-t-3xl border-t border-border/60 bg-popover/95 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] px-5",
+          "text-sm text-popover-foreground shadow-2xl outline-none backdrop-blur-xl",
 
           /* --- sm and up: centered dialog --- */
-          "sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2",
-          "sm:rounded-xl sm:border sm:p-5",
+          "sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2",
+          "sm:rounded-2xl sm:border sm:border-border/60 sm:p-6 sm:shadow-[0_24px_60px_-12px_oklch(0.2_0.03_258/0.35)]",
+
+          /* Subtle gradient accent bar at top on desktop */
+          "sm:before:absolute sm:before:inset-x-0 sm:before:top-0 sm:before:h-1 sm:before:rounded-t-2xl sm:before:bg-gradient-to-r sm:before:from-primary sm:before:via-accent-indigo sm:before:to-primary",
 
           /* One animation set that reads correctly at both sizes */
           "data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-4",
           "data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom-4",
           "sm:data-open:slide-in-from-bottom-0 sm:data-open:zoom-in-95",
-          "sm:data-closed:slide-out-to-bottom-0 sm:data-closed:zoom-out-95 sm:duration-150",
+          "sm:data-closed:slide-out-to-bottom-0 sm:data-closed:zoom-out-95 sm:duration-200",
 
-          /* ---------- single scroller ----------
-             When a dialog has a DialogBody, that body is the scroller and
-             the popup must not also scroll — two nested scrollboxes meant
-             content got sliced at the body's bottom edge and the browser
-             coerced overflow-x to `auto` on both of them. Dialogs without
-             a body keep the popup scrolling. */
+          /* ---------- single scroller ---------- */
           "has-data-[slot=dialog-body]:overflow-hidden",
 
           className
         )}
         {...props}
       >
-        {/* Grab handle — a sheet with no visible affordance feels broken */}
-        <span
-          aria-hidden="true"
-          className="mx-auto -mt-1 mb-0.5 h-1 w-9 shrink-0 rounded-full bg-border-strong sm:hidden"
-        />
+        <DialogPrimitive.Close
+          data-slot="dialog-close"
+          render={
+            <button
+              type="button"
+              aria-label="Close"
+              className="absolute top-4 right-4 z-10 inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            />
+          }
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </DialogPrimitive.Close>
 
         {children}
-
-        {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            render={
-              <Button
-                variant="ghost"
-                className="absolute top-2 right-2 z-10"
-                size="icon-sm"
-              />
-            }
-          >
-            <XIcon />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        )}
       </DialogPrimitive.Popup>
     </DialogPortal>
   )
@@ -153,16 +164,14 @@ function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-/**
- * Header text is inset on the right to clear the close button, which is
- * absolutely positioned at right-2 and 32px wide — it occupies 8–40px from
- * the edge. Reserving anything less lets a long title run underneath it.
- */
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex shrink-0 flex-col gap-1.5 pr-11", className)}
+      className={cn(
+        "flex shrink-0 flex-col gap-1.5 border-b border-border/60 pb-4 pr-8",
+        className
+      )}
       {...props}
     />
   )
@@ -180,11 +189,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        /*
-         * Pinned to the bottom of the sheet on mobile, inline on desktop.
-         * Buttons stretch on narrow screens so they clear touch targets.
-         */
-        "-mx-4 -mb-4 flex shrink-0 flex-col-reverse gap-2 border-t bg-surface-muted px-4 py-3",
+        "-mx-5 -mb-5 flex shrink-0 flex-col-reverse gap-2 border-t border-border/60 bg-surface-muted/40 px-5 py-3.5",
         "sm:mx-0 sm:mb-0 sm:flex-row sm:justify-end sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-4",
         "[&>*]:w-full sm:[&>*]:w-auto",
         className
@@ -206,7 +211,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "font-heading text-base leading-snug font-semibold tracking-[-0.01em] text-foreground",
+        "font-heading text-lg leading-tight font-semibold tracking-[-0.02em] text-foreground",
         className
       )}
       {...props}

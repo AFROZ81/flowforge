@@ -118,7 +118,7 @@ public sealed class ChangeMemberRoleCommandHandler : IRequestHandler<ChangeMembe
         {
             UserId = request.TargetUserId,
             Role = request.Role,
-            UpdatedAt = targetMember.UpdatedAt.Value
+            UpdatedAt = targetMember.UpdatedAt ?? DateTime.UtcNow
         };
     }
 }

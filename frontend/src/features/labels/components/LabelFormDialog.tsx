@@ -195,9 +195,6 @@ function LabelForm({
                     className="block text-[13px] font-medium text-foreground"
                 >
                     Description
-                    <span className="ml-1 text-xs font-normal text-muted-foreground">
-                        (optional)
-                    </span>
                 </label>
 
                 <Textarea

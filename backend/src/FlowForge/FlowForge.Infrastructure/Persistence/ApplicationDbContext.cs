@@ -8,7 +8,6 @@ using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Common.Base;
 using FlowForge.Application.Common.Models;
 using FlowForge.Domain.Events;
-using FlowForge.Application.Interfaces;
 
 namespace FlowForge.Infrastructure.Persistence;
 

@@ -79,24 +79,6 @@ export default function NeedsAttention({ summary }: { summary: MyWorkSummary }) 
 
     return (
         <section aria-labelledby="needs-attention-heading" className="space-y-2.5">
-            <div className="flex items-center justify-between gap-3">
-                <h2
-                    id="needs-attention-heading"
-                    className="text-sm font-semibold tracking-[-0.01em] text-foreground"
-                >
-                    Needs your attention
-                </h2>
-
-                {summary.overdue + summary.blocked > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-warning-subtle px-2.5 py-1 text-xs font-medium text-warning-foreground">
-                        <span
-                            aria-hidden="true"
-                            className="size-1.5 rounded-full bg-current"
-                        />
-                        {formatNumber(summary.overdue + summary.blocked)} to act on
-                    </span>
-                ) : null}
-            </div>
 
             <FigureStrip
                 figures={[

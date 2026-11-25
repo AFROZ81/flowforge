@@ -16,8 +16,8 @@ type Props = {
  * A project card for the responsive grid.
  *
  * The whole surface is one tap target — the link's ::after covers the card —
- * while the actions menu sits above it, so edit and archive work here too
- * instead of being a desktop-only affordance.
+ * while the direct icon actions sit above it, so edit and archive work here
+ * too instead of being a desktop-only affordance.
  */
 export default function ProjectCard({ project }: Props) {
     const hasDescription = Boolean(project.description?.trim());
@@ -80,7 +80,7 @@ export default function ProjectCard({ project }: Props) {
             <div className="mt-auto flex items-center justify-between gap-2 pt-1">
                 <ProjectStatusBadge archived={project.archived} />
 
-                {/* Lifted above the stretched link so the menu still receives clicks. */}
+                {/* Lifted above the stretched link so the icon actions still receive clicks. */}
                 <span className="relative z-10 shrink-0">
                     <ProjectActions project={project} />
                 </span>

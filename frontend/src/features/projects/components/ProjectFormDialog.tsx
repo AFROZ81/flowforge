@@ -8,7 +8,6 @@ import {
     Dialog,
     DialogBody,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -167,12 +166,6 @@ export default function ProjectFormDialog({
                     <DialogTitle>
                         {isEdit ? "Edit project" : "Create project"}
                     </DialogTitle>
-
-                    <DialogDescription>
-                        {isEdit
-                            ? "Changes apply to this project across its boards and work items."
-                            : "A project groups boards and work items under one name and short key."}
-                    </DialogDescription>
                 </DialogHeader>
 
                 <form

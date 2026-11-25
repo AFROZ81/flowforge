@@ -15,7 +15,6 @@ import {
     Dialog,
     DialogBody,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -162,10 +161,6 @@ export default function CreateWorkItemDialog({
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>New work item</DialogTitle>
-
-                    <DialogDescription>
-                        It lands at the top of this column.
-                    </DialogDescription>
                 </DialogHeader>
 
                 <form
@@ -173,48 +168,50 @@ export default function CreateWorkItemDialog({
                     className="flex min-h-0 flex-1 flex-col"
                 >
                     <DialogBody className="-mx-4 space-y-5 px-4 sm:mx-0 sm:px-0">
-                        <FormField
-                            label="Title"
-                            htmlFor="work-item-title"
-                            required
-                            error={errors.title?.message}
-                            hint={
-                                duplicateWarning
-                                    ? duplicateWarning
-                                    : "Short, specific summary"
-                            }
-                        >
-                            {(aria) => (
-                                <Input
-                                    {...aria}
-                                    placeholder="Short, specific summary"
-                                    maxLength={200}
-                                    autoComplete="off"
-                                    disabled={busy}
-                                    {...register("title")}
-                                />
-                            )}
-                        </FormField>
+                            <FormField
+                                label={
+                                    <span className="flex w-full items-center justify-between gap-2">
+                                        <span className="flex items-center gap-1">
+                                            Title
+                                            <span aria-hidden="true" className="text-danger">*</span>
+                                        </span>
+                                        {aiEnabled && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setAiDraftOpen(true)}
+                                                disabled={busy}
+                                                className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary-subtle hover:text-primary-hover disabled:opacity-50"
+                                            >
+                                                <Sparkles className="size-3.5 shrink-0" />
+                                                Draft with AI
+                                            </button>
+                                        )}
+                                    </span>
+                                }
+                                htmlFor="work-item-title"
+                                error={errors.title?.message}
+                                hint={
+                                    duplicateWarning
 
-                        {aiEnabled && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground/80 px-4">
-                                <Sparkles className="size-3.5 shrink-0" />
-                                <button
-                                    type="button"
-                                    onClick={() => setAiDraftOpen(true)}
-                                    disabled={busy}
-                                    className="underline underline-offset-4 hover:text-foreground transition-colors"
-                                >
-                                    Draft with AI
-                                </button>
-                            </div>
-                        )}
+                                }
+                            >
+                                {(aria) => (
+                                    <Input
+                                        {...aria}
+                                        aria-required={true}
+                                        placeholder="Short, specific summary"
+                                        maxLength={200}
+                                        autoComplete="off"
+                                        disabled={busy}
+                                        {...register("title")}
+                                    />
+                                )}
+                            </FormField>
 
                         <FormField
                             label="Description"
                             htmlFor="work-item-description"
                             optional
-                            hint="Context worth keeping after the conversation ends."
                             error={errors.description?.message}
                         >
                             {(aria) => (

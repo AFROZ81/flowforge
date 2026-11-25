@@ -7,7 +7,6 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -41,8 +40,8 @@ export default function CreateBoardDialog({
     };
 
     /*
-     * Every close route — Escape, backdrop, Cancel, success — funnels
-     * through here, so a half-typed board never survives to the next visit.
+     * Every explicit close route — Cancel and success — funnels through
+     * here, so a half-typed board never survives to the next visit.
      */
     const handleOpenChange = (next: boolean) => {
         if (!next) clearDraft();
@@ -82,10 +81,6 @@ export default function CreateBoardDialog({
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Create board</DialogTitle>
-
-                    <DialogDescription>
-                        A board holds the columns your work moves through.
-                    </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-5">

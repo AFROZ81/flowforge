@@ -1,13 +1,7 @@
 import { useState } from "react";
-import { Archive, MoreHorizontal, Pencil } from "lucide-react";
+import { Archive, Loader2, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 import ProjectFormDialog from "./ProjectFormDialog";
 
@@ -35,36 +29,37 @@ export default function ProjectActions({ project }: Props) {
 
     return (
         <>
-            <DropdownMenu>
-                <DropdownMenuTrigger
-                    aria-label={`Actions for ${project.name}`}
-                    render={
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            type="button"
-                            className="text-muted-foreground hover:text-foreground"
-                        />
-                    }
+            <div className="flex items-center gap-1">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setEditing(true)}
+                    disabled={isPending}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label={`Edit ${project.name}`}
+                    title="Edit project"
                 >
-                    <MoreHorizontal />
-                </DropdownMenuTrigger>
+                    <Pencil />
+                </Button>
 
-                <DropdownMenuContent align="end" className="min-w-[184px]">
-                    <DropdownMenuItem onClick={() => setEditing(true)}>
-                        <Pencil />
-                        Edit
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                        disabled={isPending}
-                        onClick={() => archiveWithUndo(project)}
-                    >
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => archiveWithUndo(project)}
+                    disabled={isPending}
+                    className="text-muted-foreground hover:text-destructive"
+                    aria-label={`Archive ${project.name}`}
+                    title="Archive project"
+                >
+                    {isPending ? (
+                        <Loader2 className="animate-spin" />
+                    ) : (
                         <Archive />
-                        {isPending ? "Archiving…" : "Archive"}
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+                    )}
+                </Button>
+            </div>
 
             {/*
              * Keyed to the row: opening the dialog for a different project

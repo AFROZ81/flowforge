@@ -215,16 +215,6 @@ export default function WorkItemWatchers({
                           bg-black/40
                           p-4
                       "
-                      onMouseDown={(
-                          event
-                      ) => {
-                          if (
-                              event.target ===
-                              event.currentTarget
-                          ) {
-                              closeDialog();
-                          }
-                      }}
                   >
                       <div
                           className="
@@ -235,11 +225,6 @@ export default function WorkItemWatchers({
                               bg-background
                               shadow-xl
                           "
-                          onMouseDown={(
-                              event
-                          ) =>
-                              event.stopPropagation()
-                          }
                       >
                           {/* =================================
                               HEADER
@@ -249,7 +234,6 @@ export default function WorkItemWatchers({
                               className="
                                   flex
                                   items-start
-                                  justify-between
                                   gap-4
                                   border-b
                                   px-4
@@ -279,40 +263,6 @@ export default function WorkItemWatchers({
                                   </p>
                               </div>
 
-                              <button
-                                  type="button"
-                                  onClick={
-                                      closeDialog
-                                  }
-                                  className="
-                                      flex
-                                      h-7
-                                      w-7
-                                      shrink-0
-                                      items-center
-                                      justify-center
-                                      rounded-md
-                                      text-muted-foreground
-                                      transition-colors
-                                      hover:bg-muted
-                                      hover:text-foreground
-                                  "
-                                  aria-label="Close"
-                              >
-                                  <svg
-                                      width="16"
-                                      height="16"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                  >
-                                      <path d="M18 6 6 18" />
-                                      <path d="m6 6 12 12" />
-                                  </svg>
-                              </button>
                           </div>
 
                           {/* =================================
@@ -742,6 +692,17 @@ export default function WorkItemWatchers({
                                           work item.
                                       </p>
                                   )}
+                          </div>
+
+                          <div className="flex justify-end border-t px-4 py-3">
+                              <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={closeDialog}
+                              >
+                                  Close
+                              </Button>
                           </div>
                       </div>
                   </div>,

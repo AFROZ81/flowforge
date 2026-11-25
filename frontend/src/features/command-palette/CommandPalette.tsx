@@ -336,7 +336,6 @@ export function CommandPalette() {
                             exit={{ opacity: 0, transition: motionTransition }}
                             className="fixed inset-0 bg-background/60 backdrop-blur-sm"
                             style={{ position: "fixed", inset: 0, zIndex: 2147483000 }}
-                            onClick={close}
                             aria-hidden="true"
                         />
                         <motion.div

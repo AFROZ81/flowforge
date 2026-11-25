@@ -495,10 +495,7 @@ export default function MembersSettings() {
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="invite-message">
-                                        Personal message{" "}
-                                        <span className="text-xs font-normal text-muted-foreground">
-                                            (optional)
-                                        </span>
+                                        Personal message
                                     </Label>
                                     <Textarea
                                         id="invite-message"
