@@ -28,7 +28,10 @@ export default function AuthCard() {
     const [params, setParams] = useSearchParams();
     const reduceMotion = useReducedMotion();
 
-    const mode: Mode = params.get("mode") === "register" ? "register" : "signin";
+    const invitationToken = params.get("invitationToken")?.trim() || undefined;
+    const mode: Mode = invitationToken || params.get("mode") === "register"
+        ? "register"
+        : "signin";
 
     const [prefillEmail, setPrefillEmail] = useState("");
 
@@ -87,6 +90,7 @@ export default function AuthCard() {
                     <Card className="gap-0 rounded-2xl p-6 shadow-xl backdrop-blur-xl sm:p-8">
                         {mode === "register" ? (
                             <RegisterForm
+                                invitationToken={invitationToken}
                                 onRegistered={handleRegistered}
                                 onSwitchToLogin={() => goTo("signin")}
                             />

@@ -25,6 +25,7 @@ public sealed class CommentsController : ControllerBase
     #region Commands
 
     [HttpPost]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Create(CreateCommentCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(command, cancellationToken);
@@ -48,6 +49,7 @@ public sealed class CommentsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/update")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Update(Guid id, UpdateCommentCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -61,6 +63,7 @@ public sealed class CommentsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(

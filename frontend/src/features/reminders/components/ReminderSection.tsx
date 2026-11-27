@@ -29,6 +29,12 @@ import {
 import {
     normalizeError,
 } from "@/lib/errors";
+import {
+    fromIstDateTimeInput,
+    IST_TIME_ZONE,
+    parseApiDate,
+    toIstDateTimeInput as toDateTimeLocal,
+} from "@/lib/datetime";
 
 import {
     getUpcomingReminders,
@@ -50,72 +56,6 @@ type Props = {
 };
 
 
-function toDateTimeLocal(
-    value?: string | null
-): string {
-
-    if (!value) {
-        return "";
-    }
-
-
-    const date =
-        new Date(value);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return "";
-    }
-
-
-    const year =
-        date.getFullYear();
-
-
-    const month =
-        String(
-            date.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    const day =
-        String(
-            date.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    const hours =
-        String(
-            date.getHours()
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    const minutes =
-        String(
-            date.getMinutes()
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-
 function formatReminderDate(
     value?: string | null
 ): string {
@@ -125,15 +65,9 @@ function formatReminderDate(
     }
 
 
-    const date =
-        new Date(value);
+    const date = parseApiDate(value);
 
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (!date) {
         return "";
     }
 
@@ -146,8 +80,9 @@ function formatReminderDate(
             year: "numeric",
             hour: "numeric",
             minute: "2-digit",
+            timeZone: IST_TIME_ZONE,
         }
-    ).format(date);
+    ).format(date) + " IST";
 }
 
 
@@ -459,7 +394,7 @@ export default function ReminderSection({
 
             const reminderDateValue =
                 new Date(
-                    reminderDate
+                    fromIstDateTimeInput(reminderDate) ?? ""
                 );
 
 
@@ -494,16 +429,11 @@ export default function ReminderSection({
                 dueDate
             ) {
 
-                const dueDateValue =
-                    new Date(
-                        dueDate
-                    );
+                const dueDateValue = parseApiDate(dueDate);
 
 
                 if (
-                    !Number.isNaN(
-                        dueDateValue.getTime()
-                    ) &&
+                    dueDateValue &&
                     reminderDateValue.getTime() >
                         dueDateValue.getTime()
                 ) {

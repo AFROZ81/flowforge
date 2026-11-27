@@ -1,3 +1,4 @@
+using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Features.Boards;
 using FlowForge.Application.Interfaces;
@@ -22,11 +23,13 @@ public sealed class RestoreBoardHandler
 
     public async Task<ApiResponse<RestoreBoardResponse>> Handle(RestoreBoardCommand request, CancellationToken cancellationToken)
     {
-        var board = await _boardRules.GetByIdAsync(request.BoardId, _currentUser.User.OrganizationId, cancellationToken);
+        var board = await _boardRules.GetByIdIncludingDeletedAsync(request.BoardId, _currentUser.User.OrganizationId, cancellationToken);
 
-        _boardRules.EnsureArchived(board);
+        if (!board.IsArchived && !board.IsDeleted)
+            throw new BadRequestException("Board is not archived or deleted.");
 
         board.Restore();
+        board.RestoreDeleted();
 
         await _context.SaveChangesAsync(cancellationToken);
 

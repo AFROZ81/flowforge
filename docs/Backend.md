@@ -68,6 +68,13 @@ For relational databases, invitation registration and acceptance share a transac
 
 `AzureBlobStorageService` exists as an alternative provider but is not registered by default; its presigned-url credential handling is still placeholder code.
 
+## Time handling
+
+- Timestamps are stored in UTC.
+- `AppTime` converts calendar calculations and user-facing dates to IST (`Asia/Kolkata`, UTC+05:30).
+- Due-date validation, productivity grouping, overdue detection, reminders, audit statistics, exports, and invitation expiry dates use IST calendar days.
+- The frontend treats timezone-less API timestamps as UTC and converts date/time inputs and display values to IST.
+
 ## Validation and errors
 
 FluentValidation validators are discovered from the Application assembly. Known failures map as follows:
@@ -108,4 +115,4 @@ From the repository root:
 dotnet test backend/src/FlowForge/FlowForge.Tests/FlowForge.Tests.csproj
 ```
 
-The current suite contains 21 tests covering exception mapping, SMTP behavior, invitation creation, duplicate/rate-limit rules, invitation registration and acceptance, role assignment, and link generation.
+The current suite contains 43 tests covering exception mapping, SMTP behavior, invitation creation, duplicate/rate-limit rules, invitation registration and acceptance, role assignment, link generation, RBAC policy enforcement, organization isolation, Admin-only archived project/board visibility, soft-delete retention/restoration, dependent records, global query filters, and relational transaction rollback.

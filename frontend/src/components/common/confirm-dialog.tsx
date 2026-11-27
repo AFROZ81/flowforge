@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 import {
   ConfirmContext,
@@ -23,9 +24,11 @@ import {
  */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [options, setOptions] = useState<ConfirmOptions | null>(null);
+  const [confirmationValue, setConfirmationValue] = useState("");
   const resolver = useRef<((value: boolean) => void) | null>(null);
 
   const confirm = useCallback<ConfirmFn>((next) => {
+    setConfirmationValue("");
     setOptions(next);
 
     // Settles when the dialog is answered; an unmount never leaves it hanging
@@ -37,6 +40,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const settle = useCallback((value: boolean) => {
     resolver.current?.(value);
     resolver.current = null;
+    setConfirmationValue("");
     setOptions(null);
   }, []);
 
@@ -61,6 +65,21 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             )}
           </DialogHeader>
 
+          {options?.confirmationText && (
+            <div className="grid gap-2">
+              <label htmlFor="confirm-action-text" className="text-sm font-medium text-foreground">
+                Type <span className="font-semibold">{options.confirmationText}</span> to confirm
+              </label>
+              <Input
+                id="confirm-action-text"
+                value={confirmationValue}
+                onChange={(event) => setConfirmationValue(event.target.value)}
+                autoComplete="off"
+                autoFocus
+              />
+            </div>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => settle(false)}>
               {options?.cancelLabel ?? "Cancel"}
@@ -71,6 +90,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 options?.tone === "destructive" ? "destructive" : "default"
               }
               onClick={() => settle(true)}
+              disabled={
+                Boolean(options?.confirmationText) &&
+                confirmationValue !== options?.confirmationText
+              }
             >
               {options?.confirmLabel ?? "Confirm"}
             </Button>

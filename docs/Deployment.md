@@ -120,7 +120,7 @@ For reliable production scheduling and delivery, move jobs and webhook publishin
 - Refreshing a deep link such as `/reports` does not return 404.
 - `/health` reports Healthy.
 - Login and organization switching work.
-- A new invitation email points to `https://flowforge-app.runasp.net/accept-invitation?...`.
+- A new invitation email points to `https://flowforge-app.runasp.net/login?mode=register&invitationToken=...`.
 - Register-and-accept creates the membership with the invited role.
 - SMTP diagnostics report the expected state.
 - PWA installation and offline indicator work.

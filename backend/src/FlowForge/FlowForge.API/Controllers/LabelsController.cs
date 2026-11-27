@@ -28,6 +28,7 @@ public sealed class LabelsController : ControllerBase
     #region Commands
 
     [HttpPost]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Create(CreateLabelCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -65,6 +66,7 @@ public sealed class LabelsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/update")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Update(Guid id, UpdateLabelCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -78,6 +80,7 @@ public sealed class LabelsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -91,6 +94,7 @@ public sealed class LabelsController : ControllerBase
     }
 
     [HttpPost("workitem/{workItemId:guid}/label/{labelId:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Assign(Guid workItemId, Guid labelId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -105,6 +109,7 @@ public sealed class LabelsController : ControllerBase
     }
 
     [HttpDelete("workitem/{workItemId:guid}/label/{labelId:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Remove(Guid workItemId, Guid labelId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(

@@ -19,6 +19,8 @@ import { normalizeError } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/auth.store";
+import { isMemberRole } from "@/lib/auth-roles";
 
 import LabelFormDialog from "./LabelFormDialog";
 import { LabelSwatch, LabelSwatchTile } from "./LabelSwatch";
@@ -51,6 +53,8 @@ export default function LabelManagement() {
     const updateMutation = useUpdateLabel();
     const deleteMutation = useDeleteLabel();
     const confirm = useConfirm();
+    const currentUserRole = useAuthStore((state) => state.user?.role);
+    const canEdit = isMemberRole(currentUserRole);
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingLabel, setEditingLabel] = useState<Label | null>(null);
@@ -59,11 +63,15 @@ export default function LabelManagement() {
     const [sort, setSort] = useState<SortMode>("name-asc");
 
     const openCreateDialog = () => {
+        if (!canEdit) return;
+
         setEditingLabel(null);
         setDialogOpen(true);
     };
 
     const openEditDialog = (label: Label) => {
+        if (!canEdit) return;
+
         setEditingLabel(label);
         setDialogOpen(true);
     };
@@ -76,6 +84,8 @@ export default function LabelManagement() {
     };
 
     const handleSubmit = (data: CreateLabelRequest) => {
+        if (!canEdit) return;
+
         if (editingLabel) {
             updateMutation.mutate(
                 {
@@ -94,6 +104,8 @@ export default function LabelManagement() {
     };
 
     async function handleDelete(label: Label) {
+        if (!canEdit) return;
+
         const ok = await confirm({
             title: `Delete the “${label.name}” label?`,
             description:
@@ -176,8 +188,8 @@ export default function LabelManagement() {
                     </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="relative min-w-0 flex-1 sm:flex-none">
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                    <div className="relative w-full min-w-0 sm:w-auto sm:flex-none">
                         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={search}
@@ -225,7 +237,7 @@ export default function LabelManagement() {
                         </select>
                     </label>
 
-                    {createButton}
+                    {canEdit && createButton}
                 </div>
             </div>
 
@@ -253,10 +265,12 @@ export default function LabelManagement() {
                     title="No labels yet"
                     description="Create your first label to group, filter, and report on related work items."
                     action={
-                        <Button onClick={openCreateDialog}>
-                            <Plus />
-                            Create label
-                        </Button>
+                        canEdit ? (
+                            <Button onClick={openCreateDialog}>
+                                <Plus />
+                                Create label
+                            </Button>
+                        ) : undefined
                     }
                 />
             ) : visibleLabels.length === 0 ? (
@@ -281,7 +295,9 @@ export default function LabelManagement() {
                             label={label}
                             onEdit={() => openEditDialog(label)}
                             onDelete={() => void handleDelete(label)}
+                            canEdit={canEdit}
                             actionsDisabled={
+                                !canEdit ||
                                 updateMutation.isPending ||
                                 deleteMutation.isPending
                             }
@@ -292,7 +308,7 @@ export default function LabelManagement() {
             )}
 
             <LabelFormDialog
-                open={dialogOpen}
+                open={dialogOpen && canEdit}
                 label={editingLabel}
                 isSubmitting={
                     createMutation.isPending || updateMutation.isPending
@@ -316,12 +332,14 @@ function LabelCard({
     onDelete,
     actionsDisabled,
     deleting,
+    canEdit,
 }: {
     label: Label;
     onEdit: () => void;
     onDelete: () => void;
     actionsDisabled: boolean;
     deleting: boolean;
+    canEdit: boolean;
 }) {
     return (
         <li
@@ -343,7 +361,7 @@ function LabelCard({
 
                         {/* Actions: always in the tab order, visually quiet
                             until the card is hovered or holds focus. */}
-                        <div
+                        {canEdit && <div
                             className={cn(
                                 "ml-auto flex shrink-0 items-center gap-0.5 transition-opacity",
                                 "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
@@ -377,7 +395,7 @@ function LabelCard({
                                     <Trash2 />
                                 )}
                             </Button>
-                        </div>
+                        </div>}
                     </div>
 
                     <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">

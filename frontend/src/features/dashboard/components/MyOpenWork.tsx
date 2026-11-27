@@ -4,6 +4,7 @@ import { Inbox, ListChecks } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
+import { parseApiDate } from "@/lib/datetime";
 import {
     DueDateChip,
     WorkItemPriorityBadge,
@@ -48,7 +49,7 @@ const PRIORITY_RAIL: Record<string, string> = {
 };
 
 function matches(item: WorkItemBrief, filter: Filter): boolean {
-    const due = item.dueDate ? new Date(item.dueDate).getTime() : null;
+    const due = item.dueDate ? parseApiDate(item.dueDate)?.getTime() ?? null : null;
     const now = Date.now();
 
     switch (filter) {

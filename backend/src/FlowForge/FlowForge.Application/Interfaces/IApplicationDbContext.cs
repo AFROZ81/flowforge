@@ -43,4 +43,8 @@ public interface IApplicationDbContext
     Task<List<OrganizationUserLookup>> GetOrganizationUsersAsync(Guid organizationId, CancellationToken cancellationToken = default);
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    Task ExecuteInTransactionAsync(
+        Func<Task> operation,
+        CancellationToken cancellationToken = default);
 }

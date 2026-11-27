@@ -3,6 +3,7 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { useAuthStore } from "@/stores/auth.store";
+import { getIstHour, IST_TIME_ZONE, parseApiDate } from "@/lib/datetime";
 
 type Props = {
     /** When the snapshot was built, or null while there is nothing to stamp. */
@@ -24,18 +25,23 @@ function partOfDay(hour: number): string {
 }
 
 function clockTime(value: string): string {
-    const date = new Date(value);
+    const date = parseApiDate(value);
 
-    return Number.isNaN(date.getTime())
-        ? "—"
-        : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return date
+        ? `${date.toLocaleTimeString("en-GB", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: IST_TIME_ZONE,
+          })} IST`
+        : "—";
 }
 
 function fullDate(date: Date): string {
-    return date.toLocaleDateString([], {
+    return date.toLocaleDateString("en-GB", {
         weekday: "long",
         day: "numeric",
         month: "long",
+        timeZone: IST_TIME_ZONE,
     });
 }
 
@@ -58,10 +64,10 @@ export default function DashboardHeader({
     return (
         <PageHeader
             eyebrow={fullDate(now)}
-            title={`${partOfDay(now.getHours())}, ${firstName}`}
+            title={`${partOfDay(getIstHour(now) ?? 0)}, ${firstName}`}
             description={
                 generatedAtUtc
-                    ? `Snapshot updated ${clockTime(generatedAtUtc)}`
+                    ? `Updated ${clockTime(generatedAtUtc)}`
                     : "Loading your workspace snapshot"
             }
             actions={

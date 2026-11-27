@@ -243,7 +243,7 @@ public sealed class CreateInvitationCommandHandler : IRequestHandler<CreateInvit
         var frontendBaseUrl = string.IsNullOrWhiteSpace(configuredFrontendBaseUrl)
             ? "https://flowforge-app.runasp.net"
             : configuredFrontendBaseUrl.Trim().TrimEnd('/');
-        var invitationLink = $"{frontendBaseUrl}/accept-invitation?token={invitation.Token}";
+        var invitationLink = $"{frontendBaseUrl}/login?mode=register&invitationToken={Uri.EscapeDataString(invitation.Token)}";
 
         var actor = await _userLookup.FindByIdAsync(invitation.InvitedByUserId, cancellationToken);
 

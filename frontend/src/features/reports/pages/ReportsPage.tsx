@@ -44,6 +44,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import AppLayout from "@/layouts/AppLayout";
+import { IST_TIME_ZONE, parseApiDate } from "@/lib/datetime";
 
 type ReportId =
     | "work-items"
@@ -98,14 +99,15 @@ function formatPercentage(value: number): string {
 }
 
 function formatDate(value: string): string {
-    const date = new Date(value);
+    const date = parseApiDate(value);
 
-    return Number.isNaN(date.getTime())
-        ? value
-        : date.toLocaleDateString(undefined, {
+    return date
+        ? date.toLocaleDateString("en-GB", {
               day: "2-digit",
               month: "short",
-          });
+              timeZone: IST_TIME_ZONE,
+          })
+        : value;
 }
 
 function ofTotal(value: number, total: number): number {
@@ -442,7 +444,7 @@ function TeamReport({ data }: { data: AssigneeSummary[] }) {
             <FigureStrip
                 figures={[
                     {
-                        label: "Members with work",
+                        label: "Team members",
                         value: formatNumber(data.length),
                     },
                     { label: "Assigned", value: formatNumber(totals.assigned) },
@@ -1169,13 +1171,13 @@ const ReportsPage = () => {
                         {REPORT_LABEL[report]}
                     </h2>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                         {report === "productivity" ? (
                             <PeriodFilter days={days} onSelect={setPeriod} />
                         ) : null}
 
                         {filterable ? (
-                            <div className="relative min-w-0 flex-1 sm:flex-none">
+                            <div className="relative w-full min-w-0 sm:w-auto sm:flex-none">
                                 <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     value={search}

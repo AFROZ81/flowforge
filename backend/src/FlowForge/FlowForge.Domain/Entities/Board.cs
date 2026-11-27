@@ -55,4 +55,12 @@ public sealed class Board : EntityBase
 
         IsArchived = false;
     }
+
+    public void Delete()
+    {
+        if (IsDeleted) return;
+
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+    }
 }

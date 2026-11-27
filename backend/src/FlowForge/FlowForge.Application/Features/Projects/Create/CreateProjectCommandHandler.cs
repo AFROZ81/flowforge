@@ -3,6 +3,7 @@ using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using FlowForge.Application.Common.Exceptions;
+using FlowForge.Domain.Enums;
 using MediatR;
 
 namespace FlowForge.Application.Features.Projects.Create;
@@ -21,6 +22,10 @@ public sealed class CreateProjectCommandHandler : IRequestHandler<CreateProjectC
     public async Task<CreateProjectResponse> Handle(CreateProjectCommand request, CancellationToken cancellationToken)
     {
         var currentUser = _currentUser.User;
+        if (currentUser.Role != UserRole.Admin)
+        {
+            throw new ForbiddenException("Only admins can create projects.");
+        }
 
         var exists = await _context.Projects.AnyAsync(
             x =>

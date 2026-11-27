@@ -20,6 +20,8 @@ import { FormField } from "@/components/ui/form-field";
 import { ProjectMark } from "@/components/common/project-mark";
 import { cn } from "@/lib/utils";
 import { normalizeError } from "@/lib/errors";
+import { useAuthStore } from "@/stores/auth.store";
+import { isAdminRole } from "@/lib/auth-roles";
 
 import { PROJECT_COLORS } from "../constants/projectColors";
 import { PROJECT_ICONS } from "../constants/projectIcons";
@@ -72,6 +74,8 @@ export default function ProjectFormDialog({
     project,
 }: Props) {
     const isEdit = Boolean(project);
+    const currentUserRole = useAuthStore((state) => state.user?.role);
+    const isAdmin = isAdminRole(currentUserRole);
 
     const create = useCreateProject();
     const update = useUpdateProject();
@@ -128,6 +132,8 @@ export default function ProjectFormDialog({
     };
 
     async function onSubmit(values: CreateProjectForm) {
+        if (!isAdmin) return;
+
         try {
             if (project) {
                 await update.mutateAsync({

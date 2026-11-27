@@ -20,6 +20,7 @@ public sealed class WorkItemWatchersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Create(CreateWorkItemWatcherCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(command, cancellationToken);
@@ -41,6 +42,7 @@ public sealed class WorkItemWatchersController : ControllerBase
     }
 
     [HttpDelete("{watcherId:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Delete(Guid watcherId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(

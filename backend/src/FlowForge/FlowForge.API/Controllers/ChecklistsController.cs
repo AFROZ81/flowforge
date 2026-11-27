@@ -25,6 +25,7 @@ public sealed class ChecklistsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Create(CreateChecklistItemCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(command, cancellationToken);
@@ -46,6 +47,7 @@ public sealed class ChecklistsController : ControllerBase
     }
 
     [HttpPut("{checklistItemId:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Update(Guid checklistItemId, UpdateChecklistItemCommand command, CancellationToken cancellationToken)
     {
         command = command with
@@ -59,6 +61,7 @@ public sealed class ChecklistsController : ControllerBase
     }
 
     [HttpPatch("{checklistItemId:guid}/complete")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Complete(Guid checklistItemId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -72,6 +75,7 @@ public sealed class ChecklistsController : ControllerBase
     }
 
     [HttpPatch("{checklistItemId:guid}/uncomplete")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Uncomplete(Guid checklistItemId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -85,6 +89,7 @@ public sealed class ChecklistsController : ControllerBase
     }
 
     [HttpDelete("{checklistItemId:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Delete(Guid checklistItemId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -98,6 +103,7 @@ public sealed class ChecklistsController : ControllerBase
     }
 
     [HttpPatch("reorder")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Reorder(ReorderChecklistCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(command, cancellationToken);

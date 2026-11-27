@@ -3,6 +3,7 @@ using FlowForge.Application.Features.WorkItems.Archive;
 using FlowForge.Application.Features.WorkItems.Block;
 using FlowForge.Application.Features.WorkItems.Complete;
 using FlowForge.Application.Features.WorkItems.Create;
+using FlowForge.Application.Features.WorkItems.Delete;
 using FlowForge.Application.Features.WorkItems.Edit;
 using FlowForge.Application.Features.WorkItems.GetByColumn;
 using FlowForge.Application.Features.WorkItems.GetById;
@@ -137,6 +138,21 @@ public sealed class WorkItemsController : ControllerBase
             cancellationToken);
 
         return Ok(response);
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "RequireAdmin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new DeleteWorkItemCommand { WorkItemId = id },
+            cancellationToken);
+
+        return NoContent();
     }
 
     [HttpPatch("{id:guid}/restore")]

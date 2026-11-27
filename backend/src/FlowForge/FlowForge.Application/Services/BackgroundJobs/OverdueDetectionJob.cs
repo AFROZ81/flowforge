@@ -1,3 +1,4 @@
+using FlowForge.Application.Common.Time;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Notifications;
 using FlowForge.Domain.Common.Enums;
@@ -29,20 +30,26 @@ public sealed class OverdueDetectionJob
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
-        var now = DateOnly.FromDateTime(DateTime.UtcNow);
+        var now = DateTime.UtcNow;
+        var today = AppTime.TodayInIndia;
+        var nextIndiaDayStart = AppTime.IndiaDayStartUtc(today.AddDays(1));
 
-        _logger.LogInformation("Running overdue detection job at {Time}", DateTime.UtcNow);
+        _logger.LogInformation("Running overdue detection job at {Time}", now);
 
         // Find work items that are overdue
-        var overdueWorkItems = await context.WorkItems
+        var candidates = await context.WorkItems
             .AsNoTracking()
             .Where(w =>
                 !w.IsDeleted &&
                 w.DueDate.HasValue &&
-                DateOnly.FromDateTime(w.DueDate.Value) < now &&
+                w.DueDate.Value < nextIndiaDayStart &&
                 w.Status != WorkItemStatus.Completed &&
                 w.Status != WorkItemStatus.Blocked)
             .ToListAsync(cancellationToken);
+
+        var overdueWorkItems = candidates
+            .Where(w => AppTime.DateInIndia(w.DueDate!.Value) < today)
+            .ToList();
 
         foreach (var workItem in overdueWorkItems)
         {
@@ -78,7 +85,7 @@ public sealed class OverdueDetectionJob
                         workItem.AssigneeId.Value,
                         NotificationType.WorkItemStatusChanged,
                         "Work Item Overdue",
-                        $"Work item \"{workItem.Title}\" was due on {workItem.DueDate?.ToString("yyyy-MM-dd") ?? "unknown"} and is now overdue.",
+                        $"Work item \"{workItem.Title}\" was due on {AppTime.DateInIndia(workItem.DueDate!.Value).ToString("yyyy-MM-dd")} and is now overdue.",
                         workItem.Id,
                         cancellationToken);
                 }

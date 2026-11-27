@@ -116,6 +116,28 @@ public sealed class BoardRules
         return board;
     }
 
+    public async Task<Board> GetByIdIncludingDeletedAsync(
+        Guid boardId,
+        Guid organizationId,
+        CancellationToken cancellationToken)
+    {
+        var board = await _context.Boards
+            .IgnoreQueryFilters()
+            .Include(x => x.Project)
+            .Include(x => x.Columns)
+                .ThenInclude(x => x.WorkItems)
+            .FirstOrDefaultAsync(
+                x =>
+                    x.Id == boardId &&
+                    x.Project.OrganizationId == organizationId,
+                cancellationToken);
+
+        if (board is null)
+            throw new NotFoundException("Board not found.");
+
+        return board;
+    }
+
     // =========================================================
     // BOARD ARCHIVE RULES
     // =========================================================

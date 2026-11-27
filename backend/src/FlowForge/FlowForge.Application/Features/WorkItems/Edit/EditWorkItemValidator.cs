@@ -1,4 +1,5 @@
 using FluentValidation;
+using FlowForge.Application.Common.Time;
 
 namespace FlowForge.Application.Features.WorkItems.Edit;
 
@@ -13,7 +14,7 @@ public sealed class EditWorkItemValidator : AbstractValidator<EditWorkItemComman
             .MaximumLength(2000);
 
         RuleFor(x => x.DueDate)
-            .Must(x => !x.HasValue || x.Value.Date >= DateTime.UtcNow.Date)
+            .Must(x => !x.HasValue || AppTime.DateInIndia(x.Value) >= AppTime.TodayInIndia)
             .WithMessage("Due date cannot be in the past.");
     }
 }

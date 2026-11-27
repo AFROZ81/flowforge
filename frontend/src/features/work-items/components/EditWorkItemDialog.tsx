@@ -13,6 +13,10 @@ import {
 import {
     toast,
 } from "@/lib/toast";
+import {
+    fromIstDateInput,
+    toIstDateInput,
+} from "@/lib/datetime";
 
 import {
     Dialog,
@@ -76,6 +80,9 @@ import {
     useUnassignWorkItem,
 } from "../hooks/useUnassignWorkItem";
 
+import { useAuthStore } from "@/stores/auth.store";
+import { isMemberRole } from "@/lib/auth-roles";
+
 import {
     editWorkItemSchema,
 } from "../schemas/editWorkItem.schema";
@@ -113,41 +120,6 @@ type WorkItemForm = {
 };
 
 
-function formatDateForInput(
-    dueDate?: string | null
-) {
-    if (!dueDate) {
-        return "";
-    }
-
-    const date =
-        new Date(dueDate);
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return "";
-    }
-
-    const year =
-        date.getFullYear();
-
-    const month =
-        String(
-            date.getMonth() + 1
-        ).padStart(2, "0");
-
-    const day =
-        String(
-            date.getDate()
-        ).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-}
-
-
 /** Mirrors WorkItemPriority on the server. */
 const PRIORITIES = [
     { value: 1, label: "Low" },
@@ -155,6 +127,28 @@ const PRIORITIES = [
     { value: 3, label: "High" },
     { value: 4, label: "Critical" },
 ];
+
+const PRIORITY_VALUE_BY_NAME: Record<string, number> = {
+    low: 1,
+    medium: 2,
+    high: 3,
+    critical: 4,
+};
+
+function normalizePriority(priority: string | number): number {
+    if (typeof priority === "number") {
+        return priority;
+    }
+
+    const value = priority.trim().toLowerCase();
+    const numericValue = Number(value);
+
+    if (Number.isFinite(numericValue)) {
+        return numericValue;
+    }
+
+    return PRIORITY_VALUE_BY_NAME[value] ?? 2;
+}
 
 
 export default function EditWorkItemDialog({
@@ -181,6 +175,9 @@ export default function EditWorkItemDialog({
 
     const unassignMutation =
         useUnassignWorkItem();
+
+    const currentUserRole = useAuthStore((state) => state.user?.role);
+    const canEdit = isMemberRole(currentUserRole);
 
 
     const {
@@ -222,12 +219,12 @@ export default function EditWorkItemDialog({
                 "",
 
             priority:
-                Number(
+                normalizePriority(
                     workItem.priority
                 ),
 
             dueDate:
-                formatDateForInput(
+                toIstDateInput(
                     workItem.dueDate
                 ),
 
@@ -265,7 +262,7 @@ export default function EditWorkItemDialog({
             values: WorkItemForm
         ) => {
 
-            if (!workItem) {
+            if (!canEdit || !workItem || workItem.isArchived) {
                 return;
             }
 
@@ -279,12 +276,12 @@ export default function EditWorkItemDialog({
 
 
             const originalDueDate =
-                formatDateForInput(
+                toIstDateInput(
                     workItem.dueDate
                 );
 
             const originalPriority =
-                Number(
+                normalizePriority(
                     workItem.priority
                 );
 
@@ -436,8 +433,7 @@ export default function EditWorkItemDialog({
                                 newPriority,
 
                             dueDate:
-                                newDueDate ||
-                                null,
+                                fromIstDateInput(newDueDate),
                         },
                     });
                 }

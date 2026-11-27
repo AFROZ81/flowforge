@@ -1,4 +1,5 @@
 using FlowForge.Application.Features.Boards.Create;
+using FlowForge.Application.Features.Boards.Delete;
 using FlowForge.Application.Features.Boards.GetBoards;
 using FlowForge.Application.Features.Boards.GetBoardById;
 using FlowForge.Application.Features.Boards.Update;
@@ -26,7 +27,7 @@ public sealed class BoardsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "RequireMember")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Create(CreateBoardCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(command, cancellationToken);
@@ -56,7 +57,7 @@ public sealed class BoardsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "RequireMember")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Update(Guid id, UpdateBoardCommand command, CancellationToken cancellationToken)
     {
         if (id != command.BoardId)
@@ -67,6 +68,22 @@ public sealed class BoardsController : ControllerBase
         var response = await _mediator.Send(command, cancellationToken);
 
         return Ok(response);
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "RequireAdmin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new DeleteBoardCommand { BoardId = id },
+            cancellationToken);
+
+        return NoContent();
     }
 
     [HttpPatch("{id:guid}/archive")]

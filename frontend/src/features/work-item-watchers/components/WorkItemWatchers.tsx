@@ -36,11 +36,13 @@ import {
 type Props = {
     workItemId: string;
     workItemTitle?: string;
+    disabled?: boolean;
 };
 
 export default function WorkItemWatchers({
     workItemId,
     workItemTitle,
+    disabled = false,
 }: Props) {
     const [
         isOpen,
@@ -124,6 +126,7 @@ export default function WorkItemWatchers({
     const handleAdd =
         async () => {
             if (
+                disabled ||
                 !selectedUserId ||
                 addMutation.isPending
             ) {
@@ -165,6 +168,7 @@ export default function WorkItemWatchers({
             watcherId: string
         ) => {
             if (
+                disabled ||
                 removeMutation.isPending
             ) {
                 return;
@@ -492,7 +496,7 @@ export default function WorkItemWatchers({
 
                                                       {/* REMOVE */}
 
-                                                      <Button
+                                                      {!disabled && <Button
                                                           type="button"
                                                           variant="ghost"
                                                           size="sm"
@@ -516,7 +520,7 @@ export default function WorkItemWatchers({
                                                           {removeMutation.isPending
                                                               ? "..."
                                                               : "Remove"}
-                                                      </Button>
+                                                      </Button>}
                                                   </div>
                                               )
                                           )}
@@ -527,7 +531,7 @@ export default function WorkItemWatchers({
                                   ADD WATCHER
                               ================================== */}
 
-                              {!isLoading &&
+                              {!disabled && !isLoading &&
                                   !isError &&
                                   availableUsers.length >
                                       0 && (
@@ -671,7 +675,7 @@ export default function WorkItemWatchers({
 
                               {/* ALL USERS WATCHING */}
 
-                              {!isLoading &&
+                              {!disabled && !isLoading &&
                                   !isError &&
                                   availableUsers.length ===
                                       0 &&

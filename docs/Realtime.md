@@ -24,12 +24,14 @@ On connect, a user joins their user and organization groups. `JoinBoard` and `Le
 | `WorkItemCreated` | Board | Received by the client and re-dispatched as a DOM event. |
 | `WorkItemUpdated` | Board | Received by the client and re-dispatched as a DOM event. |
 | `WorkItemMoved` | Board | Received by the client and re-dispatched as a DOM event. |
-| `WorkItemDeleted` | Board | Received by the client and re-dispatched as a DOM event. |
+| `WorkItemDeleted` | Board | Work-item soft deletion; received by the client and re-dispatched as a DOM event. |
+| `ProjectDeleted` | Organization | Project soft deletion. |
+| `BoardDeleted` | Board | Board soft deletion. |
 | `CommentAdded` / `Updated` / `Deleted` | Board | Received by the client and re-dispatched as DOM events. |
 | `RoleChanged` | User | Client refreshes its token when its own role changes. |
 | `TypingStarted` / `TypingStopped` | Board except sender | Subscribed by the client; no UI currently invokes the hub methods. |
 
-`NotifyOrganizationAsync` exists but has no current caller. `RealtimeEvents.BoardUpdated` is defined but not broadcast.
+`NotifyOrganizationAsync` is used for project soft deletion. `RealtimeEvents.BoardUpdated` is defined but not broadcast.
 
 ## Client architecture
 
@@ -64,6 +66,6 @@ The client maintains a notification inbox with unread counts, read/unread action
 
 - Typing events are subscribed but no client component sends `StartTyping` or `StopTyping`.
 - The board realtime invalidation listener is not mounted.
-- Organization-wide broadcast has no current publisher.
+- Project deletion publishes an organization event, but there is no organization-wide client invalidation listener yet.
 - There is no durable pub/sub backplane; the current design assumes one application process.
 - Local development CORS allows ports 5173, 5174, and 5175; production remains same-origin.

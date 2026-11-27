@@ -1,3 +1,4 @@
+using FlowForge.Application.Common.Time;
 using FlowForge.Application.Services;
 using FlowForge.Domain.Enums;
 using Microsoft.Extensions.Configuration;
@@ -112,7 +113,7 @@ public sealed class SmtpEmailService : IEmailService
         CancellationToken cancellationToken = default)
     {
         var subject = $"You're invited to join {organizationName}";
-        var expiresAtUtc = expiresAt.ToUniversalTime().ToString("yyyy-MM-dd");
+        var expiresAtUtc = AppTime.DateInIndia(expiresAt).ToString("yyyy-MM-dd");
         var plainText = BuildPlainTextInvitation(
             organizationName,
             invitedByName,

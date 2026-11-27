@@ -67,6 +67,28 @@ public sealed class WorkItemRules
         return workItem;
     }
 
+    public async Task<WorkItem> GetByIdIncludingDeletedAsync(
+        Guid workItemId,
+        Guid organizationId,
+        CancellationToken cancellationToken)
+    {
+        var workItem = await _context.WorkItems
+            .IgnoreQueryFilters()
+            .Include(x => x.Column)
+                .ThenInclude(x => x.Board)
+                    .ThenInclude(x => x.Project)
+            .FirstOrDefaultAsync(
+                x =>
+                    x.Id == workItemId &&
+                    x.Column.Board.Project.OrganizationId == organizationId,
+                cancellationToken);
+
+        if (workItem is null)
+            throw new NotFoundException("Work Item not found.");
+
+        return workItem;
+    }
+
     public void EnsureColumnNotArchived(Column column)
     {
         if (column.IsArchived)

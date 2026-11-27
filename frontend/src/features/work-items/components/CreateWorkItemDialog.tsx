@@ -26,6 +26,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { normalizeError } from "@/lib/errors";
+import { fromIstDateInput } from "@/lib/datetime";
+import { useAuthStore } from "@/stores/auth.store";
+import { isMemberRole } from "@/lib/auth-roles";
 
 import {
     createWorkItemSchema,
@@ -65,6 +68,8 @@ export default function CreateWorkItemDialog({
     const queryClient = useQueryClient();
 
     const mutation = useCreateWorkItem();
+    const currentUserRole = useAuthStore((state) => state.user?.role);
+    const canEdit = isMemberRole(currentUserRole);
 
     const aiEnabled = useAiFlag("draftWithAi");
 
@@ -127,13 +132,15 @@ export default function CreateWorkItemDialog({
     const busy = mutation.isPending || isSubmitting;
 
     const onSubmit = async (values: CreateWorkItemForm) => {
+        if (!canEdit) return;
+
         try {
             await mutation.mutateAsync({
                 columnId: values.columnId,
                 title: values.title,
                 description: values.description || undefined,
                 priority: values.priority,
-                dueDate: values.dueDate || undefined,
+                dueDate: fromIstDateInput(values.dueDate) ?? undefined,
             });
 
             toast.success("Work item created", {

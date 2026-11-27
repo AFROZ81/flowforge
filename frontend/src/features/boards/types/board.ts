@@ -3,5 +3,5 @@ export type Board = {
     projectId: string;
     name: string;
     description?: string;
-    archived: boolean;
+    isArchived?: boolean;
 };

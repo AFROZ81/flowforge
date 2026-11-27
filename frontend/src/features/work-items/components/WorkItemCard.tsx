@@ -42,6 +42,8 @@ import {
 } from "@/components/common/indicators";
 import { Avatar } from "@/components/ui/avatar";
 import { ProgressBar } from "@/components/ui/progress";
+import { useAuthStore } from "@/stores/auth.store";
+import { isMemberRole } from "@/lib/auth-roles";
 
 type WorkItem = {
     id: string;
@@ -90,6 +92,9 @@ export default function WorkItemCard({
         labelsOpen,
         setLabelsOpen,
     ] = useState(false);
+
+    const currentUserRole = useAuthStore((state) => state.user?.role);
+    const canEdit = isMemberRole(currentUserRole);
 
     /*
      * ========================================
@@ -211,7 +216,7 @@ export default function WorkItemCard({
     return (
         <>
             <Card
-                draggable
+                draggable={canEdit}
                 onClick={onClick}
                 onKeyDown={(event) => {
                     /* A card that opens on click must also open on Enter */
@@ -361,6 +366,7 @@ export default function WorkItemCard({
                         <WorkItemWatchers
                             workItemId={item.id}
                             workItemTitle={item.title}
+                            disabled={!canEdit || item.isArchived}
                         />
                     </div>
 
@@ -420,7 +426,7 @@ export default function WorkItemCard({
                             users
                         }
                         disabled={
-                            item.isArchived
+                            item.isArchived || !canEdit
                         }
                     />
 
@@ -451,6 +457,7 @@ export default function WorkItemCard({
                 workItemTitle={
                     item.title
                 }
+                disabled={!canEdit || item.isArchived}
             />
         </>
     );

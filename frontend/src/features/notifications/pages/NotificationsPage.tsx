@@ -30,9 +30,12 @@ import {
 } from "@/components/ui/page-header";
 
 import AppLayout from "@/layouts/AppLayout";
+import { IST_TIME_ZONE, parseApiDate } from "@/lib/datetime";
 
 function formatRelativeTime(isoString: string): string {
-    const date = new Date(isoString);
+    const date = parseApiDate(isoString);
+    if (!date) return isoString;
+
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -62,6 +65,7 @@ function formatRelativeTime(isoString: string): string {
         day: "2-digit",
         month: "short",
         year: "numeric",
+        timeZone: IST_TIME_ZONE,
     });
 }
 

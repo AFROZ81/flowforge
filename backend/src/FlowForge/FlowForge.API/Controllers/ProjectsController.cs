@@ -1,5 +1,6 @@
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Features.Projects.Create;
+using FlowForge.Application.Features.Projects.Delete;
 using FlowForge.Application.Features.Projects.GetAll;
 using FlowForge.Application.Features.Projects.GetById;
 using FlowForge.Application.Features.Projects.Update;
@@ -26,7 +27,7 @@ public sealed class ProjectsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "RequireMember")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<ActionResult<ApiResponse<CreateProjectResponse>>> Create(CreateProjectCommand command, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);
@@ -51,7 +52,7 @@ public sealed class ProjectsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "RequireMember")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Update(Guid id, UpdateProjectCommand command, CancellationToken cancellationToken)
     {
         if (id != command.ProjectId)
@@ -60,6 +61,22 @@ public sealed class ProjectsController : ControllerBase
         var response = await _mediator.Send(command, cancellationToken);
 
         return Ok(response);
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "RequireAdmin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new DeleteProjectCommand { ProjectId = id },
+            cancellationToken);
+
+        return NoContent();
     }
 
     [HttpPatch("{id:guid}/archive")]

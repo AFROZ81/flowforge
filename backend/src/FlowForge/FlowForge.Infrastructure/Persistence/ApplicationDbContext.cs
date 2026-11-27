@@ -8,6 +8,7 @@ using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Common.Base;
 using FlowForge.Application.Common.Models;
 using FlowForge.Domain.Events;
+using System.Linq.Expressions;
 
 namespace FlowForge.Infrastructure.Persistence;
 
@@ -68,6 +69,18 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (!typeof(EntityBase).IsAssignableFrom(entityType.ClrType))
+                continue;
+
+            var parameter = Expression.Parameter(entityType.ClrType, "entity");
+            var isDeleted = Expression.Property(parameter, nameof(EntityBase.IsDeleted));
+            var filter = Expression.Lambda(Expression.Not(isDeleted), parameter);
+
+            entityType.SetQueryFilter(filter);
+        }
 
         modelBuilder.Entity<OrganizationUser>()
             .HasKey(ou => new { ou.UserId, ou.OrganizationId });
@@ -216,6 +229,21 @@ public override async Task<int> SaveChangesAsync(
         }
 
         return result;
+    }
+
+    public async Task ExecuteInTransactionAsync(
+        Func<Task> operation,
+        CancellationToken cancellationToken = default)
+    {
+        if (Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            await operation();
+            return;
+        }
+
+        await using var transaction = await Database.BeginTransactionAsync(cancellationToken);
+        await operation();
+        await transaction.CommitAsync(cancellationToken);
     }
 
     public async Task<List<OrganizationUserLookup>>

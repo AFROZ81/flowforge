@@ -32,7 +32,7 @@ All notable changes are documented here. The current update summarizes the worki
 
 ### Testing
 
-- Backend xUnit project with 21 tests.
+- Backend xUnit project with 43 tests.
 - Frontend Vitest unit project and Storybook browser-test configuration.
 
 ## Changed
@@ -55,12 +55,29 @@ All notable changes are documented here. The current update summarizes the worki
 - Duplicate invitation checks use SQL-translatable `TRIM`/`LOWER` comparison.
 - Invitation creation returns the correct conflict/result behavior.
 - Invitation registration uses the configured Axios API client instead of a relative request to the Vite server.
+- Invitation emails now open the original registration card at `/login?mode=register` with the invite token; legacy acceptance links redirect there and the form prefills the invited email, hides workspace selection, and accepts the invite after account creation.
 - Invitation acceptance no longer conflicts with a membership created prematurely during registration.
 - Expired invitations are excluded from the pending UI list.
 - Email delivery failures are reported as invitation-created-but-not-sent instead of false success.
 - Invitation-list load failures now show a visible retry state.
 - The organization-role correction migration no longer deletes user accounts and maps legacy roles in a single safe update.
 - Removed the custom PWA install prompt and versioned the branded icon URLs to bypass stale mobile caches.
+- Member roles now normalize the API's enum names before display and send role names back when updating a member.
+- Search fields now take a full row on mobile across projects, members, labels, and reports instead of competing with filters for width.
+- Reports and Settings navigation now use a cleaner segmented control with hidden mobile scrollbars and edge fades that make overflowing views discoverable.
+- The Team report now includes every current organization member, including members with no assigned work, by reading memberships instead of the legacy primary-organization field.
+- Board keyboard selection now clears when the user clicks outside the board, including any lingering DOM focus on the selected card.
+- Work-item editing now prefills the saved priority whether the API returns an enum name or numeric value, and unrelated edits no longer reset it.
+- Removed icon-only X controls from all shared dialogs and sheets; modals keep explicit Close/Cancel actions, and the mobile navigation drawer now has a text Close button.
+- Board columns now use a predictable responsive grid: one on phones, two on small screens, three on medium, four on large, and five on extra-large screens.
+- All user-facing dates and times now use IST (`Asia/Kolkata`), including date inputs, activity feeds, reminders, audit filters, reports, exports, and invitation emails; stored timestamps remain UTC.
+- Invitation creation, listing, resend, and revocation are now admin-only in both the Members page UI and API authorization.
+- Added Admin-only soft deletion for work items, projects, and boards with typed UI confirmation, audit logs, realtime notifications, transactional flag updates, retained dependent records/files, global query filters, restore support, and non-empty container protection.
+- Project and board creation/editing are now Admin-only in both API policies and UI visibility; Viewers have read-only work-item details and cannot call work-item mutation APIs.
+- Project cards now expose direct Edit/Archive/Delete icons, board cards expose direct Edit/Archive/Delete icons, and soft delete is no longer hidden behind management or danger menus.
+- Added an Admin-only board edit dialog with prefilled name/description fields on board cards.
+- Admin project and board pages now show an Archived button only when archived items exist; the button opens a restore modal, while Members and Viewers continue to see active items only.
+- Removed duplicate board Edit/Archive controls from the board detail columns page.
 
 ## Known boundaries
 

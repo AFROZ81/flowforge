@@ -12,6 +12,8 @@ public static class RealtimeEvents
     public const string WorkItemMoved = "WorkItemMoved";
     public const string WorkItemDeleted = "WorkItemDeleted";
 
+    public const string ProjectDeleted = "ProjectDeleted";
+    public const string BoardDeleted = "BoardDeleted";
     public const string BoardUpdated = "BoardUpdated";
     public const string BoardPresenceChanged = "BoardPresenceChanged";
 

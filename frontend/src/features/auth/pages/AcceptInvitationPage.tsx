@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { Navigate, useSearchParams, useNavigate } from "react-router-dom";
 import { Loader2, Mail, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,15 @@ export default function AcceptInvitationPage() {
               : "register";
 
     const visibleError = invitationError ?? error;
+
+    if (token && !isAuthenticated) {
+        return (
+            <Navigate
+                to={`/login?mode=register&invitationToken=${encodeURIComponent(token)}`}
+                replace
+            />
+        );
+    }
 
     const tryAcceptInvitation = async () => {
         if (!token) return;

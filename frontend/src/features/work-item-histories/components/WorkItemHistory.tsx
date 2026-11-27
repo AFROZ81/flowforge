@@ -3,6 +3,7 @@ import {
 } from "../hooks/useWorkItemHistory";
 
 import OnlineIndicator from "@/features/presence/components/OnlineIndicator";
+import { IST_TIME_ZONE, parseApiDate } from "@/lib/datetime";
 
 type OrganizationUser = {
     id: string;
@@ -132,14 +133,9 @@ function getActionStyle(
 function formatDate(
     value: string
 ) {
-    const date =
-        new Date(value);
+    const date = parseApiDate(value);
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (!date) {
         return value;
     }
 
@@ -151,8 +147,9 @@ function formatDate(
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
+            timeZone: IST_TIME_ZONE,
         }
-    );
+    ) + " IST";
 }
 
 export default function WorkItemHistory({

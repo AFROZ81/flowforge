@@ -1,3 +1,9 @@
+import {
+    IST_TIME_ZONE,
+    istDateKey,
+    parseApiDate,
+} from "./datetime";
+
 /**
  * Presentation-only formatters.
  *
@@ -42,9 +48,7 @@ const DAY_MS = 86_400_000
 export function parseDate(value?: string | null): Date | null {
     if (!value) return null
 
-    const date = new Date(value)
-
-    return Number.isNaN(date.getTime()) ? null : date
+    return parseApiDate(value)
 }
 
 /**
@@ -55,11 +59,13 @@ export function dueStateOf(dueDate?: string | null): DueState {
     const date = parseDate(dueDate)
     if (!date) return "none"
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    date.setHours(0, 0, 0, 0)
+    const todayKey = istDateKey(new Date())
+    const dueKey = istDateKey(date)
+    if (!todayKey || !dueKey) return "none"
 
-    const days = Math.round((date.getTime() - today.getTime()) / DAY_MS)
+    const today = new Date(`${todayKey}T00:00:00Z`).getTime()
+    const due = new Date(`${dueKey}T00:00:00Z`).getTime()
+    const days = Math.round((due - today) / DAY_MS)
 
     if (days < 0) return "overdue"
     if (days === 0) return "today"
@@ -79,6 +85,7 @@ export function formatDueDate(
         day: "numeric",
         month: "short",
         ...(style === "long" ? { year: "numeric" } : {}),
+        timeZone: IST_TIME_ZONE,
     })
 }
 
@@ -94,6 +101,7 @@ export function formatDate(
         month: "short",
         year: "numeric",
         ...(style === "short" ? {} : { weekday: "short" }),
+        timeZone: IST_TIME_ZONE,
     })
 }
 
@@ -101,10 +109,11 @@ export function formatDateTime(value?: string | null): string {
     const date = parseDate(value)
     if (!date) return "—"
 
-    return `${formatDate(value, "short")} · ${date.toLocaleTimeString([], {
+    return `${formatDate(value, "short")} · ${date.toLocaleTimeString("en-GB", {
         hour: "2-digit",
         minute: "2-digit",
-    })}`
+        timeZone: IST_TIME_ZONE,
+    })} IST`
 }
 
 /** Compact "3h ago" style label for activity feeds. */

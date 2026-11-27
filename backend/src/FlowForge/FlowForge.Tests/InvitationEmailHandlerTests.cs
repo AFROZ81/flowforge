@@ -346,7 +346,7 @@ public sealed class InvitationEmailHandlerTests
 
         // Email service was called with the correct link shape.
         Assert.Single(ctx.Email.Calls);
-        Assert.StartsWith("https://flowforge-app.runasp.net/accept-invitation?token=", ctx.Email.Calls[0].Link);
+        Assert.StartsWith("https://flowforge-app.runasp.net/login?mode=register&invitationToken=", ctx.Email.Calls[0].Link);
         Assert.DoesNotContain("token=", ctx.Email.Calls[0].To);
     }
 
@@ -462,7 +462,7 @@ public sealed class InvitationEmailHandlerTests
         await handler.Handle(Command("invitee@example.com", ctx.OrganizationId), CancellationToken.None);
 
         Assert.Single(ctx.Email.Calls);
-        Assert.StartsWith("http://localhost:5173/accept-invitation?token=", ctx.Email.Calls[0].Link);
+        Assert.StartsWith("http://localhost:5173/login?mode=register&invitationToken=", ctx.Email.Calls[0].Link);
     }
 
     [Fact]
@@ -493,7 +493,7 @@ public sealed class InvitationEmailHandlerTests
         await handler.Handle(new ResendInvitationCommand { Id = invitation.Id }, CancellationToken.None);
 
         Assert.Single(ctx.Email.Calls);
-        Assert.StartsWith("https://flowforge-app.runasp.net/accept-invitation?token=", ctx.Email.Calls[0].Link);
+        Assert.StartsWith("https://flowforge-app.runasp.net/login?mode=register&invitationToken=", ctx.Email.Calls[0].Link);
     }
 
     [Fact]

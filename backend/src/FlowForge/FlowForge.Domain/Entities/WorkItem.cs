@@ -148,4 +148,12 @@ public sealed class WorkItem : EntityBase
         DueDate = null;
         ReminderDate = null;
     }
+
+    public void Delete()
+    {
+        if (IsDeleted) return;
+
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+    }
 }

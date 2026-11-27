@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 
 import { cn } from "@/lib/utils";
@@ -18,13 +18,12 @@ type PillNavProps<T extends string> = {
 };
 
 /**
- * A centered segmented pill for switching between views of the same page.
+ * A centered segmented control for switching between views of the same page.
  *
  * Items are links rather than buttons, so a view can be deep-linked,
- * middle-clicked or copied from the address bar. The track is
- * `surface-sunken` because that sits below the card colour in every theme;
- * with a muted track the selected pill would read as pressed rather than raised
- * in the dark themes, where the card is darker than the track.
+ * middle-clicked or copied from the address bar. The track stays quieter than
+ * the selected card in every theme, and the mobile scrollbar is hidden so the
+ * control reads as navigation rather than a clipped form field.
  */
 export default function PillNav<T extends string>({
     items,
@@ -33,6 +32,28 @@ export default function PillNav<T extends string>({
     onPrefetch,
 }: PillNavProps<T>) {
     const trackRef = useRef<HTMLUListElement>(null);
+    const [scrollEdges, setScrollEdges] = useState({
+        start: false,
+        end: false,
+    });
+
+    const updateScrollEdges = useCallback(() => {
+        const track = trackRef.current;
+
+        if (!track) {
+            return;
+        }
+
+        const max = track.scrollWidth - track.clientWidth;
+        const start = track.scrollLeft > 1;
+        const end = max - track.scrollLeft > 1;
+
+        setScrollEdges((current) =>
+            current.start === start && current.end === end
+                ? current
+                : { start, end }
+        );
+    }, []);
 
     /*
      * On a phone the track is wider than the screen and pans, so a deep-linked or
@@ -121,13 +142,19 @@ export default function PillNav<T extends string>({
 
         let alive = true;
 
-        const observer = new ResizeObserver(() => revealActive(false));
+        const observer = new ResizeObserver(() => {
+            revealActive(false);
+            updateScrollEdges();
+        });
         observer.observe(track);
+        track.addEventListener("scroll", updateScrollEdges, { passive: true });
+        updateScrollEdges();
 
         document.fonts?.ready
             .then(() => {
                 if (alive) {
                     revealActive(false);
+                    updateScrollEdges();
                 }
             })
             .catch(() => {
@@ -137,14 +164,15 @@ export default function PillNav<T extends string>({
         return () => {
             alive = false;
             observer.disconnect();
+            track.removeEventListener("scroll", updateScrollEdges);
         };
-    }, [revealActive]);
+    }, [revealActive, updateScrollEdges]);
 
     return (
-        <nav aria-label={ariaLabel} className="min-w-0">
+        <nav aria-label={ariaLabel} className="relative w-full min-w-0">
             <ul
                 ref={trackRef}
-                className="mx-auto flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full border bg-surface-sunken p-1"
+                className="mx-auto flex w-fit max-w-full items-center gap-1 overflow-x-auto overscroll-x-contain rounded-xl border border-border/70 bg-surface-muted/60 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
                 {items.map((item) => {
                     const selected = item.id === active;
@@ -165,11 +193,11 @@ export default function PillNav<T extends string>({
                                         : undefined
                                 }
                                 className={cn(
-                                    "flex h-8 items-center whitespace-nowrap rounded-full px-3.5 text-sm font-medium",
-                                    "outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40",
+                                    "flex h-9 items-center whitespace-nowrap rounded-lg px-3 text-[13px] font-medium sm:px-4 sm:text-sm",
+                                    "outline-none transition-[color,background-color,box-shadow] focus-visible:ring-inset focus-visible:ring-[3px] focus-visible:ring-ring/40",
                                     selected
-                                        ? "bg-card text-foreground shadow-xs"
-                                        : "text-muted-foreground hover:text-foreground"
+                                        ? "bg-card text-foreground shadow-sm ring-1 ring-border/70"
+                                        : "text-muted-foreground hover:bg-surface-muted/70 hover:text-foreground"
                                 )}
                             >
                                 {item.label}
@@ -178,6 +206,20 @@ export default function PillNav<T extends string>({
                     );
                 })}
             </ul>
+
+            {scrollEdges.start ? (
+                <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-1 left-1 z-10 w-7 rounded-l-xl bg-linear-to-r from-surface-muted/90 to-transparent"
+                />
+            ) : null}
+
+            {scrollEdges.end ? (
+                <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-1 right-1 z-10 w-7 rounded-r-xl bg-linear-to-l from-surface-muted/90 to-transparent"
+                />
+            ) : null}
         </nav>
     );
 }

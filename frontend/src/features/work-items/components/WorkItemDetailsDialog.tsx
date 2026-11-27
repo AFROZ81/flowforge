@@ -1,8 +1,9 @@
 import {
-    useEffect,
     useRef,
     useState,
 } from "react";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
     toast,
@@ -39,6 +40,7 @@ import {
 import {
     normalizeError,
 } from "@/lib/errors";
+import { IST_TIME_ZONE, parseApiDate } from "@/lib/datetime";
 
 import {
     DueDateChip,
@@ -105,6 +107,9 @@ import type {
 } from "@/features/attachments/types/attachment";
 
 import EditWorkItemDialog from "./EditWorkItemDialog";
+import { useDeleteWorkItem } from "../hooks/useDeleteWorkItem";
+import { useAuthStore } from "@/stores/auth.store";
+import { isAdminRole, isMemberRole } from "@/lib/auth-roles";
 
 
 type Props = {
@@ -176,17 +181,9 @@ function formatAttachmentDate(
     dateString: string
 ): string {
 
-    const date =
-        new Date(
-            dateString
-        );
+    const date = parseApiDate(dateString);
 
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (!date) {
         return "";
     }
 
@@ -197,6 +194,7 @@ function formatAttachmentDate(
             day: "2-digit",
             month: "short",
             year: "numeric",
+            timeZone: IST_TIME_ZONE,
         }
     ).format(date);
 }
@@ -272,6 +270,9 @@ export default function WorkItemDetailsDialog({
         editOpen,
         setEditOpen,
     ] = useState(false);
+    const currentUserRole = useAuthStore((state) => state.user?.role);
+    const isAdmin = isAdminRole(currentUserRole);
+    const canEdit = isMemberRole(currentUserRole);
 
 
     /* =====================================================
@@ -311,6 +312,11 @@ export default function WorkItemDetailsDialog({
     const restoreMutation =
         useRestoreWorkItem();
 
+    const deleteMutation =
+        useDeleteWorkItem();
+
+    const confirm = useConfirm();
+
 
     const completeMutation =
         useCompleteWorkItem();
@@ -327,6 +333,7 @@ export default function WorkItemDetailsDialog({
     const isSaving =
         archiveMutation.isPending ||
         restoreMutation.isPending ||
+        deleteMutation.isPending ||
         completeMutation.isPending ||
         blockMutation.isPending ||
         activateMutation.isPending;
@@ -336,20 +343,14 @@ export default function WorkItemDetailsDialog({
        ATTACHMENT STATE
     ===================================================== */
 
-    const [
-        attachments,
-        setAttachments,
-    ] =
-        useState<Attachment[]>(
-            []
-        );
-
-
-    const [
-        attachmentsLoading,
-        setAttachmentsLoading,
-    ] =
-        useState(false);
+    const queryClient = useQueryClient();
+    const attachmentsQuery = useQuery({
+        queryKey: ["attachments", workItemId],
+        queryFn: () => getAttachmentsByWorkItem(workItemId!),
+        enabled: open && Boolean(workItemId),
+    });
+    const attachments = attachmentsQuery.data ?? [];
+    const attachmentsLoading = attachmentsQuery.isLoading;
 
 
     const [
@@ -394,91 +395,18 @@ export default function WorkItemDetailsDialog({
        LOAD ATTACHMENTS
     ===================================================== */
 
-    const loadAttachments =
-        async () => {
-
-            if (!workItemId) {
-                return;
-            }
+    const loadAttachments = () => attachmentsQuery.refetch();
 
 
-            try {
-
-                setAttachmentsLoading(
-                    true
-                );
-
-
-                const result =
-                    await getAttachmentsByWorkItem(
-                        workItemId
-                    );
-
-
-                setAttachments(
-                    result
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Failed to load attachments:",
-                    error
-                );
-
-
-                toast.error(
-                    "Failed to load attachments."
-                );
-
-            } finally {
-
-                setAttachmentsLoading(
-                    false
-                );
-            }
-        };
-
-
-    useEffect(() => {
-
-        if (
-            open &&
-            workItemId
-        ) {
-
-            void loadAttachments();
-
+    const handleOpenChange = (next: boolean) => {
+        if (!next) {
+            setUploading(false);
+            setUploadProgress(0);
+            setUploadingFileName(null);
         }
 
-
-        if (!open) {
-
-            setAttachments(
-                []
-            );
-
-
-            setUploading(
-                false
-            );
-
-
-            setUploadProgress(
-                0
-            );
-
-
-            setUploadingFileName(
-                null
-            );
-
-        }
-
-    }, [
-        open,
-        workItemId,
-    ]);
+        onOpenChange(next);
+    };
 
 
     /* =====================================================
@@ -488,7 +416,7 @@ export default function WorkItemDetailsDialog({
     const handleComplete =
         async () => {
 
-            if (!workItemId) {
+            if (!canEdit || !workItemId) {
                 return;
             }
 
@@ -530,7 +458,7 @@ export default function WorkItemDetailsDialog({
     const handleBlock =
         async () => {
 
-            if (!workItemId) {
+            if (!canEdit || !workItemId) {
                 return;
             }
 
@@ -572,7 +500,7 @@ export default function WorkItemDetailsDialog({
     const handleActivate =
         async () => {
 
-            if (!workItemId) {
+            if (!canEdit || !workItemId) {
                 return;
             }
 
@@ -614,7 +542,7 @@ export default function WorkItemDetailsDialog({
     const handleArchive =
         async () => {
 
-            if (!workItemId) {
+            if (!isAdmin || !workItemId) {
                 return;
             }
 
@@ -656,7 +584,7 @@ export default function WorkItemDetailsDialog({
     const handleRestore =
         async () => {
 
-            if (!workItemId) {
+            if (!isAdmin || !workItemId) {
                 return;
             }
 
@@ -692,6 +620,38 @@ export default function WorkItemDetailsDialog({
 
 
     /* =====================================================
+       SOFT DELETE
+    ===================================================== */
+
+    const handleSoftDelete = async () => {
+        if (!isAdmin || !workItem || attachmentsLoading) return;
+
+        const confirmed = await confirm({
+            title: `Delete “${workItem.title}”?`,
+            description:
+                `This soft-deletes the work item and ${attachments.length} attached file${attachments.length === 1 ? "" : "s"}, plus its comments, labels, watchers, checklist, reminders, and history. All records and files are retained.`,
+            confirmLabel: "Delete",
+            confirmationText: workItem.title,
+            tone: "destructive",
+        });
+
+        if (!confirmed) return;
+
+        try {
+            await deleteMutation.mutateAsync(workItem.id);
+            toast.success("Work item deleted.");
+            onOpenChange(false);
+        } catch (error) {
+            const { title, description } = normalizeError(error, {
+                title: "Couldn't delete that work item",
+                description: "Nothing was deleted. Try again.",
+            });
+            toast.error(title, { description });
+        }
+    };
+
+
+    /* =====================================================
        UPLOAD
     ===================================================== */
 
@@ -705,6 +665,7 @@ export default function WorkItemDetailsDialog({
 
 
             if (
+                !canEdit ||
                 !files ||
                 files.length === 0 ||
                 !workItemId
@@ -848,6 +809,7 @@ export default function WorkItemDetailsDialog({
         async (
             attachment: Attachment
         ) => {
+            if (!canEdit) return;
 
             const confirmed = await confirm({
                 title: `Delete “${attachment.fileName}”?`,
@@ -877,13 +839,9 @@ export default function WorkItemDetailsDialog({
                 );
 
 
-                setAttachments(
-                    current =>
-                        current.filter(
-                            item =>
-                                item.id !==
-                                attachment.id
-                        )
+                queryClient.setQueryData<Attachment[]>(
+                    ["attachments", workItemId],
+                    current => current?.filter((item) => item.id !== attachment.id) ?? []
                 );
 
 
@@ -918,8 +876,6 @@ export default function WorkItemDetailsDialog({
        ASSIGNEE
     ===================================================== */
 
-    const confirm = useConfirm();
-
     const assignee =
         workItem?.assigneeId
             ? users.find(
@@ -947,7 +903,7 @@ export default function WorkItemDetailsDialog({
                     !editOpen
                 }
                 onOpenChange={
-                    onOpenChange
+                    handleOpenChange
                 }
             >
 
@@ -1315,7 +1271,8 @@ export default function WorkItemDetailsDialog({
                                                 }
                                                 disabled={
                                                     uploading ||
-                                                    workItem.isArchived
+                                                    workItem.isArchived ||
+                                                    !canEdit
                                                 }
                                             />
 
@@ -1326,7 +1283,8 @@ export default function WorkItemDetailsDialog({
                                                 variant="outline"
                                                 disabled={
                                                     uploading ||
-                                                    workItem.isArchived
+                                                    workItem.isArchived ||
+                                                    !canEdit
                                                 }
                                                 onClick={() =>
                                                     fileInputRef.current?.click()
@@ -1554,7 +1512,7 @@ export default function WorkItemDetailsDialog({
                                             </p>
 
 
-                                            {!workItem.isArchived && (
+                                            {canEdit && !workItem.isArchived && (
 
                                                 <Button
                                                     type="button"
@@ -1740,7 +1698,7 @@ export default function WorkItemDetailsDialog({
                                                                 </Button>
 
 
-                                                                {!workItem.isArchived && (
+                                                                {canEdit && !workItem.isArchived && (
 
                                                                     <Button
                                                                         type="button"
@@ -1816,7 +1774,7 @@ export default function WorkItemDetailsDialog({
                                         workItem.dueDate
                                     }
                                     disabled={
-                                        workItem.isArchived
+                                        workItem.isArchived || !canEdit
                                     }
                                 />
 
@@ -1853,7 +1811,7 @@ export default function WorkItemDetailsDialog({
                                             workItem.id
                                         }
                                         disabled={
-                                            workItem.isArchived
+                                            workItem.isArchived || !canEdit
                                         }
                                     />
 
@@ -1926,6 +1884,7 @@ export default function WorkItemDetailsDialog({
 
                                     {/* STATUS ACTIONS */}
 
+                                    {canEdit && (
                                     <div
                                         className="
                                             flex
@@ -2032,7 +1991,7 @@ export default function WorkItemDetailsDialog({
 
                                         {/* ARCHIVE / RESTORE */}
 
-                                        {workItem.isArchived ? (
+                                        {isAdmin && (workItem.isArchived ? (
 
                                             <Button
                                                 type="button"
@@ -2055,7 +2014,8 @@ export default function WorkItemDetailsDialog({
 
                                             <Button
                                                 type="button"
-                                                variant="destructive"
+                                                variant="outline"
+                                                className="border-warning/40 text-warning-foreground hover:bg-warning-subtle"
                                                 onClick={
                                                     handleArchive
                                                 }
@@ -2070,9 +2030,28 @@ export default function WorkItemDetailsDialog({
                                                 }
                                             </Button>
 
+                                        ))}
+
+                                        {isAdmin && (
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                onClick={() => void handleSoftDelete()}
+                                                disabled={isSaving || attachmentsLoading}
+                                            >
+                                                {deleteMutation.isPending ? (
+                                                    <Loader2 className="size-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="size-4" />
+                                                )}
+                                                {deleteMutation.isPending
+                                                    ? "Deleting..."
+                                                    : "Delete"}
+                                            </Button>
                                         )}
 
                                     </div>
+                                    )}
 
 
                                     {/* CLOSE / EDIT */}
@@ -2097,15 +2076,14 @@ export default function WorkItemDetailsDialog({
                                         </Button>
 
 
-                                        {!workItem.isArchived && (
+                                        {canEdit && !workItem.isArchived && (
 
                                             <Button
                                                 type="button"
-                                                onClick={() =>
-                                                    setEditOpen(
-                                                        true
-                                                    )
-                                                }
+                                                onClick={() => {
+                                                    if (!canEdit || isSaving) return;
+                                                    setEditOpen(true);
+                                                }}
                                                 disabled={
                                                     isSaving
                                                 }
@@ -2134,7 +2112,7 @@ export default function WorkItemDetailsDialog({
 
             <EditWorkItemDialog
                 open={
-                    editOpen
+                    editOpen && canEdit && !workItem?.isArchived
                 }
                 onOpenChange={(
                     value

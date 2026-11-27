@@ -1,4 +1,5 @@
 using FlowForge.Application.Features.AuditLogs.GetAuditLogs;
+using FlowForge.Application.Common.Time;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.AuditLogs;
 using FlowForge.Domain.Entities;
@@ -143,8 +144,7 @@ public sealed class AuditLogService : IAuditLogService
 
     public async Task<AuditLogStatistics> GetStatisticsAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
-        var now = DateTime.UtcNow;
-        var todayStart = DateTime.Today;
+        var todayStart = AppTime.IndiaDayStartUtc(AppTime.TodayInIndia);
 
         var totalEntries = await _context.AuditLogs
             .AsNoTracking()
@@ -156,7 +156,7 @@ public sealed class AuditLogService : IAuditLogService
 
         var todayEntries = await _context.AuditLogs
             .AsNoTracking()
-            .CountAsync(a => a.OrganizationId == organizationId && !a.IsDeleted && a.CreatedAt >= DateTime.Today, cancellationToken);
+            .CountAsync(a => a.OrganizationId == organizationId && !a.IsDeleted && a.CreatedAt >= todayStart, cancellationToken);
 
         var byType = await _context.AuditLogs
             .AsNoTracking()

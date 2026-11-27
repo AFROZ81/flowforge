@@ -1,4 +1,5 @@
 using FlowForge.Application.Common.Responses;
+using FlowForge.Application.Common.Time;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Common.Enums;
@@ -22,33 +23,34 @@ public sealed class GetProductivityTrendsQueryHandler : IRequestHandler<GetProdu
     {
         var organizationId = _currentUser.User.OrganizationId;
 
-        var fromDate = DateTime.UtcNow.Date.AddDays(-(request.Days - 1));
+        var fromDate = AppTime.TodayInIndia.AddDays(-(request.Days - 1));
+        var fromUtc = AppTime.IndiaDayStartUtc(fromDate);
 
         var workItems = await _context.WorkItems
             .AsNoTracking()
             .Where(x =>
                 !x.IsDeleted &&
                 x.Column.Board.Project.OrganizationId == organizationId &&
-                x.CreatedAt >= fromDate)
+                x.CreatedAt >= fromUtc)
             .ToListAsync(cancellationToken);
 
         var response = Enumerable
             .Range(0, request.Days)
             .Select(i =>
             {
-                var day = DateOnly.FromDateTime(fromDate.AddDays(i));
+                var day = fromDate.AddDays(i);
 
                 return new GetProductivityTrendsResponse
                 {
                     Date = day,
 
                     Created = workItems.Count(x =>
-                        DateOnly.FromDateTime(x.CreatedAt) == day),
+                        AppTime.DateInIndia(x.CreatedAt) == day),
 
                     Completed = workItems.Count(x =>
                         x.Status == WorkItemStatus.Completed &&
                         x.UpdatedAt.HasValue &&
-                        DateOnly.FromDateTime(x.UpdatedAt.Value) == day)
+                        AppTime.DateInIndia(x.UpdatedAt.Value) == day)
                 };
             })
             .ToList();

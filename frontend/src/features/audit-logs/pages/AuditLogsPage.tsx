@@ -24,6 +24,7 @@ import FigureStrip from "@/components/ui/figure-strip";
 import AppLayout from "@/layouts/AppLayout";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth.store";
+import { IST_TIME_ZONE, parseApiDate } from "@/lib/datetime";
 
 import {
     auditLogsService,
@@ -42,21 +43,22 @@ function formatEventType(value: string): string {
 }
 
 function formatTimestamp(value: string): string {
-    const date = new Date(value);
+    const date = parseApiDate(value);
 
-    if (Number.isNaN(date.getTime())) {
+    if (!date) {
         return value;
     }
 
     return new Intl.DateTimeFormat(undefined, {
         dateStyle: "medium",
         timeStyle: "short",
-    }).format(date);
+        timeZone: IST_TIME_ZONE,
+    }).format(date) + " IST";
 }
 
 function formatRelative(value: string): string | null {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
+    const date = parseApiDate(value);
+    if (!date) return null;
 
     const seconds = Math.round((date.getTime() - Date.now()) / 1000);
     const abs = Math.abs(seconds);

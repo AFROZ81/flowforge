@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using FlowForge.Application.Common.Time;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Services.Users;
@@ -36,6 +37,7 @@ public sealed class ExportWorkItemsXlsxQueryHandler
 
         var generatedAt =
             DateTime.UtcNow;
+        var today = AppTime.TodayInIndia;
 
         /*
          * -----------------------------------------------------
@@ -143,8 +145,7 @@ public sealed class ExportWorkItemsXlsxQueryHandler
                 x.Status !=
                     WorkItemStatus.Completed &&
                 x.DueDate.HasValue &&
-                x.DueDate.Value <
-                    generatedAt);
+                AppTime.DateInIndia(x.DueDate.Value) < today);
 
 
         var completionPercentage =
@@ -205,8 +206,7 @@ public sealed class ExportWorkItemsXlsxQueryHandler
                                 x.Status !=
                                     WorkItemStatus.Completed &&
                                 x.DueDate.HasValue &&
-                                x.DueDate.Value <
-                                    generatedAt),
+                                AppTime.DateInIndia(x.DueDate.Value) < today),
 
                         CompletionPercentage =
                             groupTotal == 0
@@ -275,8 +275,7 @@ public sealed class ExportWorkItemsXlsxQueryHandler
                                 x.Status !=
                                     WorkItemStatus.Completed &&
                                 x.DueDate.HasValue &&
-                                x.DueDate.Value <
-                                    generatedAt)
+                                AppTime.DateInIndia(x.DueDate.Value) < today)
                     };
                 })
                 .Where(x =>
@@ -343,15 +342,16 @@ public sealed class ExportWorkItemsXlsxQueryHandler
         const int productivityDays = 30;
 
         var fromDate =
-            generatedAt.Date.AddDays(
+            today.AddDays(
                 -(productivityDays - 1));
+        var fromUtc = AppTime.IndiaDayStartUtc(fromDate);
 
 
         var productivityItems =
             workItems
                 .Where(x =>
                     x.CreatedAt >=
-                    fromDate)
+                    fromUtc)
                 .ToList();
 
 
@@ -363,12 +363,11 @@ public sealed class ExportWorkItemsXlsxQueryHandler
                 .Select(i =>
                 {
                     var day =
-                        fromDate.AddDays(i)
-                            .Date;
+                        fromDate.AddDays(i);
 
                     var created =
                         productivityItems.Count(x =>
-                            x.CreatedAt.Date ==
+                            AppTime.DateInIndia(x.CreatedAt) ==
                             day);
 
                     var completedThatDay =
@@ -376,7 +375,7 @@ public sealed class ExportWorkItemsXlsxQueryHandler
                             x.Status ==
                                 WorkItemStatus.Completed &&
                             x.CreatedAt <=
-                                day.AddDays(1).AddTicks(-1));
+                                AppTime.IndiaDayStartUtc(day.AddDays(1)).AddTicks(-1));
 
                     /*
                      * The API's productivity handler defines
@@ -396,14 +395,12 @@ public sealed class ExportWorkItemsXlsxQueryHandler
                             x.Status ==
                                 WorkItemStatus.Completed &&
                             x.UpdatedAt.HasValue &&
-                            x.UpdatedAt.Value.Date ==
+                            AppTime.DateInIndia(x.UpdatedAt.Value) ==
                                 day);
 
                     return new ProductivityExportRow
                     {
-                        Date =
-                            DateOnly.FromDateTime(
-                                day),
+                        Date = day,
 
                         Created =
                             created,
@@ -482,13 +479,13 @@ public sealed class ExportWorkItemsXlsxQueryHandler
         summarySheet
             .Cell("B8")
             .Value =
-                "Generated (UTC)";
+                "Generated (IST)";
 
 
         summarySheet
             .Cell("C8")
             .Value =
-                generatedAt;
+                AppTime.ToIndiaTime(generatedAt);
 
 
         summarySheet
@@ -500,7 +497,7 @@ public sealed class ExportWorkItemsXlsxQueryHandler
         summarySheet
             .Cell("C9")
             .Value =
-                $"{fromDate:dd MMM yyyy} - {generatedAt:dd MMM yyyy}";
+                $"{fromDate:dd MMM yyyy} - {today:dd MMM yyyy}";
 
 
         summarySheet
@@ -694,8 +691,7 @@ public sealed class ExportWorkItemsXlsxQueryHandler
                 item.Status !=
                     WorkItemStatus.Completed &&
                 item.DueDate.HasValue &&
-                item.DueDate.Value <
-                    generatedAt;
+                AppTime.DateInIndia(item.DueDate.Value) < today;
 
 
             workItemsSheet
@@ -753,7 +749,7 @@ public sealed class ExportWorkItemsXlsxQueryHandler
                 workItemsSheet
                     .Cell(workItemRow, 9)
                     .Value =
-                        item.DueDate.Value;
+                        AppTime.ToIndiaTime(item.DueDate.Value);
 
                 workItemsSheet
                     .Cell(workItemRow, 9)
@@ -767,7 +763,7 @@ public sealed class ExportWorkItemsXlsxQueryHandler
             workItemsSheet
                 .Cell(workItemRow, 10)
                 .Value =
-                    item.CreatedAt;
+                    AppTime.ToIndiaTime(item.CreatedAt);
 
             workItemsSheet
                 .Cell(workItemRow, 10)

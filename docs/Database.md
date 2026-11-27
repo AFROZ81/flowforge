@@ -74,7 +74,7 @@ Most domain entities inherit audit and soft-delete fields from `EntityBase`. `Ap
 - `UpdatedAt`, `UpdatedBy` on modified rows
 - `IsDeleted = false` on added rows
 
-Anonymous writes are supported, so author fields can remain null. Queries filter soft-deleted records explicitly.
+Anonymous writes are supported, so author fields can remain null. `ApplicationDbContext` installs global `!IsDeleted` query filters for every `EntityBase` entity. Restore handlers use `IgnoreQueryFilters()` with explicit organization scoping, and work-item restoration also restores its soft-deleted dependents.
 
 ## Migrations
 

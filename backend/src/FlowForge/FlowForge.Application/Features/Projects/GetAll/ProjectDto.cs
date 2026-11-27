@@ -13,4 +13,8 @@ public sealed class ProjectDto
     public string? Color { get; init; }
 
     public string? Icon { get; init; }
+
+    public int BoardCount { get; init; }
+
+    public bool Archived { get; init; }
 }

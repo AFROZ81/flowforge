@@ -32,9 +32,9 @@ attachments, comments, watchers, a reminder and an activity history.
 | Roles (RBAC) | Admin / Member / Viewer roles per organization, enforced with `RequireAdmin` / `RequireMember` / `RequireViewer` policies |
 | Invitations | Email invitations with delivery status, retry, resend, revoke, validate, accept, and register-and-accept; member role management |
 | Structure | Organizations, projects, boards, columns, work items |
-| Work items | Create, rename, edit, assign, move, complete, block, activate, archive, restore |
+| Work items | Create, rename, edit, assign, move, complete, block, activate, archive, restore, Admin-only soft delete |
 | Item detail | Checklists, labels, attachments, comments, watchers, reminder, activity history |
-| Boards | Five default columns, HTML5 drag-and-drop ordering, live board presence, keyboard-first navigation |
+| Boards | Five default columns, Admin-only create/edit/archive/delete, HTML5 drag-and-drop ordering, live board presence, keyboard-first navigation |
 | AI drafting | On-device AI turns a prompt into a title + two-sentence description (local, free, no API keys) — see [docs/AI-Drafting.md](docs/AI-Drafting.md) |
 | Dashboard | One composed snapshot: own workload, status mix, priority mix, project health, team workload, throughput, recent activity |
 | Reports | Work items, projects, team, labels, productivity + XLSX export |
@@ -61,7 +61,7 @@ attachments, comments, watchers, a reminder and an activity history.
 | Client data | TanStack Query 5 + Table 8, Zustand 5 (`persist`), react-hook-form + Zod 4 |
 | Client extras | framer-motion 12, sonner toasts, lucide-react icons, next-themes, Geist font, Vite PWA, Transformers.js |
 | Email & storage | SMTP invitation delivery with status tracking; local attachment storage by default, Azure Blob implementation available but not active |
-| Testing | xUnit backend suite (21 tests), Vitest unit project, Storybook stories and browser-test configuration |
+| Testing | xUnit backend suite (43 tests), Vitest unit project (87 tests), Storybook stories and browser-test configuration |
 
 ---
 
@@ -272,8 +272,8 @@ Invoke-RestMethod -Method Post -Uri http://localhost:5045/api/Organizations `
 | Screen | What you do there |
 | --- | --- |
 | `/` landing | Signed-out intro; theme switch, links to sign in and register |
-| `/login` | One card, two faces. The token is kept in `sessionStorage` under `flowforge-auth` — survives a refresh, not a browser restart |
-| `/accept-invitation` | Validates an invitation, accepts it while signed in, or registers and accepts in one flow |
+| `/login` | One card, two faces. Invitation links open the original registration face with a validated invite token. The session token is kept in `sessionStorage` under `flowforge-auth` — survives a refresh, not a browser restart |
+| `/accept-invitation` | Legacy invitation links; signed-out visitors are redirected to the original registration face with the invite token |
 | **Dashboard** | Everything from **one** `GET /api/Dashboard`, timestamped and refreshable; a failed refresh keeps the last numbers with a warning. Panels: needs attention and my open work · status mix and priority mix · project health and team workload · throughput and recently updated |
 | **Projects** | Cards with an Active / Archived badge, colour, icon, board counts, recent activity. Create asks for name (unique per organization), key (derived, editable, unique per organization at the database level), colour, icon, description; edit and archive available, and archiving offers undo |
 | **Board** | The working surface — see below. Everyone viewing it shows in its presence strip |
@@ -381,7 +381,9 @@ mark the user offline.
 | `BoardPresenceChanged` | `board:{id}` | `JoinBoard` / `LeaveBoard` |
 | `WorkItemCreated` | `board:{id}` | create, restore |
 | `WorkItemUpdated` | `board:{id}` | rename, edit, assign, unassign, complete, block, activate |
-| `WorkItemMoved` / `WorkItemDeleted` | `board:{id}` | drag · archive |
+| `WorkItemMoved` / `WorkItemDeleted` | `board:{id}` | drag · soft delete |
+| `ProjectDeleted` | `organization:{id}` | soft project delete |
+| `BoardDeleted` | `board:{id}` | soft board delete |
 | `CommentAdded` / `Updated` / `Deleted` | `board:{id}` | comment handlers |
 | `TypingStarted` / `TypingStopped` | `board:{id}` except sender | `StartTyping` / `StopTyping` — no caller |
 
@@ -475,7 +477,7 @@ Recorded so nobody searches the code for a thing that does not exist.
 | Search is API-only | `GET /api/Search/workitems` exists; the command palette searches pages/actions rather than work items |
 | Typing indicators are backend-only | The client subscribes, but no UI invokes `StartTyping` / `StopTyping` |
 | `ReminderOverview` unused | The component is written; no page imports it — reminders are set in the item dialog |
-| CI | Backend (21 tests) and frontend unit suites exist, but no CI pipeline is configured |
+| CI | Backend (43 tests) and frontend unit suites (87 tests) exist, but no CI pipeline is configured |
 | AI cold start | First draft downloads the model (one-time, can take minutes); the 20 s deadline covers generation only — see [docs/AI-Drafting.md](docs/AI-Drafting.md) |
 | No Docker or Redis | Not started. Hosting is one MonsterASP.NET site serving API and SPA from the same origin — see [docs/Deployment.md](docs/Deployment.md) |
 

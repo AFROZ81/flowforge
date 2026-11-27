@@ -6,9 +6,11 @@ import {
     Mail,
     UserRound,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useNavigate } from "react-router";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "@/lib/toast";
+import { useAuthStore } from "@/stores/auth.store";
 
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
@@ -20,6 +22,7 @@ import { toOrganizationSlug } from "../lib/organization-slug";
 import { useCreateOrganization } from "../hooks/useCreateOrganization";
 import { useOrganizationOptions } from "../hooks/useOrganizationOptions";
 import { useRegister } from "../hooks/useRegister";
+import { useInvitationDetails } from "@/features/settings/hooks/useInvitations";
 import {
     buildRegisterSchema,
     EMPTY_REGISTER_FORM,
@@ -27,23 +30,29 @@ import {
 } from "../validation/register.schema";
 
 type Props = {
+    invitationToken?: string;
     onRegistered: (email: string) => void;
     onSwitchToLogin: () => void;
 };
 
 export default function RegisterForm({
+    invitationToken,
     onRegistered,
     onSwitchToLogin,
 }: Props) {
+    const navigate = useNavigate();
+    const login = useAuthStore((state) => state.login);
     const mutation = useRegister();
     const createOrganization = useCreateOrganization();
+    const isInvitationRegistration = Boolean(invitationToken);
+    const invitation = useInvitationDetails(invitationToken ?? "");
 
     /*
      * This face only exists while it is showing, so asking for the workspace
      * list on mount is exactly the right time — a plain visit to /login never
      * requests it.
      */
-    const organizations = useOrganizationOptions(true);
+    const organizations = useOrganizationOptions(!isInvitationRegistration);
 
     const options = organizations.data ?? [];
 
@@ -53,13 +62,14 @@ export default function RegisterForm({
      * form asks for a name instead and creates the workspace itself.
      */
     const needsWorkspaceName =
+        !isInvitationRegistration &&
         !organizations.isLoading &&
         !organizations.isError &&
         options.length === 0;
 
     const schema = useMemo(
-        () => buildRegisterSchema(needsWorkspaceName),
-        [needsWorkspaceName],
+        () => buildRegisterSchema(needsWorkspaceName, isInvitationRegistration),
+        [needsWorkspaceName, isInvitationRegistration],
     );
 
     const {
@@ -67,13 +77,34 @@ export default function RegisterForm({
         register,
         handleSubmit,
         reset,
+        setValue,
         formState: { errors, isSubmitting },
     } = useForm<RegisterFormValues>({
         resolver: zodResolver(schema),
         defaultValues: EMPTY_REGISTER_FORM,
     });
 
-    const busy = isSubmitting || mutation.isPending || createOrganization.isPending;
+    const invitationError = !isInvitationRegistration
+        ? null
+        : invitation.isLoading
+          ? null
+          : invitation.isError || !invitation.data
+            ? "This invitation is invalid or expired."
+            : invitation.data.isAccepted
+              ? "This invitation has already been accepted."
+              : null;
+
+    useEffect(() => {
+        if (!isInvitationRegistration || !invitation.data?.email) return;
+
+        setValue("email", invitation.data.email, { shouldDirty: false });
+    }, [isInvitationRegistration, invitation.data?.email, setValue]);
+
+    const busy =
+        isSubmitting ||
+        mutation.isPending ||
+        createOrganization.isPending ||
+        (isInvitationRegistration && invitation.isLoading);
 
     /*
      * Read live because the meter moves while the field is being typed.
@@ -84,6 +115,8 @@ export default function RegisterForm({
     const password = useWatch({ control, name: "password" });
 
     async function onSubmit(values: RegisterFormValues) {
+        if (busy || invitationError) return;
+
         try {
             /*
              * Two calls, in order, when no workspace exists yet: make one, then
@@ -93,7 +126,7 @@ export default function RegisterForm({
              */
             let organizationId = values.organizationId;
 
-            if (needsWorkspaceName) {
+            if (!isInvitationRegistration && needsWorkspaceName) {
                 const name = values.organizationName.trim();
 
                 const created = await createOrganization.mutateAsync({
@@ -104,13 +137,29 @@ export default function RegisterForm({
                 organizationId = created.id;
             }
 
-            await mutation.mutateAsync({
+            const response = await mutation.mutateAsync({
                 fullName: values.fullName,
                 email: values.email,
                 password: values.password,
                 confirmPassword: values.confirmPassword,
-                organizationId,
+                organizationId: isInvitationRegistration ? undefined : organizationId,
+                invitationToken,
             });
+
+            if (isInvitationRegistration) {
+                const { accessToken, expiresAtUtc } = response.data;
+
+                if (!accessToken || !expiresAtUtc) {
+                    throw new Error("Invitation acceptance did not return a session.");
+                }
+
+                login(accessToken, expiresAtUtc);
+                toast.success("Invitation accepted", {
+                    description: `Welcome to ${invitation.data?.organizationName || "your workspace"}.`,
+                });
+                navigate("/dashboard", { replace: true });
+                return;
+            }
 
             toast.success("Account created", {
                 description: "Sign in to reach your workspace.",
@@ -143,6 +192,20 @@ export default function RegisterForm({
             <h1 className="font-heading text-[26px] leading-[1.1] font-semibold tracking-[-0.03em] text-balance text-foreground sm:text-[30px]">
                 Create your account
             </h1>
+
+            {isInvitationRegistration && (
+                <div className={`mt-5 rounded-xl border px-4 py-3 text-[13px] ${invitationError ? "border-danger/30 bg-danger/10 text-danger-foreground" : "border-border bg-surface-muted/50 text-muted-foreground"}`}>
+                    {invitation.isLoading ? (
+                        "Verifying your invitation…"
+                    ) : invitationError ? (
+                        invitationError
+                    ) : (
+                        <>
+                            Join <strong className="font-semibold text-foreground">{invitation.data?.organizationName}</strong> as <strong className="font-semibold text-foreground">{invitation.data?.role}</strong>.
+                        </>
+                    )}
+                </div>
+            )}
 
             <form
                 onSubmit={handleSubmit(onSubmit)}
@@ -183,13 +246,13 @@ export default function RegisterForm({
                             inputMode="email"
                             autoComplete="email"
                             placeholder="you@company.com"
-                            disabled={busy}
+                            disabled={busy || isInvitationRegistration}
                             registered={register("email")}
                         />
                     )}
                 </FormField>
 
-                {organizations.isError ? (
+                {!isInvitationRegistration && (organizations.isError ? (
                     /*
                      * A failed lookup is not a validation error on the field —
                      * there is nothing for the user to type differently — so it
@@ -270,7 +333,7 @@ export default function RegisterForm({
                             </AuthSelectField>
                         )}
                     </FormField>
-                )}
+                ))}
 
                 <FormField
                     label="Password"
@@ -313,18 +376,20 @@ export default function RegisterForm({
                 <Button
                     type="submit"
                     className="h-12 w-full rounded-xl text-[15px] font-semibold"
-                    disabled={busy}
+                    disabled={busy || Boolean(invitationError)}
                 >
                     {busy ? (
                         <>
                             <Loader2 className="animate-spin" aria-hidden="true" />
-                            {createOrganization.isPending
-                                ? "Creating workspace…"
-                                : "Creating account…"}
+                            {isInvitationRegistration && invitation.isLoading
+                                ? "Verifying invitation…"
+                                : createOrganization.isPending
+                                  ? "Creating workspace…"
+                                  : "Creating account…"}
                         </>
                     ) : (
                         <>
-                            Create Account
+                            {isInvitationRegistration ? "Create Account & Accept" : "Create Account"}
                             <ArrowRight
                                 className="transition-transform duration-(--transition-fast) ease-(--ease-standard) group-hover/button:translate-x-0.5"
                                 aria-hidden="true"
@@ -334,21 +399,23 @@ export default function RegisterForm({
                 </Button>
             </form>
 
-            <p className="mt-6 text-center text-[13px] text-muted-foreground">
-                Already have an account?{" "}
-                <button
-                    type="button"
-                    onClick={onSwitchToLogin}
-                    disabled={busy}
-                    className="
-                        font-medium text-auth-link underline-offset-4
-                        transition-colors hover:underline
-                        disabled:pointer-events-none disabled:opacity-50
-                    "
-                >
-                    Sign in
-                </button>
-            </p>
+            {!isInvitationRegistration && (
+                <p className="mt-6 text-center text-[13px] text-muted-foreground">
+                    Already have an account?{" "}
+                    <button
+                        type="button"
+                        onClick={onSwitchToLogin}
+                        disabled={busy}
+                        className="
+                            font-medium text-auth-link underline-offset-4
+                            transition-colors hover:underline
+                            disabled:pointer-events-none disabled:opacity-50
+                        "
+                    >
+                        Sign in
+                    </button>
+                </p>
+            )}
         </>
     );
 }

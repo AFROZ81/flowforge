@@ -63,4 +63,12 @@ public sealed class Project : EntityBase
         Color = color;
         Icon = icon;
     }
+
+    public void Delete()
+    {
+        if (IsDeleted) return;
+
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+    }
 }

@@ -116,7 +116,7 @@ npm --prefix frontend exec -- vitest run --project unit --root frontend
 npm --prefix frontend run storybook
 ```
 
-The backend suite currently has 21 tests. Frontend unit tests cover the local AI feature and supporting utilities.
+The backend suite currently has 34 tests. Frontend unit tests cover the local AI feature, role helpers, and supporting utilities.
 
 ## Coding conventions
 

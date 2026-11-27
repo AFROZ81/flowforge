@@ -26,6 +26,7 @@ public sealed class AttachmentsController : ControllerBase
     #region Commands
 
     [HttpPost]
+    [Authorize(Policy = "RequireMember")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Upload([FromForm] UploadAttachmentRequest request, CancellationToken cancellationToken)
     {
@@ -91,6 +92,7 @@ public sealed class AttachmentsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(

@@ -22,6 +22,7 @@ public sealed class RemindersController : ControllerBase
     }
 
     [HttpPatch]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> SetReminder(SetReminderCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(command, cancellationToken);
@@ -42,6 +43,7 @@ public sealed class RemindersController : ControllerBase
     }
 
     [HttpDelete("{workItemId:guid}")]
+    [Authorize(Policy = "RequireMember")]
     public async Task<IActionResult> RemoveReminder(Guid workItemId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(

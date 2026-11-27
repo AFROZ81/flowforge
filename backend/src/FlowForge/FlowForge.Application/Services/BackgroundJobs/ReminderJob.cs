@@ -1,3 +1,4 @@
+using FlowForge.Application.Common.Time;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Notifications;
 using FlowForge.Domain.Common.Enums;
@@ -30,7 +31,9 @@ public sealed class ReminderJob
         var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
         var now = DateTime.UtcNow;
-        var today = DateOnly.FromDateTime(now);
+        var today = AppTime.TodayInIndia;
+        var dayStart = AppTime.IndiaDayStartUtc(today);
+        var nextDayStart = AppTime.IndiaDayStartUtc(today.AddDays(1));
 
         _logger.LogInformation("Running reminder job at {Time}", now);
 
@@ -40,7 +43,8 @@ public sealed class ReminderJob
             .Where(w =>
                 !w.IsDeleted &&
                 w.ReminderDate.HasValue &&
-                DateOnly.FromDateTime(w.ReminderDate.Value) == today &&
+                w.ReminderDate.Value >= dayStart &&
+                w.ReminderDate.Value < nextDayStart &&
                 w.Status != WorkItemStatus.Completed &&
                 w.Status != WorkItemStatus.Blocked)
             .ToListAsync(cancellationToken);

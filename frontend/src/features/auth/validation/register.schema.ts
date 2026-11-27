@@ -66,13 +66,18 @@ export const EMPTY_REGISTER_FORM: RegisterFormValues = {
  * `POST /api/Organizations` is anonymous, so the form asks for a name and
  * creates the workspace itself instead of leaving the user at a dead end.
  */
-export function buildRegisterSchema(needsWorkspaceName: boolean) {
+export function buildRegisterSchema(
+    needsWorkspaceName: boolean,
+    invitationRegistration = false,
+) {
     return registerFields
         .refine((values) => values.password === values.confirmPassword, {
             message: "Passwords do not match.",
             path: ["confirmPassword"],
         })
         .superRefine((values, report) => {
+            if (invitationRegistration) return;
+
             if (needsWorkspaceName) {
                 /*
                  * The two-character floor is ours, not the API's: it exists so

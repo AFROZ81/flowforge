@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import { fromIstDateInput } from "@/lib/datetime";
 
 export type AuditLogEntry = {
     id: string;
@@ -173,7 +174,15 @@ function normalizeAuditLogStatistics(value: unknown): AuditLogStatistics {
 
 async function getAuditLogs(filters: AuditLogFilters): Promise<AuditLogPage> {
     const response = await api.get<unknown>("/AuditLogs", {
-        params: filters,
+        params: {
+            ...filters,
+            fromDate: filters.fromDate
+                ? fromIstDateInput(filters.fromDate) ?? undefined
+                : undefined,
+            toDate: filters.toDate
+                ? fromIstDateInput(filters.toDate) ?? undefined
+                : undefined,
+        },
     });
 
     return normalizeAuditLogPage(response.data);

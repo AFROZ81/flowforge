@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { normalizeError } from "@/lib/errors";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/auth.store";
+import { isAdminRole } from "@/lib/auth-roles";
 
 import { useArchivedWorkItems } from "../hooks/useArchivedWorkItems";
 import { useRestoreWorkItem } from "../hooks/useRestoreWorkItem";
@@ -28,6 +30,8 @@ export default function ArchivedWorkItems({ columnId }: Props) {
         useArchivedWorkItems(columnId);
 
     const restoreMutation = useRestoreWorkItem();
+    const currentUserRole = useAuthStore((state) => state.user?.role);
+    const isAdmin = isAdminRole(currentUserRole);
 
     const archivedItems = workItems.filter((item) => item.isArchived);
 
@@ -36,6 +40,8 @@ export default function ArchivedWorkItems({ columnId }: Props) {
     }
 
     async function handleRestore(id: string, title: string) {
+        if (!isAdmin) return;
+
         try {
             await restoreMutation.mutateAsync(id);
 
@@ -117,7 +123,7 @@ export default function ArchivedWorkItems({ columnId }: Props) {
                                     )}
                                 </div>
 
-                                <Button
+                                {isAdmin && <Button
                                     type="button"
                                     size="xs"
                                     variant="ghost"
@@ -134,7 +140,7 @@ export default function ArchivedWorkItems({ columnId }: Props) {
                                         <ArchiveRestore />
                                     )}
                                     Restore
-                                </Button>
+                                </Button>}
                             </div>
                         ))
                     )}

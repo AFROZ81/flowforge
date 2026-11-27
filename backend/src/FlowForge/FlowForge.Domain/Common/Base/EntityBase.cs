@@ -28,6 +28,17 @@ public abstract class EntityBase
     public DateTime? DeletedAt { get; set; }
 
     /// <summary>
+    /// Restores a soft-deleted entity without changing its archive state.
+    /// </summary>
+    public void RestoreDeleted()
+    {
+        if (!IsDeleted) return;
+
+        IsDeleted = false;
+        DeletedAt = null;
+    }
+
+    /// <summary>
     /// Gets the domain events raised by this entity.
     /// </summary>
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();

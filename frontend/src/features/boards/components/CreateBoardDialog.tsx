@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { normalizeError } from "@/lib/errors";
+import { useAuthStore } from "@/stores/auth.store";
+import { isAdminRole } from "@/lib/auth-roles";
 
 import { useCreateBoard } from "../hooks/useCreateBoard";
 
@@ -28,6 +30,8 @@ export default function CreateBoardDialog({
     projectId,
 }: Props) {
     const mutation = useCreateBoard();
+    const currentUserRole = useAuthStore((state) => state.user?.role);
+    const isAdmin = isAdminRole(currentUserRole);
 
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
@@ -54,6 +58,7 @@ export default function CreateBoardDialog({
 
     async function handleSubmit(event: FormEvent) {
         event.preventDefault();
+        if (!isAdmin) return;
         setTouched(true);
 
         if (!name.trim()) return;

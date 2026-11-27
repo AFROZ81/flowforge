@@ -29,6 +29,7 @@ public sealed class InvitationsController : ControllerBase
     /// Creates a new organization invitation.
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = "RequireAdmin")]
     [ProducesResponseType(typeof(CreateInvitationResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -65,6 +66,7 @@ public sealed class InvitationsController : ControllerBase
     /// Gets all invitations for the current organization.
     /// </summary>
     [HttpGet]
+    [Authorize(Policy = "RequireAdmin")]
     [ProducesResponseType(typeof(List<GetInvitationsResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -85,6 +87,7 @@ public sealed class InvitationsController : ControllerBase
     /// Deletes/revokes an organization invitation.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "RequireAdmin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -100,6 +103,7 @@ public sealed class InvitationsController : ControllerBase
     /// Resends an organization invitation.
     /// </summary>
     [HttpPost("{id:guid}/resend")]
+    [Authorize(Policy = "RequireAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

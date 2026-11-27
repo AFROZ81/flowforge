@@ -80,7 +80,7 @@ Errors use a common shape with `success`, `message`, `traceId`, and optional `er
 | Method | Route | Access | Purpose |
 | --- | --- | --- | --- |
 | `POST` | `/api/Invitations` | Admin | Create an invitation. |
-| `GET` | `/api/Invitations` | Authenticated | List current-organization invitations. |
+| `GET` | `/api/Invitations` | Admin | List current-organization invitations. |
 | `DELETE` | `/api/Invitations/{id}` | Admin | Revoke an invitation. |
 | `POST` | `/api/Invitations/{id}/resend` | Admin | Rotate token, extend expiry, retry email. |
 | `GET` | `/api/Invitations/validate?token=…` | Anonymous | Read invitation details without accepting. |
@@ -119,6 +119,20 @@ Previously emailed links do not change; resend to generate a link with the curre
 ## Audit logs
 
 `GET /api/AuditLogs` supports pagination, date range, type, actor, target, sensitivity, text search, and sorting. `GET /api/AuditLogs/statistics` returns totals and breakdowns. Both require `RequireAdmin` and are scoped to the active organization.
+
+## Work item, project, and board permissions
+
+| Resource | Member access | Admin-only access |
+| --- | --- | --- |
+| Work items | Create, edit, move, assign, complete, block, activate | Archive, restore, soft delete |
+| Projects | View | Create, update, archive, restore, soft delete |
+| Boards | View | Create, update, archive, restore, soft delete |
+
+Soft-delete endpoints are `DELETE /api/WorkItems/{id}`, `DELETE /api/Projects/{id}`, and `DELETE /api/Boards/{id}`. They set `IsDeleted`/`DeletedAt`; no rows or attachment files are physically removed. Global query filters hide soft-deleted entities from normal queries. Project deletion returns `409` while active boards exist; board deletion returns `409` while active columns exist. Work-item deletion also soft-deletes its dependent records in one transaction. The existing Admin-only restore endpoints can restore soft-deleted records, including work-item dependents.
+
+Archived projects are included in `GET /api/Projects` only for Admins. `GET /api/Boards?includeArchived=true` likewise returns archived boards only for Admins; Members and Viewers always receive active boards.
+
+Viewer accounts are read-only for work-item mutations. Creating/editing work items, moving them, changing status or assignees, and mutating attachments, comments, labels, watchers, reminders, and checklists require `RequireMember` (which also allows Admins).
 
 ## Webhooks
 

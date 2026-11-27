@@ -1,3 +1,4 @@
+using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Features.Projects;
 using FlowForge.Application.Interfaces;
@@ -22,11 +23,13 @@ public sealed class RestoreProjectHandler
 
     public async Task<ApiResponse<RestoreProjectResponse>> Handle(RestoreProjectCommand request, CancellationToken cancellationToken)
     {
-        var project = await _projectRules.GetByIdAsync(request.ProjectId, _currentUser.User.OrganizationId, cancellationToken);
+        var project = await _projectRules.GetByIdIncludingDeletedAsync(request.ProjectId, _currentUser.User.OrganizationId, cancellationToken);
 
-        _projectRules.EnsureArchived(project);
+        if (!project.IsArchived && !project.IsDeleted)
+            throw new BadRequestException("Project is not archived or deleted.");
 
         project.Restore();
+        project.RestoreDeleted();
 
         await _context.SaveChangesAsync(cancellationToken);
 

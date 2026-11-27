@@ -10,6 +10,7 @@ import {
 } from "@/components/common/confirm";
 import { normalizeError } from "@/lib/errors";
 import { formatRelativeTime } from "@/lib/format";
+import { IST_TIME_ZONE, parseApiDate } from "@/lib/datetime";
 
 import {
     useUpdateComment,
@@ -32,6 +33,7 @@ import OnlineIndicator from "@/features/presence/components/OnlineIndicator";
 type Props = {
     comment: Comment;
     users: OrganizationUser[];
+    disabled?: boolean;
 };
 
 function formatDate(
@@ -41,14 +43,9 @@ function formatDate(
         return "";
     }
 
-    const date =
-        new Date(value);
+    const date = parseApiDate(value);
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (!date) {
         return "";
     }
 
@@ -60,13 +57,15 @@ function formatDate(
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
+            timeZone: IST_TIME_ZONE,
         }
-    );
+    ) + " IST";
 }
 
 export default function CommentItem({
     comment,
     users,
+    disabled = false,
 }: Props) {
     const [editing, setEditing] =
         useState(false);
@@ -93,6 +92,8 @@ export default function CommentItem({
 
     const handleUpdate =
         async () => {
+            if (disabled) return;
+
             const trimmed =
                 content.trim();
 
@@ -137,6 +138,8 @@ export default function CommentItem({
 
     const handleDelete =
         async () => {
+            if (disabled) return;
+
             const confirmed = await confirm({
                 title: "Delete this comment?",
                 description:
@@ -227,7 +230,7 @@ export default function CommentItem({
 
             {/* Content */}
 
-            {editing ? (
+            {editing && !disabled ? (
                 <div className="mt-3 space-y-2">
 
                     <Textarea
@@ -308,7 +311,7 @@ export default function CommentItem({
                             {formatRelativeTime(comment.createdAt)}
                         </time>
 
-                        <div className="flex items-center gap-1">
+                        {!disabled && <div className="flex items-center gap-1">
 
                             <Button
                                 type="button"
@@ -335,7 +338,7 @@ export default function CommentItem({
                                     : "Delete"}
                             </Button>
 
-                        </div>
+                        </div>}
 
                     </div>
                 </>

@@ -16,6 +16,8 @@ import { useMoveWorkItem } from "@/features/work-items/hooks/useMoveWorkItem";
 import { useCompleteWorkItem } from "@/features/work-items/hooks/useCompleteWorkItem";
 import { useActivateWorkItem } from "@/features/work-items/hooks/useActivateWorkItem";
 import { useOrganizationUsers } from "@/features/work-items/hooks/useOrganizationUsers";
+import { useAuthStore } from "@/stores/auth.store";
+import { isMemberRole } from "@/lib/auth-roles";
 
 type WorkItem = {
     id: string;
@@ -66,6 +68,8 @@ export default function ColumnCard({
     focusedCardIndex,
 }: Props) {
     const { boardId } = useParams();
+    const currentUserRole = useAuthStore((state) => state.user?.role);
+    const canEdit = isMemberRole(currentUserRole);
 
     const [createOpen, setCreateOpen] =
         useState(false);
@@ -177,7 +181,7 @@ export default function ColumnCard({
                 (i) => i.id === event.detail.workItemId
             );
 
-            if (!item) {
+            if (!canEdit || !item) {
                 return;
             }
 
@@ -207,7 +211,7 @@ export default function ColumnCard({
                 onToggleComplete as EventListener
             );
         };
-    }, [activeWorkItems, completeMutation, activateMutation, openWorkItem]);
+    }, [activeWorkItems, canEdit, completeMutation, activateMutation, openWorkItem]);
 
     /*
      * ==========================================
@@ -218,6 +222,8 @@ export default function ColumnCard({
         event: React.DragEvent,
         workItemId: string
     ) => {
+        if (!canEdit) return;
+
         const dragData: DragData = {
             workItemId,
         };
@@ -290,6 +296,8 @@ export default function ColumnCard({
         workItemId: string,
         destinationIndex: number
     ) => {
+        if (!canEdit) return;
+
         const sourceColumn =
             findSourceColumn(
                 workItemId
@@ -390,6 +398,8 @@ export default function ColumnCard({
         event: React.DragEvent,
         index: number
     ) => {
+        if (!canEdit) return;
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -420,6 +430,8 @@ export default function ColumnCard({
         event: React.DragEvent,
         index: number
     ) => {
+        if (!canEdit) return;
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -463,6 +475,8 @@ export default function ColumnCard({
     const handleColumnDragOver = (
         event: React.DragEvent
     ) => {
+        if (!canEdit) return;
+
         event.preventDefault();
 
         event.dataTransfer.dropEffect =
@@ -479,6 +493,8 @@ export default function ColumnCard({
     const handleColumnDrop = async (
         event: React.DragEvent
     ) => {
+        if (!canEdit) return;
+
         event.preventDefault();
 
         const dragData =
@@ -509,7 +525,7 @@ export default function ColumnCard({
     return (
         <Card
             className="
-                flex min-h-[18rem] max-h-[min(44rem,75vh)] flex-col gap-0 rounded-xl p-0
+                flex min-h-[18rem] max-h-[min(44rem,75vh)] min-w-0 flex-col gap-0 rounded-xl p-0
                 shadow-xs
             "
         >
@@ -565,10 +581,10 @@ export default function ColumnCard({
                     p-3
                 "
                 onDragOver={
-                    handleColumnDragOver
+                    canEdit ? handleColumnDragOver : undefined
                 }
                 onDrop={
-                    handleColumnDrop
+                    canEdit ? handleColumnDrop : undefined
                 }
             >
 
@@ -586,7 +602,9 @@ export default function ColumnCard({
                         </p>
 
                         <p className="text-xs text-muted-foreground/80">
-                            Drop a work item in, or add one below.
+                            {canEdit
+                                ? "Drop a work item in, or add one below."
+                                : "Work items added to this column will appear here."}
                         </p>
                     </div>
                 ) : (
@@ -620,32 +638,24 @@ export default function ColumnCard({
                                     />
 
                                     <div
-                                        onDragStart={(
-                                            event
-                                        ) =>
-                                            handleDragStart(
-                                                event,
-                                                item.id
-                                            )
+                                        draggable={canEdit}
+                                        onDragStart={
+                                            canEdit
+                                                ? (event) => handleDragStart(event, item.id)
+                                                : undefined
                                         }
                                         onDragEnd={
-                                            handleDragEnd
+                                            canEdit ? handleDragEnd : undefined
                                         }
-                                        onDragOver={(
-                                            event
-                                        ) =>
-                                            handleCardDragOver(
-                                                event,
-                                                index
-                                            )
+                                        onDragOver={
+                                            canEdit
+                                                ? (event) => handleCardDragOver(event, index)
+                                                : undefined
                                         }
-                                        onDrop={(
-                                            event
-                                        ) =>
-                                            handleCardDrop(
-                                                event,
-                                                index
-                                            )
+                                        onDrop={
+                                            canEdit
+                                                ? (event) => void handleCardDrop(event, index)
+                                                : undefined
                                         }
                                     >
 
@@ -678,7 +688,7 @@ export default function ColumnCard({
                             DROP AREA AT END
                         ================================== */}
 
-                        <div
+                        {canEdit && <div
                             className={`
                                 h-4
                                 rounded-md
@@ -706,7 +716,7 @@ export default function ColumnCard({
                             onDrop={
                                 handleColumnDrop
                             }
-                        />
+                        />}
 
                     </div>
                 )}
@@ -727,28 +737,24 @@ export default function ColumnCard({
                 ADD TASK
             ================================== */}
 
-            <div className="shrink-0 border-t border-border p-3">
-
-                <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() =>
-                        setCreateOpen(
-                            true
-                        )
-                    }
-                >
-                    <Plus />
-                    Add work item
-                </Button>
-
-            </div>
+            {canEdit && (
+                <div className="shrink-0 border-t border-border p-3">
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setCreateOpen(true)}
+                    >
+                        <Plus />
+                        Add work item
+                    </Button>
+                </div>
+            )}
 
             {/* =================================
                 CREATE DIALOG
             ================================== */}
 
-            <CreateWorkItemDialog
+            {canEdit && <CreateWorkItemDialog
                 open={
                     createOpen
                 }
@@ -764,7 +770,7 @@ export default function ColumnCard({
                 existingTitles={
                     activeWorkItems.map((item) => item.title)
                 }
-            />
+            />}
 
             {/* =================================
                 DETAILS DIALOG

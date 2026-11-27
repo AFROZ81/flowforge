@@ -18,6 +18,8 @@ type Props = {
     query?: string;
     /** Clear the active filter from the empty state. */
     onClearFilter?: () => void;
+    emptyTitle?: string;
+    emptyDescription?: string;
 };
 
 export default function ProjectTable({
@@ -27,6 +29,8 @@ export default function ProjectTable({
     onCreate,
     query,
     onClearFilter,
+    emptyTitle = "No projects yet",
+    emptyDescription = "Create your first project to start organizing your team's work.",
 }: Props) {
     if (isLoading) {
         return <ProjectGridSkeleton />;
@@ -58,8 +62,8 @@ export default function ProjectTable({
             <EmptyStateCard
                 icon={FolderKanban}
                 tone="brand"
-                title="No projects yet"
-                description="Create your first project to start organizing your team's work."
+                title={emptyTitle}
+                description={emptyDescription}
                 action={
                     onCreate ? (
                         <Button onClick={onCreate}>

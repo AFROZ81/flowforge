@@ -1,4 +1,6 @@
+using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Common.Responses;
+using FlowForge.Domain.Enums;
 using FlowForge.Application.Features.Boards;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
@@ -22,6 +24,11 @@ public sealed class UpdateBoardHandler
 
     public async Task<ApiResponse<UpdateBoardResponse>> Handle(UpdateBoardCommand request, CancellationToken cancellationToken)
     {
+        if (_currentUser.User.Role != UserRole.Admin)
+        {
+            throw new ForbiddenException("Only admins can update boards.");
+        }
+
         var board = await _boardRules.GetByIdAsync(request.BoardId, _currentUser.User.OrganizationId, cancellationToken);
 
         _boardRules.EnsureNotArchived(board);

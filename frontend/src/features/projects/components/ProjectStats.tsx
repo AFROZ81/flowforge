@@ -206,7 +206,7 @@ export default function ProjectStats({
                         boards:
                             boards.filter(
                                 board =>
-                                    !board.archived
+                                    !board.isArchived
                             ).length,
 
                         tasks:

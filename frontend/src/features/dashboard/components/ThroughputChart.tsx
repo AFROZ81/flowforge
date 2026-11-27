@@ -3,6 +3,7 @@ import { Activity } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
+import { IST_TIME_ZONE } from "@/lib/datetime";
 import DataSection from "@/components/ui/data-section";
 import EmptyStatePanel from "./EmptyStatePanel";
 
@@ -385,7 +386,7 @@ function dayLabel(value: string): string {
               weekday: "short",
               day: "numeric",
               month: "short",
-              timeZone: "UTC",
+              timeZone: IST_TIME_ZONE,
           })
         : value;
 }

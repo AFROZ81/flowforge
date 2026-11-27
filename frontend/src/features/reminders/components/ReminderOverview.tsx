@@ -19,6 +19,7 @@ import {
 import type {
     Reminder,
 } from "../types/reminder";
+import { IST_TIME_ZONE, parseApiDate } from "@/lib/datetime";
 
 
 type Props = {
@@ -42,15 +43,9 @@ function formatDate(
     }
 
 
-    const date =
-        new Date(value);
+    const date = parseApiDate(value);
 
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (!date) {
         return "";
     }
 
@@ -61,6 +56,7 @@ function formatDate(
             day: "2-digit",
             month: "short",
             year: "numeric",
+            timeZone: IST_TIME_ZONE,
         }
     ).format(date);
 }
@@ -75,15 +71,9 @@ function formatDateTime(
     }
 
 
-    const date =
-        new Date(value);
+    const date = parseApiDate(value);
 
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (!date) {
         return "";
     }
 
@@ -95,8 +85,9 @@ function formatDateTime(
             month: "short",
             hour: "numeric",
             minute: "2-digit",
+            timeZone: IST_TIME_ZONE,
         }
-    ).format(date);
+    ).format(date) + " IST";
 }
 
 

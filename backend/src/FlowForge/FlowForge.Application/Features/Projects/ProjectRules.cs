@@ -28,6 +28,21 @@ public sealed class ProjectRules
         return project;
     }
 
+    public async Task<Project> GetByIdIncludingDeletedAsync(Guid projectId, Guid organizationId, CancellationToken cancellationToken)
+    {
+        var project = await _context.Projects
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x =>
+                x.Id == projectId &&
+                x.OrganizationId == organizationId,
+                cancellationToken);
+
+        if (project is null)
+            throw new NotFoundException("Project not found.");
+
+        return project;
+    }
+
     public async Task EnsureNameUniqueAsync(string name, Guid organizationId, Guid? ignoreProjectId, CancellationToken cancellationToken)
     {
         var exists = await _context.Projects.AnyAsync(x =>

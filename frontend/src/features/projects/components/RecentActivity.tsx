@@ -37,6 +37,7 @@ import {
 import {
     useOrganizationUsers,
 } from "@/features/work-items/hooks/useOrganizationUsers";
+import { IST_TIME_ZONE, parseApiDate } from "@/lib/datetime";
 
 
 type Props = {
@@ -226,15 +227,9 @@ function formatRelativeTime(
     value: string
 ): string {
 
-    const date =
-        new Date(value);
+    const date = parseApiDate(value);
 
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (!date) {
         return value;
     }
 
@@ -314,6 +309,7 @@ function formatRelativeTime(
             day: "2-digit",
             month: "short",
             year: "numeric",
+            timeZone: IST_TIME_ZONE,
         }
     );
 }
@@ -664,17 +660,6 @@ export default function RecentActivity({
                     >
                         Recent Activity
                     </h2>
-
-
-                    <p
-                        className="
-                            mt-0.5
-                            text-xs
-                            text-muted-foreground
-                        "
-                    >
-                        Latest changes across this project.
-                    </p>
 
                 </div>
 

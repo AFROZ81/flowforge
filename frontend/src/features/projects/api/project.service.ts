@@ -45,6 +45,10 @@ export const archiveProject = async (projectId: string) => {
     return res.data.data;
 };
 
+export const deleteProject = async (projectId: string): Promise<void> => {
+    await api.delete(`/Projects/${projectId}`);
+};
+
 export const restoreProject = async (projectId: string) => {
     const res = await api.patch(`/Projects/${projectId}/restore`);
     return res.data.data;

@@ -8,6 +8,10 @@ export type CreateBoardRequest = {
     description?: string;
 };
 
+export type UpdateBoardRequest = CreateBoardRequest & {
+    boardId: string;
+};
+
 
 /* =========================================================
    BOARD REQUEST CACHE
@@ -67,12 +71,15 @@ const BOARD_CACHE_TTL_MS =
    ========================================================= */
 
 export const getBoards = async (
-    projectId: string
+    projectId: string,
+    includeArchived = false
 ): Promise<Board[]> => {
 
     if (!projectId) {
         return [];
     }
+
+    const cacheKey = `${projectId}:${includeArchived ? "all" : "active"}`;
 
 
     /*
@@ -83,7 +90,7 @@ export const getBoards = async (
 
     const cached =
         boardCache.get(
-            projectId
+            cacheKey
         );
 
 
@@ -111,7 +118,7 @@ export const getBoards = async (
 
     const existingRequest =
         inFlightBoardRequests.get(
-            projectId
+            cacheKey
         );
 
 
@@ -135,6 +142,7 @@ export const getBoards = async (
             {
                 params: {
                     projectId,
+                    includeArchived,
                 },
             }
         )
@@ -160,7 +168,7 @@ export const getBoards = async (
                  */
 
                 boardCache.set(
-                    projectId,
+                    cacheKey,
                     {
                         data: boards,
 
@@ -184,7 +192,7 @@ export const getBoards = async (
                  */
 
                 inFlightBoardRequests.delete(
-                    projectId
+                    cacheKey
                 );
             }
         );
@@ -198,7 +206,7 @@ export const getBoards = async (
      */
 
     inFlightBoardRequests.set(
-        projectId,
+        cacheKey,
         request
     );
 
@@ -247,14 +255,34 @@ export const createBoard = async (
      * retrieves the newly-created board.
      */
 
-    boardCache.delete(
-        data.projectId
-    );
+    boardCache.delete(`${data.projectId}:active`);
+    boardCache.delete(`${data.projectId}:all`);
 
 
     return res.data.data;
 };
 
+
+export const updateBoard = async (data: UpdateBoardRequest): Promise<Board> => {
+    const res = await api.put(`/Boards/${data.boardId}`, data);
+    invalidateProjectBoards(data.projectId);
+    return res.data.data;
+};
+
+export const archiveBoard = async (boardId: string, projectId: string): Promise<void> => {
+    await api.patch(`/Boards/${boardId}/archive`);
+    invalidateProjectBoards(projectId);
+};
+
+export const restoreBoard = async (boardId: string, projectId: string): Promise<void> => {
+    await api.patch(`/Boards/${boardId}/restore`);
+    invalidateProjectBoards(projectId);
+};
+
+export const deleteBoard = async (boardId: string, projectId: string): Promise<void> => {
+    await api.delete(`/Boards/${boardId}`);
+    invalidateProjectBoards(projectId);
+};
 
 /* =========================================================
    INVALIDATE PROJECT BOARDS
@@ -281,9 +309,8 @@ export const invalidateProjectBoards = (
     }
 
 
-    boardCache.delete(
-        projectId
-    );
+    boardCache.delete(`${projectId}:active`);
+    boardCache.delete(`${projectId}:all`);
 };
 
 

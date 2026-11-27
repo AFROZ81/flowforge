@@ -45,7 +45,7 @@ export default function CommentsSection({
     const handleCreate = async () => {
         const trimmed = content.trim();
 
-        if (!trimmed) return;
+        if (disabled || !trimmed) return;
 
         try {
             await createMutation.mutateAsync({
@@ -117,6 +117,7 @@ export default function CommentsSection({
                             key={comment.id}
                             comment={comment}
                             users={users}
+                            disabled={disabled}
                         />
                     ))}
                 </div>
@@ -138,7 +139,7 @@ export default function CommentsSection({
                     id="new-comment"
                     placeholder={
                         disabled
-                            ? "Archived — read only"
+                            ? "Read only"
                             : "Write a comment…"
                     }
                     value={content}

@@ -3,7 +3,6 @@ import { Link } from "react-router";
 
 import { ProjectMark } from "@/components/common/project-mark";
 import ProjectStatusBadge from "./ProjectStatusBadge";
-import ProjectActions from "./ProjectActions";
 
 import type { Project } from "../types/project";
 
@@ -75,11 +74,5 @@ export const columns: ColumnDef<Project>[] = [
             <ProjectStatusBadge archived={row.original.archived} />
         ),
         meta: { className: "w-[1%]" },
-    },
-    {
-        id: "actions",
-        header: "",
-        cell: ({ row }) => <ProjectActions project={row.original} />,
-        meta: { align: "right", className: "w-[1%]" },
     },
 ];

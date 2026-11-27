@@ -5,6 +5,7 @@ using FlowForge.Application.Features.Boards;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
+using FlowForge.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,8 +35,8 @@ public sealed class GetBoardsHandler
                 x.ProjectId == request.ProjectId &&
                 x.Project.OrganizationId == _currentUser.User.OrganizationId);
 
-        // Exclude archived boards by default
-        if (!request.IncludeArchived)
+        // Archived boards are an Admin-only recovery view.
+        if (!request.IncludeArchived || _currentUser.User.Role != UserRole.Admin)
         {
             query = query.Where(x => !x.IsArchived);
         }

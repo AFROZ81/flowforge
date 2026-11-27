@@ -1,4 +1,6 @@
+using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Common.Responses;
+using FlowForge.Domain.Enums;
 using FlowForge.Application.Features.Projects;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
@@ -22,6 +24,11 @@ public sealed class UpdateProjectHandler
 
     public async Task<ApiResponse<UpdateProjectResponse>> Handle(UpdateProjectCommand request, CancellationToken cancellationToken)
     {
+        if (_currentUser.User.Role != UserRole.Admin)
+        {
+            throw new ForbiddenException("Only admins can update projects.");
+        }
+
         var project = await _projectRules.GetByIdAsync(
             request.ProjectId,
             _currentUser.User.OrganizationId,

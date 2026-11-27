@@ -43,9 +43,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/lib/toast";
 import { normalizeError } from "@/lib/errors";
 import { usePresence } from "@/features/presence";
-import { formatNumber } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth.store";
+import { isAdminRole } from "@/lib/auth-roles";
 
 import {
     useMemberWorkload,
@@ -164,9 +165,11 @@ export default function MembersSettings() {
         (state) => state.user?.organizationId
     );
     const currentUserRole = useAuthStore((state) => state.user?.role);
-    const isAdmin = currentUserRole === "1";
+    const isAdmin = isAdminRole(currentUserRole);
 
-    const invitations = useInvitations(currentOrganizationId ?? "");
+    const invitations = useInvitations(
+        isAdmin ? currentOrganizationId ?? "" : ""
+    );
     const createInvitation = useCreateInvitation(currentOrganizationId ?? "");
     const deleteInvitation = useDeleteInvitation(currentOrganizationId ?? "");
     const resendInvitation = useResendInvitation(currentOrganizationId ?? "");
@@ -276,6 +279,8 @@ export default function MembersSettings() {
     const handleInviteSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
 
+        if (!isAdmin) return;
+
         if (!inviteEmail.trim()) {
             toast.error("Email is required");
             return;
@@ -342,6 +347,8 @@ export default function MembersSettings() {
     };
 
     const handleRevoke = async (invitationId: string) => {
+        if (!isAdmin) return;
+
         if (!confirm("Are you sure you want to revoke this invitation?")) {
             return;
         }
@@ -355,6 +362,8 @@ export default function MembersSettings() {
     };
 
     const handleResend = async (invitationId: string) => {
+        if (!isAdmin) return;
+
         try {
             await resendInvitation.mutateAsync(invitationId);
             toast.success("Invitation resent");
@@ -426,6 +435,7 @@ export default function MembersSettings() {
                     </p>
                 </div>
 
+                {isAdmin ? (
                 <Dialog
                     open={isInviteDialogOpen}
                     onOpenChange={setIsInviteDialogOpen}
@@ -542,6 +552,7 @@ export default function MembersSettings() {
                         </form>
                     </DialogContent>
                 </Dialog>
+                ) : null}
             </div>
 
             {/* ---------------- Edit role dialog ---------------- */}
@@ -670,7 +681,7 @@ export default function MembersSettings() {
                 </div>
             ) : null}
 
-            {invitations.error ? (
+            {isAdmin && invitations.error ? (
                 <div
                     role="alert"
                     className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
@@ -694,7 +705,7 @@ export default function MembersSettings() {
             {/* ---------------- Toolbar ---------------- */}
             {totalMembers > 0 ? (
                 <div className="flex flex-wrap items-center gap-2">
-                    <div className="relative min-w-0 flex-1 sm:flex-none">
+                    <div className="relative w-full min-w-0 sm:w-auto sm:flex-none">
                         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={search}
@@ -798,7 +809,7 @@ export default function MembersSettings() {
             ) : null}
 
             {/* ---------------- Pending invitations ---------------- */}
-            {pendingInvitations.length > 0 ? (
+            {isAdmin && pendingInvitations.length > 0 ? (
                 <PendingInvitations
                     invitations={pendingInvitations}
                     onResend={handleResend}
@@ -1109,17 +1120,8 @@ function PendingInvitations({
                                 <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
                                     <Clock className="size-3" />
                                     Expires{" "}
-                                    {new Date(
-                                        invitation.expiresAt
-                                    ).toLocaleDateString()}
+                                    {formatDate(invitation.expiresAt, "short")}
                                 </p>
-                                <RoleBadge role={roleToNumber(invitation.role)} />
-                                {invitation.emailStatus === "Failed" && (
-                                    <span className="mt-1 inline-flex items-center gap-1 rounded-lg border border-destructive/30 bg-destructive/5 px-2 py-0.5 text-xs text-destructive">
-                                        <CircleAlert className="size-3" />
-                                        Email failed
-                                    </span>
-                                )}
                                 {invitation.emailError && (
                                     <p className="mt-1 text-xs text-destructive">
                                         {invitation.emailError}
@@ -1128,32 +1130,43 @@ function PendingInvitations({
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-1.5 pt-1">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onResend(invitation.id)}
-                                disabled={resending}
-                                aria-label="Resend invitation"
-                            >
-                                {resending ? (
-                                    <Loader2 className="animate-spin" />
-                                ) : (
-                                    <Send />
+                        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <RoleBadge role={roleToNumber(invitation.role)} />
+                                {invitation.emailStatus === "Failed" && (
+                                    <span className="inline-flex items-center gap-1 rounded-lg border border-destructive/30 bg-destructive/5 px-2 py-0.5 text-xs text-destructive">
+                                        <CircleAlert className="size-3" />
+                                        Email failed
+                                    </span>
                                 )}
-                                Resend
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onRevoke(invitation.id)}
-                                disabled={revoking}
-                                className="text-muted-foreground hover:bg-danger-subtle hover:text-danger-foreground"
-                                aria-label="Revoke invitation"
-                            >
-                                <X />
-                                Revoke
-                            </Button>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onResend(invitation.id)}
+                                    disabled={resending}
+                                    aria-label="Resend invitation"
+                                >
+                                    {resending ? (
+                                        <Loader2 className="animate-spin" />
+                                    ) : (
+                                        <Send />
+                                    )}
+                                    Resend
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onRevoke(invitation.id)}
+                                    disabled={revoking}
+                                    className="text-muted-foreground hover:bg-danger-subtle hover:text-danger-foreground"
+                                    aria-label="Revoke invitation"
+                                >
+                                    <X />
+                                    Revoke
+                                </Button>
+                            </div>
                         </div>
                     </li>
                 ))}

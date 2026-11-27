@@ -1,9 +1,7 @@
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
-import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 
 type Side = "left" | "right" | "bottom"
 
@@ -12,8 +10,26 @@ type Side = "left" | "right" | "bottom"
  * bottom-sheet style modals on small screens, where a centered dialog
  * has awkward reach and poor use of the vertical viewport.
  */
-function Sheet({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="sheet" {...props} />
+function Sheet({ onOpenChange, ...props }: DialogPrimitive.Root.Props) {
+  return (
+    <DialogPrimitive.Root
+      data-slot="sheet"
+      {...props}
+      disablePointerDismissal
+      onOpenChange={(open, eventDetails) => {
+        if (
+          !open &&
+          eventDetails.reason !== "close-press" &&
+          eventDetails.reason !== "imperative-action"
+        ) {
+          eventDetails.cancel()
+          return
+        }
+
+        onOpenChange?.(open, eventDetails)
+      }}
+    />
+  )
 }
 
 function SheetTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
@@ -28,11 +44,9 @@ function SheetContent({
   className,
   children,
   side = "right",
-  showCloseButton = true,
   ...props
 }: DialogPrimitive.Popup.Props & {
   side?: Side
-  showCloseButton?: boolean
 }) {
   const edge: Record<Side, string> = {
     left:
@@ -61,22 +75,6 @@ function SheetContent({
         {...props}
       >
         {children}
-
-        {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="sheet-close"
-            render={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="absolute top-2.5 right-2.5 text-muted-foreground"
-              />
-            }
-          >
-            <XIcon />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        )}
       </DialogPrimitive.Popup>
     </DialogPrimitive.Portal>
   )

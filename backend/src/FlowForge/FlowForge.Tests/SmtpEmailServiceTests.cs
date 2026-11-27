@@ -72,7 +72,7 @@ public sealed class SmtpEmailServiceTests
             "Acme Corp",
             "Admin",
             "Member",
-            "http://localhost:5173/accept-invitation?token=abc",
+            "http://localhost:5173/login?mode=register&invitationToken=abc",
             DateTime.UtcNow.AddDays(7),
             "Welcome!");
 

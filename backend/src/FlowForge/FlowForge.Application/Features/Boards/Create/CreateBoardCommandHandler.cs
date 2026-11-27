@@ -1,4 +1,6 @@
+using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Common.Responses;
+using FlowForge.Domain.Enums;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
@@ -21,6 +23,11 @@ public sealed class CreateBoardCommandHandler : IRequestHandler<CreateBoardComma
 
     public async Task<ApiResponse<CreateBoardResponse>> Handle(CreateBoardCommand request, CancellationToken cancellationToken)
     {
+        if (_currentUser.User.Role != UserRole.Admin)
+        {
+            throw new ForbiddenException("Only admins can create boards.");
+        }
+
         var project = await _boardRules.GetProjectAsync(request.ProjectId, _currentUser.User.OrganizationId, cancellationToken);
 
         _boardRules.EnsureProjectNotArchived(project);

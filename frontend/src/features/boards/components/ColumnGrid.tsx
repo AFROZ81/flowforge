@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Columns3 } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import ColumnCard from "./ColumnCard";
 import { useBoardKeyboard } from "../hooks/useBoardKeyboard";
+import { useAuthStore } from "@/stores/auth.store";
+import { isMemberRole } from "@/lib/auth-roles";
 
 type WorkItem = {
     id: string;
@@ -32,6 +34,10 @@ type Props = {
 export default function ColumnGrid({
     columns,
 }: Props) {
+    const boardRef = useRef<HTMLDivElement>(null);
+    const currentUserRole = useAuthStore((state) => state.user?.role);
+    const canEdit = isMemberRole(currentUserRole);
+
     const [
         localColumns,
         setLocalColumns,
@@ -136,6 +142,7 @@ export default function ColumnGrid({
         handleKeyDown,
         setColumnFocus,
         setCardFocus,
+        clearFocus,
     } = useBoardKeyboard({
         columns: localColumns,
         actions: {
@@ -147,6 +154,8 @@ export default function ColumnGrid({
                 );
             },
             onEditWorkItem: (workItemId) => {
+                if (!canEdit) return;
+
                 window.dispatchEvent(
                     new CustomEvent("flowforge:edit-work-item", {
                         detail: { workItemId },
@@ -168,6 +177,8 @@ export default function ColumnGrid({
                 );
             },
             onSetDueDate: (workItemId) => {
+                if (!canEdit) return;
+
                 window.dispatchEvent(
                     new CustomEvent("flowforge:set-due-date", {
                         detail: { workItemId },
@@ -175,6 +186,8 @@ export default function ColumnGrid({
                 );
             },
             onToggleComplete: (workItemId, status) => {
+                if (!canEdit) return;
+
                 window.dispatchEvent(
                     new CustomEvent("flowforge:toggle-complete", {
                         detail: { workItemId, status },
@@ -194,6 +207,27 @@ export default function ColumnGrid({
             "keydown",
             handleKeyDown as EventListener
         );
+
+        const onOutsidePointerDown = (event: PointerEvent) => {
+            if (event.button !== 0) return;
+
+            const target = event.target;
+            if (target instanceof Node && boardRef.current?.contains(target)) {
+                return;
+            }
+
+            const activeElement = document.activeElement;
+            if (
+                activeElement instanceof HTMLElement &&
+                boardRef.current?.contains(activeElement)
+            ) {
+                activeElement.blur();
+            }
+
+            clearFocus();
+        };
+
+        document.addEventListener("pointerdown", onOutsidePointerDown, true);
 
         /*
          * When a user clicks a column header or card, keyboard focus follows
@@ -246,6 +280,7 @@ export default function ColumnGrid({
 
         return () => {
             document.removeEventListener("keydown", handleKeyDown);
+            document.removeEventListener("pointerdown", onOutsidePointerDown, true);
             window.removeEventListener(
                 "flowforge:focus-column",
                 onFocusColumn as EventListener
@@ -255,7 +290,7 @@ export default function ColumnGrid({
                 onFocusCard as EventListener
             );
         };
-    }, [handleKeyDown, localColumns, setColumnFocus, setCardFocus]);
+    }, [handleKeyDown, localColumns, setColumnFocus, setCardFocus, clearFocus]);
 
     const isColumnFocused = (index: number) =>
         focus?.kind === "column" && focus.columnIndex === index;
@@ -281,15 +316,15 @@ export default function ColumnGrid({
 
     return (
         /*
-         * Flowing columns rather than a fixed five-up grid: boards have a
-         * user-chosen number of columns, and a phone gets one full-width
-         * column per row instead of a sideways scroll.
+         * Explicit breakpoints keep the board density predictable: one column
+         * on a phone, then two, three, four and five as the viewport grows.
          */
         <div
+            ref={boardRef}
             tabIndex={-1}
             className="
-                grid gap-4
-                grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))]
+                grid grid-cols-1 gap-4
+                sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5
                 lg:gap-5
                 outline-none
             "

@@ -5,6 +5,7 @@ export type Project = {
     description: string;
     color: string;
     icon: string;
+    boardCount?: number;
     archived?: boolean;
 };
 

@@ -27,6 +27,7 @@ type Props = {
     onOpenChange: (open: boolean) => void;
     workItemId: string;
     workItemTitle: string;
+    disabled?: boolean;
 };
 
 export default function LabelsDialog({
@@ -34,6 +35,7 @@ export default function LabelsDialog({
     onOpenChange,
     workItemId,
     workItemTitle,
+    disabled = false,
 }: Props) {
     const { data: labels = [], isLoading: labelsLoading } = useLabels();
 
@@ -62,7 +64,7 @@ export default function LabelsDialog({
         assignMutation.isPending || removeMutation.isPending;
 
     async function handleLabelClick(labelId: string) {
-        if (busy) return;
+        if (disabled || busy) return;
 
         try {
             setProcessingLabelId(labelId);
@@ -127,7 +129,7 @@ export default function LabelsDialog({
                                         <button
                                             type="button"
                                             aria-pressed={isAssigned}
-                                            disabled={isProcessing || busy}
+                                            disabled={disabled || isProcessing || busy}
                                             onClick={() =>
                                                 void handleLabelClick(label.id)
                                             }

@@ -5,6 +5,7 @@ using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Domain.Entities;
+using FlowForge.Domain.Enums;
 
 using MediatR;
 
@@ -33,7 +34,12 @@ public sealed class GetProjectsQueryHandler : IRequestHandler<GetProjectsQuery, 
 
     public async Task<ApiResponse<PagedResponse<ProjectDto>>> Handle(GetProjectsQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Projects.AsNoTracking().Where(x => x.OrganizationId == _currentUser.User.OrganizationId && !x.IsArchived);
+        var query = _context.Projects.AsNoTracking().Where(x => x.OrganizationId == _currentUser.User.OrganizationId);
+
+        if (_currentUser.User.Role != UserRole.Admin)
+        {
+            query = query.Where(x => !x.IsArchived);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -61,7 +67,9 @@ public sealed class GetProjectsQueryHandler : IRequestHandler<GetProjectsQuery, 
             Key = x.Key,
             Description = x.Description,
             Color = x.Color,
-            Icon = x.Icon
+            Icon = x.Icon,
+            BoardCount = x.Boards.Count(),
+            Archived = x.IsArchived
         });
 
         var pagedProjects = await dtoQuery.ToPagedResponseAsync(request, cancellationToken);

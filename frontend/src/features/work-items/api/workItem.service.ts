@@ -87,6 +87,10 @@ export const archiveWorkItem = async (
     return res.data.data;
 };
 
+export const deleteWorkItem = async (id: string): Promise<void> => {
+    await api.delete(`/WorkItems/${id}`);
+};
+
 export const restoreWorkItem = async (
     id: string
 ) => {

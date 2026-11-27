@@ -48,7 +48,6 @@ import {
     Download,
     Loader2,
     ShieldCheck,
-    X,
 } from "lucide-react";
 import {
     toast,
@@ -489,10 +488,7 @@ export function AIDraftDialog({
                                 Cancel
                             </span>
                         ) : (
-                            <span className="flex items-center gap-2">
-                                <X className="size-4" />
-                                Close
-                            </span>
+                            "Close"
                         )}
                     </Button>
 

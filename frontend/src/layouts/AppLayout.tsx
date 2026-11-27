@@ -4,7 +4,8 @@ import { useLocation } from "react-router";
 import Sidebar from "@/components/layout/Sidebar";
 import SidebarToggle from "@/components/layout/SidebarToggle";
 import TopBar from "@/components/layout/Topbar";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useUiStore } from "@/stores/ui.store";
 
 type Props = {
@@ -109,18 +110,33 @@ export default function AppLayout({ children }: Props) {
             >
                 <SheetContent
                     side="left"
-                    showCloseButton={false}
                     className="w-[min(18rem,84vw)] p-0"
                 >
                     <SheetTitle className="sr-only">
                         Site navigation
                     </SheetTitle>
 
-                    <Sidebar
-                        variant="drawer"
-                        collapsed={false}
-                        onNavigate={() => setMobileNavOpen(false)}
-                    />
+                    <div className="min-h-0 flex-1">
+                        <Sidebar
+                            variant="drawer"
+                            collapsed={false}
+                            onNavigate={() => setMobileNavOpen(false)}
+                        />
+                    </div>
+
+                    <div className="shrink-0 border-t border-border p-3">
+                        <SheetClose
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                />
+                            }
+                        >
+                            Close
+                        </SheetClose>
+                    </div>
                 </SheetContent>
             </Sheet>
 

@@ -12,6 +12,8 @@ export type ConfirmOptions = {
     /** The verb on the destructive action. Keep it specific: "Delete label". */
     confirmLabel?: string;
     cancelLabel?: string;
+    /** Requires the user to type this exact text before confirming. */
+    confirmationText?: string;
     /** `destructive` renders the primary action in the danger tone. */
     tone?: "default" | "destructive";
 };
