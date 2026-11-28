@@ -34,22 +34,13 @@ export default function NotificationItem({
     return (
         <li
             className={cn(
-                "group relative flex gap-3 border-b border-border-subtle px-3.5 py-3 transition-colors last:border-b-0",
+                "group relative flex gap-2.5 border-b border-border-subtle px-3 py-3 transition-colors last:border-b-0",
                 isUnread
                     ? "bg-primary-subtle/50"
                     : "hover:bg-surface-muted/60"
             )}
         >
-            {/* Unread marker — paired with the bold title, never color alone */}
-            <span className="flex w-1.5 shrink-0 justify-center pt-2.5">
-                {isUnread && (
-                    <span
-                        aria-hidden="true"
-                        className="size-1.5 rounded-full bg-primary"
-                    />
-                )}
-            </span>
-
+            {/* Unread state is carried by the bold title and subtle background. */}
             <span
                 aria-hidden="true"
                 className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-muted-foreground"

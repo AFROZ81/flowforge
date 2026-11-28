@@ -13,7 +13,6 @@ import {
     Dialog,
     DialogBody,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -128,6 +127,17 @@ type Props = {
    Moved to components/common/indicators so this dialog, the
    board card and any future table can't drift apart.
 ========================================================= */
+
+
+function isActiveWorkItemStatus(
+    status: string | number
+): boolean {
+    const normalized =
+        String(status).trim().toLowerCase();
+
+    return normalized === "active" ||
+        normalized === "1";
+}
 
 
 /* =========================================================
@@ -631,7 +641,6 @@ export default function WorkItemDetailsDialog({
             description:
                 `This soft-deletes the work item and ${attachments.length} attached file${attachments.length === 1 ? "" : "s"}, plus its comments, labels, watchers, checklist, reminders, and history. All records and files are retained.`,
             confirmLabel: "Delete",
-            confirmationText: workItem.title,
             tone: "destructive",
         });
 
@@ -909,7 +918,7 @@ export default function WorkItemDetailsDialog({
 
                 <DialogContent
                     className="
-                        max-h-[92dvh] gap-0 px-0 pb-0 sm:max-w-3xl lg:max-w-4xl
+                        max-h-[92dvh] px-0 pb-0 sm:max-w-3xl lg:max-w-4xl
                         sm:px-5 sm:pb-5
                     "
                 >
@@ -946,11 +955,6 @@ export default function WorkItemDetailsDialog({
                                         "Work Item"
                                     }
                                 </DialogTitle>
-
-
-                                <DialogDescription>
-                                    Work item details and activity.
-                                </DialogDescription>
 
                             </div>
 
@@ -1024,7 +1028,7 @@ export default function WorkItemDetailsDialog({
                              * position: sticky.
                              */
                             <>
-                            <DialogBody className="space-y-5 px-4 sm:px-0">
+                            <DialogBody className="space-y-5 px-4 sm:px-0 sm:pr-3">
 
                                 {/* =================================================
                                     BASIC INFORMATION
@@ -1774,7 +1778,10 @@ export default function WorkItemDetailsDialog({
                                         workItem.dueDate
                                     }
                                     disabled={
-                                        workItem.isArchived || !canEdit
+                                        workItem.isArchived ||
+                                        !isActiveWorkItemStatus(
+                                            workItem.status
+                                        )
                                     }
                                 />
 
@@ -1874,7 +1881,7 @@ export default function WorkItemDetailsDialog({
                                  */}
                                 <div
                                     className="
-                                        mt-4 flex shrink-0 flex-col gap-3
+                                        flex shrink-0 flex-col gap-3
                                         border-t border-border-subtle
                                         px-4 pt-3 pb-4
                                         sm:flex-row sm:items-center sm:justify-between
@@ -2076,12 +2083,12 @@ export default function WorkItemDetailsDialog({
                                         </Button>
 
 
-                                        {canEdit && !workItem.isArchived && (
+                                        {isAdmin && !workItem.isArchived && (
 
                                             <Button
                                                 type="button"
                                                 onClick={() => {
-                                                    if (!canEdit || isSaving) return;
+                                                    if (!isAdmin || isSaving) return;
                                                     setEditOpen(true);
                                                 }}
                                                 disabled={
@@ -2112,7 +2119,7 @@ export default function WorkItemDetailsDialog({
 
             <EditWorkItemDialog
                 open={
-                    editOpen && canEdit && !workItem?.isArchived
+                    editOpen && isAdmin && !workItem?.isArchived
                 }
                 onOpenChange={(
                     value

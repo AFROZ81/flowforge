@@ -37,6 +37,11 @@ public sealed class AssignWorkItemCommandHandler : IRequestHandler<AssignWorkIte
     {
         var currentUser = _currentUser.User;
 
+        if (currentUser.Role != UserRole.Admin)
+        {
+            throw new ForbiddenException("Only admins can assign work items.");
+        }
+
         var workItem = await _context.WorkItems
             .Include(x => x.Column)
                 .ThenInclude(x => x.Board)

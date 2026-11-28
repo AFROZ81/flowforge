@@ -55,15 +55,18 @@ HTTP request
 
 ## Identity and organization scoping
 
-A user can belong to multiple organizations through `OrganizationUser`. JWTs carry:
+A user can belong to multiple organizations through `OrganizationUser`, the sole membership authority. Registration creates only an Identity account and returns an account-only session. Workspace creation and invitation acceptance are the only operations that create memberships.
 
-- `NameIdentifier` — user id
-- `organizationId` — active organization
-- `orgIds` — all organization ids for the user
-- `ClaimTypes.Role` — role in the active organization
-- email and display-name claims
+Account tokens contain identity claims only. Organization tokens add:
 
-`CurrentUserService` reconstructs this context for handlers. Organization switching validates membership and issues a new token with the selected organization and its role. Most resource queries derive organization scope from the token rather than trusting a route id.
+- `organizationId` — selected workspace
+- `membershipId` — surrogate membership key
+- `tokenVersion` — membership session version
+- `ClaimTypes.Role` — current database role for routing/display
+
+`orgIds` may be present for compatibility but is not an authorization source. `OnTokenValidated` loads the membership, organization state, role, owner flag, and token version from the database on each request. Invalid organization context is stripped while account authentication remains, allowing `/Auth/refresh` to recover. Refresh reloads all active memberships and falls back to another workspace or an account-only token.
+
+`RequireAccount`, `RequireOrganizationSession`, `RequireViewer`, `RequireMember`, `RequireAdmin`, and `RequireOwner` enforce this validated context. Organization route IDs must match the session organization. The frontend protected route also checks `GET /api/Organizations/mine`; zero-membership accounts use `/onboarding` to create a workspace or accept an invitation.
 
 ## Vertical slices
 
@@ -106,13 +109,14 @@ Key client concerns:
 
 - TanStack Query owns server cache and invalidation.
 - Zustand persists auth in `sessionStorage` and AI preferences in local storage.
-- `PresenceProvider` owns the shared SignalR connection.
+- `PresenceProvider` owns the shared SignalR connection and routes role/membership events through the shared session refresh and query invalidation.
+- `SessionSync` invalidates organization query caches after login, refresh, and workspace switching, and clears them on logout.
 - AI inference runs in a Web Worker and is loaded only when used.
 - The Vite PWA plugin generates the manifest and service worker.
 
 ## Testing architecture
 
 - Backend: xUnit with EF Core InMemory and fake services for deterministic handler tests.
-- Frontend: Vitest unit tests for AI and utility behavior.
+- Frontend: Vitest unit tests for AI, utilities, account-first authentication, onboarding, the named workspace switcher, route guarding, and permission-aware settings.
 - Storybook stories cover shared primitives; browser tests are configured separately.
 - No CI pipeline is configured yet, so verification remains a local pre-commit step.

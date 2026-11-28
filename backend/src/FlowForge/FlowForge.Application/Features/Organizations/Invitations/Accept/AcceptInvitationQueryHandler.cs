@@ -26,8 +26,14 @@ public sealed class AcceptInvitationQueryHandler : IRequestHandler<AcceptInvitat
             .AsNoTracking()
             .FirstOrDefaultAsync(i => i.Token == request.Token && !i.IsDeleted, cancellationToken);
 
-        if (invitation is null)
+        if (invitation is null ||
+            invitation.IsAccepted ||
+            invitation.ExpiresAt < DateTime.UtcNow ||
+            !invitation.Organization.IsActive ||
+            invitation.Organization.IsDeleted)
+        {
             throw new NotFoundException("Invalid or expired invitation token.");
+        }
 
         return new AcceptInvitationQueryResponse
         {

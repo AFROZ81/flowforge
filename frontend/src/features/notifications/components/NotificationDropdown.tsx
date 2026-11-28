@@ -135,10 +135,8 @@ export default function NotificationDropdown({
                         {Array.from({ length: 4 }).map((_, index) => (
                             <li
                                 key={index}
-                                className="flex gap-3 border-b border-border-subtle px-3.5 py-3 last:border-b-0"
+                                className="flex gap-2.5 border-b border-border-subtle px-3 py-3 last:border-b-0"
                             >
-                                <span className="w-1.5 shrink-0" />
-
                                 <Skeleton className="size-8 rounded-full" />
 
                                 <div className="min-w-0 flex-1 space-y-2">

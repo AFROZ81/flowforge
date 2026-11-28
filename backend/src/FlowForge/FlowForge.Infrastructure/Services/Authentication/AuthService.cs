@@ -43,6 +43,7 @@ public sealed class AuthService : IAuthService
         if (!string.IsNullOrWhiteSpace(request.InvitationToken))
         {
             invitation = await _context.OrganizationInvitations
+                .Include(i => i.Organization)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(
                     i => i.Token == request.InvitationToken && !i.IsDeleted,
@@ -57,16 +58,11 @@ public sealed class AuthService : IAuthService
             if (invitation.ExpiresAt < DateTime.UtcNow)
                 throw new BadRequestException("This invitation has expired.");
 
+            if (!invitation.Organization.IsActive || invitation.Organization.IsDeleted)
+                throw new BadRequestException("This invitation's organization is not active.");
+
             if (!string.Equals(invitation.Email.Trim(), request.Email.Trim(), StringComparison.OrdinalIgnoreCase))
                 throw new BadRequestException("Registration email must match the invited email address.");
-        }
-        else
-        {
-            var organizationExists = await _context.Organizations
-                .AnyAsync(x => x.Id == request.OrganizationId, cancellationToken);
-
-            if (!organizationExists)
-                throw new NotFoundException("Organization not found.");
         }
 
         var email = request.Email.Trim();
@@ -86,11 +82,8 @@ public sealed class AuthService : IAuthService
             FullName = request.FullName,
             UserName = email,
             Email = email,
-            Role = invitation?.Role ?? (await _context.OrganizationUsers
-                .AsNoTracking()
-                .CountAsync(ou => ou.OrganizationId == request.OrganizationId, cancellationToken) == 0
-                ? UserRole.Admin
-                : UserRole.Member)
+            OrganizationId = Guid.Empty,
+            Role = invitation?.Role ?? UserRole.Member
         };
 
         IdentityResult result = await _userManager.CreateAsync(user, request.Password);
@@ -100,25 +93,29 @@ public sealed class AuthService : IAuthService
             throw new BadRequestException(string.Join(Environment.NewLine, result.Errors.Select(x => x.Description)));
         }
 
-        if (invitation is null)
-        {
-            var orgUser = new OrganizationUser
-            {
-                UserId = user.Id,
-                OrganizationId = request.OrganizationId,
-                Role = user.Role
-            };
-
-            _context.OrganizationUsers.Add(orgUser);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-
+        TokenResult? accountToken = null;
         AcceptInvitationResponse? acceptance = null;
 
-        if (invitation is not null)
+        if (invitation is null)
+        {
+            accountToken = _tokenService.GenerateAccessToken(new AuthenticatedUser
+            {
+                UserId = user.Id,
+                Email = user.Email,
+                FullName = user.FullName,
+                OrganizationId = Guid.Empty,
+                OrganizationIds = [],
+                Role = UserRole.Member
+            });
+        }
+        else
         {
             acceptance = await _mediator.Send(
-                new AcceptInvitationCommand { Token = invitation.Token },
+                new AcceptInvitationCommand
+                {
+                    Token = invitation.Token,
+                    AcceptingUserId = user.Id
+                },
                 cancellationToken);
         }
 
@@ -131,8 +128,8 @@ public sealed class AuthService : IAuthService
             Message = acceptance is null
                 ? "User registered successfully."
                 : "User registered and invitation accepted successfully.",
-            AccessToken = acceptance?.AccessToken,
-            ExpiresAtUtc = acceptance?.ExpiresAtUtc
+            AccessToken = acceptance?.AccessToken ?? accountToken?.AccessToken,
+            ExpiresAtUtc = acceptance?.ExpiresAtUtc ?? accountToken?.ExpiresAtUtc
         };
     }
 
@@ -150,29 +147,10 @@ public sealed class AuthService : IAuthService
         if (!passwordValid)
             throw new UnauthorizedException("Invalid email or password.");
 
-        var organizationUsers = await _context.OrganizationUsers
-            .AsNoTracking()
-            .Where(ou => ou.UserId == user.Id)
-            .ToListAsync();
-
-        if (!organizationUsers.Any())
-            throw new UnauthorizedException("User is not a member of any organization.");
-
-        var organizationIds = organizationUsers.Select(ou => ou.OrganizationId).ToList();
-
-        // Get the role from the first organization (default organization)
-        var firstOrgUser = organizationUsers.First();
-        var role = firstOrgUser.Role;
-
-        var authenticatedUser = new AuthenticatedUser
-        {
-            UserId = user.Id,
-            Email = user.Email!,
-            FullName = user.FullName,
-            OrganizationId = firstOrgUser.OrganizationId,
-            OrganizationIds = organizationIds,
-            Role = role
-        };
+        var memberships = await GetActiveMembershipsAsync(user.Id, cancellationToken: default);
+        var authenticatedUser = memberships.Count > 0
+            ? CreateOrganizationSession(user, memberships, memberships[0])
+            : CreateAccountSession(user);
 
         var token = _tokenService.GenerateAccessToken(authenticatedUser);
 
@@ -185,7 +163,21 @@ public sealed class AuthService : IAuthService
 
     public async Task<LoginResponse> RefreshTokenAsync(AuthenticatedUser user)
     {
-        var token = _tokenService.GenerateAccessToken(user);
+        var account = await _userManager.FindByIdAsync(user.UserId.ToString())
+            ?? throw new UnauthorizedException("Account no longer exists.");
+
+        var memberships = await GetActiveMembershipsAsync(account.Id);
+        var currentIndex = memberships.FindIndex(
+            x => x.Membership.OrganizationId == user.OrganizationId);
+
+        var authenticatedUser = memberships.Count > 0
+            ? CreateOrganizationSession(
+                account,
+                memberships,
+                currentIndex >= 0 ? memberships[currentIndex] : memberships[0])
+            : CreateAccountSession(account);
+
+        var token = _tokenService.GenerateAccessToken(authenticatedUser);
 
         return new LoginResponse
         {
@@ -193,4 +185,54 @@ public sealed class AuthService : IAuthService
             ExpiresAtUtc = token.ExpiresAtUtc
         };
     }
+
+    private async Task<List<(OrganizationUser Membership, Organization Organization)>> GetActiveMembershipsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await _context.OrganizationUsers
+            .AsNoTracking()
+            .Where(x => x.UserId == userId && !x.IsDeleted)
+            .Select(x => new
+            {
+                Membership = x,
+                Organization = x.Organization
+            })
+            .OrderBy(x => x.Membership.CreatedAt)
+            .ThenBy(x => x.Organization.Name)
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .Where(x => !x.Organization.IsDeleted && x.Organization.IsActive)
+            .Select(x => (x.Membership, x.Organization))
+            .ToList();
+    }
+
+    private static AuthenticatedUser CreateAccountSession(ApplicationUser user) => new()
+    {
+        UserId = user.Id,
+        Email = user.Email ?? string.Empty,
+        FullName = user.FullName,
+        OrganizationId = Guid.Empty,
+        OrganizationIds = [],
+        Role = UserRole.Member
+    };
+
+    private static AuthenticatedUser CreateOrganizationSession(
+        ApplicationUser user,
+        List<(OrganizationUser Membership, Organization Organization)> memberships,
+        (OrganizationUser Membership, Organization Organization) selected) => new()
+    {
+        UserId = user.Id,
+        Email = user.Email ?? string.Empty,
+        FullName = user.FullName,
+        OrganizationId = selected.Membership.OrganizationId,
+        MembershipId = selected.Membership.Id,
+        TokenVersion = selected.Membership.TokenVersion,
+        OrganizationIds = memberships
+            .Select(x => x.Membership.OrganizationId)
+            .Distinct()
+            .ToList(),
+        Role = selected.Membership.Role
+    };
 }

@@ -30,11 +30,21 @@ public sealed class TokenService : ITokenService
             new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
             new(ClaimTypes.Name, user.FullName),
             new(ClaimTypes.Email, user.Email),
-            new("organizationId", user.OrganizationId.ToString()),
-            new("orgIds", JsonSerializer.Serialize(user.OrganizationIds)),
-            new(ClaimTypes.Role, user.Role.ToString()),
+            new("sessionState", user.HasOrganization ? "organization" : "account"),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        if (user.HasOrganization)
+        {
+            claims.Add(new Claim("organizationId", user.OrganizationId.ToString()));
+            claims.Add(new Claim("orgIds", JsonSerializer.Serialize(user.OrganizationIds)));
+            claims.Add(new Claim(ClaimTypes.Role, user.Role.ToString()));
+
+            if (user.MembershipId.HasValue)
+                claims.Add(new Claim("membershipId", user.MembershipId.Value.ToString()));
+
+            claims.Add(new Claim("tokenVersion", user.TokenVersion.ToString()));
+        }
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_jwtSettings.Key));

@@ -45,7 +45,8 @@ public sealed class CurrentUserService : ICurrentUserService
 
         var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        var organizationId = user.FindFirst("organizationId")?.Value;
+        var organizationIdClaim = user.FindFirst("organizationId")?.Value;
+        var organizationId = Guid.Empty;
 
         if (string.IsNullOrWhiteSpace(userId))
         {
@@ -55,12 +56,19 @@ public sealed class CurrentUserService : ICurrentUserService
             return null;
         }
 
-        if (string.IsNullOrWhiteSpace(organizationId))
+        if (!string.IsNullOrWhiteSpace(organizationIdClaim))
         {
-            if (required)
-                throw new UnauthorizedAccessException("OrganizationId claim is missing.");
+            if (!Guid.TryParse(organizationIdClaim, out organizationId))
+            {
+                if (required)
+                    throw new UnauthorizedAccessException("OrganizationId claim is invalid.");
 
-            return null;
+                return null;
+            }
+        }
+        else if (required)
+        {
+            throw new UnauthorizedAccessException("OrganizationId claim is missing.");
         }
 
         // Parse organizationIds claim
@@ -78,6 +86,16 @@ public sealed class CurrentUserService : ICurrentUserService
             }
         }
 
+        Guid? membershipId = null;
+        var membershipIdClaim = user.FindFirst("membershipId")?.Value;
+        if (Guid.TryParse(membershipIdClaim, out var parsedMembershipId))
+            membershipId = parsedMembershipId;
+
+        var tokenVersion = 0;
+        var tokenVersionClaim = user.FindFirst("tokenVersion")?.Value;
+        if (int.TryParse(tokenVersionClaim, out var parsedTokenVersion))
+            tokenVersion = parsedTokenVersion;
+
         // Parse role claim
         var roleClaim = user.FindFirst(ClaimTypes.Role)?.Value;
         var role = UserRole.Member;
@@ -91,7 +109,9 @@ public sealed class CurrentUserService : ICurrentUserService
             UserId = Guid.Parse(userId),
             Email = user.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty,
             FullName = user.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty,
-            OrganizationId = Guid.Parse(organizationId),
+            OrganizationId = organizationId,
+            MembershipId = membershipId,
+            TokenVersion = tokenVersion,
             OrganizationIds = organizationIds,
             Role = role
         };

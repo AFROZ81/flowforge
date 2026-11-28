@@ -124,7 +124,9 @@ export default function AcceptInvitationPage() {
     };
 
     const goToLogin = () => {
-        navigate("/login");
+        navigate(token
+            ? `/login?mode=signin&invitationToken=${encodeURIComponent(token)}`
+            : "/login");
     };
 
     if (step === "loading" || detailsLoading) {

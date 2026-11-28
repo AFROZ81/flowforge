@@ -1,5 +1,6 @@
 using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Interfaces;
+using FlowForge.Domain.Common.Enums;
 using FlowForge.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,6 +38,12 @@ public sealed class ReminderRules
     {
         if (workItem.IsArchived)
             throw new BadRequestException("Archived Work Items cannot be modified.");
+    }
+
+    public void EnsureWorkItemActive(WorkItem workItem)
+    {
+        if (workItem.Status != WorkItemStatus.Active)
+            throw new BadRequestException("Reminders can only be managed on active work items.");
     }
 
     public void ValidateReminder(

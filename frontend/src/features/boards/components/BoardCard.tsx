@@ -71,7 +71,6 @@ export default function BoardCard({ board, projectId }: Props) {
             description:
                 "This soft-deletes the board and retains its data. The API blocks deletion while active columns remain.",
             confirmLabel: "Delete",
-            confirmationText: board.name,
             tone: "destructive",
         });
 

@@ -6,6 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/sonner";
 import { queryClient } from "@/lib/queryClient";
+import { SESSION_CHANGED_EVENT, useAuthStore } from "@/stores/auth.store";
 import { assertThemeCoverage } from "@/lib/themes";
 
 type Props = {
@@ -70,6 +71,27 @@ function ThemeEffects() {
     return null;
 }
 
+/**
+ * Keeps organization-scoped query caches in step with login, refresh, workspace
+ * switching, and logout without coupling the Zustand store to TanStack Query.
+ */
+function SessionSync() {
+    useEffect(() => {
+        const handleSessionChange = () => {
+            if (useAuthStore.getState().accessToken) {
+                void queryClient.invalidateQueries();
+            } else {
+                queryClient.clear();
+            }
+        };
+
+        window.addEventListener(SESSION_CHANGED_EVENT, handleSessionChange);
+        return () => window.removeEventListener(SESSION_CHANGED_EVENT, handleSessionChange);
+    }, []);
+
+    return null;
+}
+
 export function AppProvider({ children }: Props) {
     return (
         <ThemeProvider
@@ -104,6 +126,7 @@ export function AppProvider({ children }: Props) {
             <ThemeEffects />
 
             <QueryClientProvider client={queryClient}>
+                <SessionSync />
                 {children}
 
                 {/*

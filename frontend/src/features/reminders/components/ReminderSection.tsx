@@ -380,6 +380,8 @@ export default function ReminderSection({
     const handleSave =
         async () => {
 
+            if (disabled || saving) return;
+
             if (
                 !reminderDate
             ) {
@@ -458,10 +460,6 @@ export default function ReminderSection({
                     await updateReminder({
                         workItemId,
 
-                        dueDate:
-                            dueDate ??
-                            reminderDateValue.toISOString(),
-
                         reminderDate:
                             reminderDateValue.toISOString(),
                     });
@@ -476,7 +474,7 @@ export default function ReminderSection({
 
                         dueDate:
                             dueDate ??
-                            reminderDateValue.toISOString(),
+                            null,
 
                         reminderDate:
                             reminderDateValue.toISOString(),
@@ -526,6 +524,8 @@ export default function ReminderSection({
 
     const handleDelete =
         async () => {
+
+            if (disabled || deleting) return;
 
             const confirmed = await confirm({
                 title: "Remove this reminder?",
@@ -652,6 +652,12 @@ export default function ReminderSection({
                 </div>
 
             </div>
+
+            {disabled && (
+                <p className="mb-3 text-xs text-muted-foreground">
+                    Reminders are only available on active work items.
+                </p>
+            )}
 
 
             {/* =====================================================
@@ -971,7 +977,8 @@ export default function ReminderSection({
 
             {!loading &&
                 !error &&
-                editing && (
+                editing &&
+                !disabled && (
 
                     <div
                         className="
@@ -1008,7 +1015,7 @@ export default function ReminderSection({
                                     )
                             }
                             disabled={
-                                saving
+                                saving || disabled
                             }
                         />
 
@@ -1063,7 +1070,7 @@ export default function ReminderSection({
                             <Button
                                 type="button"
                                 disabled={
-                                    saving
+                                    saving || disabled
                                 }
                                 onClick={() =>
                                     void handleSave()

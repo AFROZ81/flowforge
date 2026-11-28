@@ -66,5 +66,9 @@ public enum AuditLogType
     DataExported = 90,
     DataImported = 91,
     SettingsChanged = 95,
-    SecurityEvent = 99
+    SecurityEvent = 99,
+    OrganizationArchived = 100,
+    OrganizationRestored = 101,
+    OwnershipTransferred = 102,
+    OrganizationLeft = 103
 }

@@ -21,18 +21,26 @@ public sealed class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvit
     private readonly IUserLookupService _userLookup;
     private readonly ITokenService _tokenService;
     private readonly IAuditLogService _auditLogService;
+    private readonly ICurrentUserService _currentUser;
 
-    public AcceptInvitationCommandHandler(IApplicationDbContext context, IUserLookupService userLookup, ITokenService tokenService, IAuditLogService auditLogService)
+    public AcceptInvitationCommandHandler(
+        IApplicationDbContext context,
+        IUserLookupService userLookup,
+        ITokenService tokenService,
+        IAuditLogService auditLogService,
+        ICurrentUserService currentUser)
     {
         _context = context;
         _userLookup = userLookup;
         _tokenService = tokenService;
         _auditLogService = auditLogService;
+        _currentUser = currentUser;
     }
 
     public async Task<AcceptInvitationResponse> Handle(AcceptInvitationCommand request, CancellationToken cancellationToken)
     {
         var invitation = await _context.OrganizationInvitations
+            .Include(i => i.Organization)
             .FirstOrDefaultAsync(i => i.Token == request.Token && !i.IsDeleted, cancellationToken);
 
         if (invitation is null)
@@ -44,85 +52,121 @@ public sealed class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvit
         if (invitation.ExpiresAt < DateTime.UtcNow)
             throw new BadRequestException("This invitation has expired.");
 
-        var user = await _userLookup.FindByEmailAsync(invitation.Email, cancellationToken);
+        if (!invitation.Organization.IsActive || invitation.Organization.IsDeleted)
+            throw new BadRequestException("This invitation's organization is not active.");
 
-        if (user is null)
+        var userId = request.AcceptingUserId
+            ?? _currentUser.TryGetUser()?.UserId
+            ?? throw new UnauthorizedAccessException("User is not authenticated.");
+
+        var user = await _userLookup.FindByIdAsync(userId, cancellationToken)
+            ?? throw new NotFoundException("User not found.");
+
+        if (!string.Equals(
+                invitation.Email.Trim(),
+                user.Email,
+                StringComparison.OrdinalIgnoreCase))
         {
-            throw new BadRequestException("Please register an account first, then accept the invitation.");
+            throw new BadRequestException("Registration email must match the invited email address.");
         }
 
-        // Check if user is already a member
-        var isMember = await _context.OrganizationUsers
+        var activeMembership = await _context.OrganizationUsers
             .AsNoTracking()
             .AnyAsync(
-                ou => ou.UserId == user.Id && ou.OrganizationId == invitation.OrganizationId,
+                x => x.UserId == userId &&
+                     x.OrganizationId == invitation.OrganizationId &&
+                     !x.IsDeleted,
                 cancellationToken);
 
-        if (isMember)
+        if (activeMembership)
             throw new ConflictException("User is already a member of this organization.");
 
-        // Create the organization user link
-        var orgUser = new OrganizationUser
+        var membership = await _context.OrganizationUsers
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(
+                x => x.UserId == userId && x.OrganizationId == invitation.OrganizationId,
+                cancellationToken);
+
+        membership ??= new OrganizationUser
         {
-            Id = Guid.NewGuid(),
-            UserId = user.Id,
-            OrganizationId = invitation.OrganizationId,
-            Role = invitation.Role
+            UserId = userId,
+            OrganizationId = invitation.OrganizationId
         };
 
-        _context.OrganizationUsers.Add(orgUser);
-
-        // Mark invitation as accepted
-        invitation.IsAccepted = true;
-        invitation.AcceptedAt = DateTime.UtcNow;
-        invitation.AcceptedByUserId = user.Id;
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        // Audit log the invitation acceptance
-        var actor = await _userLookup.FindByIdAsync(user.Id, cancellationToken);
-
-        await _auditLogService.CreateAsync(new AuditLogEntry
+        await _context.ExecuteInTransactionAsync(async () =>
         {
-            Type = AuditLogType.InvitationAccepted,
-            OrganizationId = invitation.OrganizationId,
-            ActorId = user.Id,
-            ActorName = actor?.FullName ?? "Unknown",
-            TargetEntityId = invitation.Id,
-            TargetEntityType = "OrganizationInvitation",
-            Action = "InvitationAccepted",
-            Description = $"Accepted invitation for {invitation.Email} with role {invitation.Role}",
-            OldValuesJson = "{}",
-            NewValuesJson = JsonSerializer.Serialize(new { Email = invitation.Email, Role = invitation.Role.ToString() }),
-            IsSensitive = false
+            if (membership.IsDeleted)
+            {
+                _context.OrganizationUsers.Update(membership);
+                membership.RestoreMembership(invitation.Role, userId);
+            }
+            else
+            {
+                membership.ChangeRole(invitation.Role, userId);
+                _context.OrganizationUsers.Add(membership);
+            }
+
+            invitation.IsAccepted = true;
+            invitation.AcceptedAt = DateTime.UtcNow;
+            invitation.AcceptedByUserId = userId;
+            invitation.UpdatedAt = DateTime.UtcNow;
+            invitation.UpdatedBy = userId;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            await _auditLogService.CreateAsync(new AuditLogEntry
+            {
+                Type = AuditLogType.InvitationAccepted,
+                OrganizationId = invitation.OrganizationId,
+                ActorId = userId,
+                ActorName = user.FullName,
+                TargetEntityId = invitation.Id,
+                TargetEntityType = "OrganizationInvitation",
+                Action = "InvitationAccepted",
+                Description = $"Accepted invitation for {invitation.Email} with role {invitation.Role}",
+                OldValuesJson = "{}",
+                NewValuesJson = JsonSerializer.Serialize(new
+                {
+                    Email = invitation.Email,
+                    Role = invitation.Role.ToString()
+                }),
+                IsSensitive = false
+            }, cancellationToken);
         }, cancellationToken);
 
-        // Generate new token with updated organization and role
         var organizationIds = await _context.OrganizationUsers
             .AsNoTracking()
-            .Where(ou => ou.UserId == user.Id)
-            .Select(ou => ou.OrganizationId)
+            .Where(x => x.UserId == userId &&
+                        !x.IsDeleted &&
+                        x.Organization.IsActive &&
+                        !x.Organization.IsDeleted)
+            .Select(x => x.OrganizationId)
+            .Distinct()
             .ToListAsync(cancellationToken);
 
-        var orgUserResult = await _context.OrganizationUsers
+        var acceptedMembership = await _context.OrganizationUsers
             .AsNoTracking()
-            .FirstOrDefaultAsync(ou => ou.UserId == user.Id && ou.OrganizationId == invitation.OrganizationId, cancellationToken);
+            .FirstAsync(
+                x => x.UserId == userId &&
+                     x.OrganizationId == invitation.OrganizationId &&
+                     !x.IsDeleted,
+                cancellationToken);
 
-        var authenticatedUser = new AuthenticatedUser
+        var token = _tokenService.GenerateAccessToken(new AuthenticatedUser
         {
-            UserId = user.Id,
+            UserId = userId,
             Email = user.Email,
             FullName = user.FullName,
             OrganizationId = invitation.OrganizationId,
+            MembershipId = acceptedMembership.Id,
+            TokenVersion = acceptedMembership.TokenVersion,
             OrganizationIds = organizationIds,
-            Role = invitation.Role
-        };
-
-        var token = _tokenService.GenerateAccessToken(authenticatedUser);
+            Role = acceptedMembership.Role
+        });
 
         return new AcceptInvitationResponse
         {
-            UserId = user.Id,
+            UserId = userId,
             AccessToken = token.AccessToken,
             ExpiresAtUtc = token.ExpiresAtUtc
         };

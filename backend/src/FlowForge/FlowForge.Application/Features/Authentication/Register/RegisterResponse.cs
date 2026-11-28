@@ -10,7 +10,8 @@ public sealed class RegisterResponse
     public string Message { get; init; } = string.Empty;
 
     /// <summary>
-    /// Session token returned when registration also accepts an invitation.
+    /// Account-only session for normal registration, or organization session for
+    /// invitation registration.
     /// </summary>
     public string? AccessToken { get; init; }
 

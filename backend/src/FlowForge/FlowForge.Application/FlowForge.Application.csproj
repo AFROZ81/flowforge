@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FlowForge.Domain\FlowForge.Domain.csproj" />
+    <InternalsVisibleTo Include="FlowForge.Tests" />
   </ItemGroup>
 
 </Project>

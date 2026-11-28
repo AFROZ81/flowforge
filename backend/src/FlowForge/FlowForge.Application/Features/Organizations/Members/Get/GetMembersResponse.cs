@@ -11,6 +11,7 @@ public sealed class GetMembersResponse
     public string Email { get; init; } = string.Empty;
     public string FullName { get; init; } = string.Empty;
     public UserRole Role { get; init; }
+    public bool IsOwner { get; init; }
     public DateTime JoinedAt { get; init; }
     public bool IsCurrentUser { get; init; }
 }

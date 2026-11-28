@@ -7,7 +7,5 @@ public sealed record SetReminderCommand : IRequest<ApiResponse<SetReminderRespon
 {
     public Guid WorkItemId { get; init; }
 
-    public DateTime? DueDate { get; init; }
-
     public DateTime? ReminderDate { get; init; }
 }

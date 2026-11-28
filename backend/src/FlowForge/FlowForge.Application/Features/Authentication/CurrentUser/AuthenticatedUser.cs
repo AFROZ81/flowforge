@@ -12,6 +12,12 @@ public sealed class AuthenticatedUser
 
     public Guid OrganizationId { get; init; }
 
+    public Guid? MembershipId { get; init; }
+
+    public int TokenVersion { get; init; }
+
+    public bool HasOrganization => OrganizationId != Guid.Empty;
+
     public IReadOnlyList<Guid> OrganizationIds { get; init; } = new List<Guid>();
 
     public UserRole Role { get; init; } = UserRole.Member;

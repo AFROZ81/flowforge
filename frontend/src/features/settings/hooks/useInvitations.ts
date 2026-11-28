@@ -49,8 +49,14 @@ export function useResendInvitation(organizationId: string) {
 }
 
 export function useAcceptInvitation() {
+    const queryClient = useQueryClient();
+
     return useMutation({
         mutationFn: (token: string) => invitationsService.acceptInvitation(token),
+        onSuccess: (_, variables) => {
+            void queryClient.invalidateQueries({ queryKey: ["invitation", variables] });
+            void queryClient.invalidateQueries({ queryKey: ["organizations", "mine"] });
+        },
     });
 }
 

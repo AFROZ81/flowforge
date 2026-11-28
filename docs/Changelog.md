@@ -2,6 +2,34 @@
 
 All notable changes are documented here. The current update summarizes the working-tree changes since commit `90de061`.
 
+# [v0.9.0] - 2026-11-28
+
+## Added
+
+- Account-first registration and protected `/onboarding` for workspace creation, invitation acceptance, active-workspace recovery, and archived-Owner recovery.
+- Organization profile editing, ownership transfer, leave, archive/restore, and terminal soft delete with exact slug confirmation.
+- Surrogate membership IDs, Owner flag, token versioning, rowversion concurrency, filtered unique indexes, and deterministic Owner migration backfill.
+- Database-backed organization session validation and policies for accounts, organization sessions, roles, and Owners.
+- Named workspace switcher, single-retry Axios refresh flow, shared session cache synchronization, and realtime membership/role refresh handling.
+- Backend organization-management regression suite and frontend auth/onboarding/switcher/settings/route-guard tests.
+- Verification totals: 72 backend tests and 107 frontend unit tests.
+
+## Changed
+
+- Normal registration no longer accepts `organizationId`; only workspace creation or invitation acceptance creates memberships.
+- Invitation acceptance now requires authentication and normalized email equality; rejoin restores the historical membership row.
+- `GET /api/Organizations/mine` replaces public organization options for client workspace discovery.
+- Login, refresh, switch, and lifecycle mutations issue sessions from authoritative database state.
+- Demo seeding now creates/selects a workspace through authenticated APIs and invites teammates through invitation acceptance.
+
+## Fixed
+
+- Removed members, changed roles, archived organizations, and terminally deleted organizations no longer retain organization access through stale signed claims.
+- Owner and last-Admin invariants are enforced for role changes, removal, leave, and ownership transfer.
+- Membership listings exclude terminally deleted organizations while retaining archived workspaces for Owner recovery.
+- Corrected the organization-management migration's SQL Server preflight `THROW` syntax and reused the existing `IX_OrganizationUsers_OrganizationId` index instead of recreating it; the local migration now applies cleanly and its columns, filtered indexes, and Owner invariants were verified in SQL Server.
+- Fixed `/api/Organizations/mine` ordering before projection so EF Core can translate it to SQL Server, and capped membership-query retries to prevent request loops during server errors.
+
 # [v0.8.0] - 2026-11-24
 
 ## Added
@@ -32,7 +60,7 @@ All notable changes are documented here. The current update summarizes the worki
 
 ### Testing
 
-- Backend xUnit project with 43 tests.
+- Backend xUnit project with 55 tests.
 - Frontend Vitest unit project and Storybook browser-test configuration.
 
 ## Changed
@@ -72,17 +100,22 @@ All notable changes are documented here. The current update summarizes the worki
 - Board columns now use a predictable responsive grid: one on phones, two on small screens, three on medium, four on large, and five on extra-large screens.
 - All user-facing dates and times now use IST (`Asia/Kolkata`), including date inputs, activity feeds, reminders, audit filters, reports, exports, and invitation emails; stored timestamps remain UTC.
 - Invitation creation, listing, resend, and revocation are now admin-only in both the Members page UI and API authorization.
-- Added Admin-only soft deletion for work items, projects, and boards with typed UI confirmation, audit logs, realtime notifications, transactional flag updates, retained dependent records/files, global query filters, restore support, and non-empty container protection.
+- Added Admin-only soft deletion for work items, projects, and boards with the app confirmation modal, audit logs, realtime notifications, transactional flag updates, retained dependent records/files, global query filters, restore support, and non-empty container protection.
 - Project and board creation/editing are now Admin-only in both API policies and UI visibility; Viewers have read-only work-item details and cannot call work-item mutation APIs.
+- Work-item field editing, rename, and assign/unassign remain Admin-only; Members retain create/move/status workflow access. All roles can set or remove reminders on Active, unarchived work items, and reminder changes no longer modify due dates.
 - Project cards now expose direct Edit/Archive/Delete icons, board cards expose direct Edit/Archive/Delete icons, and soft delete is no longer hidden behind management or danger menus.
+- Invitation revocation and member removal now use the app confirmation modal instead of the browser confirmation dialog; delete confirmations no longer require typing the entity name.
 - Added an Admin-only board edit dialog with prefilled name/description fields on board cards.
 - Admin project and board pages now show an Archived button only when archived items exist; the button opens a restore modal, while Members and Viewers continue to see active items only.
 - Removed duplicate board Edit/Archive controls from the board detail columns page.
+- Online presence now resolves organization membership through `OrganizationUsers`, so Admins, Members, and Viewers all see the same role-agnostic online roster.
+- Fixed IST date/time input conversion so valid reminder selections convert to UTC correctly instead of being rejected as invalid.
+- Due reminders now persist notifications for the assignee and watchers, broadcast `NotificationReceived` over SignalR, email the assignee through the existing SMTP service, and use `ReminderNotifiedAt` to prevent duplicate delivery.
 
 ## Known boundaries
 
 - Domain-event handlers are not registered, so automatic webhook publishing is not connected.
-- The scheduler is demo-level and runs reminder/overdue jobs every minute.
+- The scheduler is demo-level: reminders are scanned every minute with once-only delivery, while the overdue job still runs every check.
 - Export processing is not scheduled; Excel/PDF generation is placeholder output.
 - Azure Blob Storage is not registered and its presigned-URL credentials are incomplete.
 - Board realtime invalidation exists but is not mounted end to end.

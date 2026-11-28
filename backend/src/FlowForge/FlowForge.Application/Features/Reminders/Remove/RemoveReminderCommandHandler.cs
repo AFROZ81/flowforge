@@ -26,6 +26,7 @@ public sealed class RemoveReminderCommandHandler : IRequestHandler<RemoveReminde
         var workItem = await _rules.GetWorkItemAsync(request.WorkItemId, currentUser.OrganizationId, cancellationToken);
 
         _rules.EnsureWorkItemNotArchived(workItem);
+        _rules.EnsureWorkItemActive(workItem);
 
         workItem.ClearReminder();
 

@@ -59,7 +59,9 @@ If SMTP is unavailable, the invitation is still stored with a failed delivery st
 
 ## Database migrations
 
-Migrations are committed. Apply them before or with the deployment:
+Migrations are committed. Back up the database and review the generated SQL Server script before applying them, especially `20261128130000_AddOrganizationManagement`. That migration fails with offending organization IDs when any non-deleted organization has no active Admin, then deterministically assigns the oldest active Admin as Owner. Verify filtered indexes and foreign keys before production deployment.
+
+Apply them before or with the deployment:
 
 ```powershell
 dotnet ef database update --project backend/src/FlowForge/FlowForge.Infrastructure --startup-project backend/src/FlowForge/FlowForge.API
@@ -97,7 +99,7 @@ This directory persists on the host but is not source-controlled. `AzureBlobStor
 
 The hosted `ScheduledJobRunner` and `WebhookDispatcher` are present, but current behavior is demo-level:
 
-- The scheduler checks every minute and currently runs reminder/overdue jobs every check.
+- The scheduler checks every minute; reminders use due-time scanning with once-only delivery, while the overdue job still runs every check.
 - Export processing is not invoked.
 - Domain-event handlers are not registered, so domain events do not automatically publish webhooks.
 - In-memory queues and presence state are lost on app-pool recycle.
@@ -107,19 +109,22 @@ For reliable production scheduling and delivery, move jobs and webhook publishin
 ## Deploy steps
 
 1. Set production environment variables and secrets.
-2. Apply database migrations.
+2. Back up the database, run migration preflight, and apply migrations.
 3. Configure SMTP.
 4. Build the frontend and copy `dist` into `FlowForge.API/wwwroot`.
 5. Run backend and frontend verification.
-6. Publish with Web Deploy, FTP/SFTP, or the provider's .NET build.
-7. Restart the site and complete the verification checklist.
+6. Publish backend and frontend together; the old registration UI depends on the removed public options route.
+7. Restart/reconnect processes manually, reconnect SignalR clients, and complete the verification checklist.
 
 ## Verification checklist
 
 - `https://flowforge-app.runasp.net/` loads the SPA.
 - Refreshing a deep link such as `/reports` does not return 404.
 - `/health` reports Healthy.
-- Login and organization switching work.
+- Login, account-only onboarding, authenticated workspace creation, and organization switching work.
+- A zero-membership account can create a workspace or accept an invitation; anonymous acceptance returns `401`.
+- Owner transfer, leave, archive/restore, and slug-confirmed terminal delete behave as expected.
+- Stale membership/role tokens cannot access organization resources and refresh recovers to a valid workspace or account-only session.
 - A new invitation email points to `https://flowforge-app.runasp.net/login?mode=register&invitationToken=...`.
 - Register-and-accept creates the membership with the invited role.
 - SMTP diagnostics report the expected state.
@@ -133,3 +138,5 @@ For reliable production scheduling and delivery, move jobs and webhook publishin
 - Do not enable wildcard CORS for the same-origin deployment.
 - Review webhook endpoint authorization and organization scoping before exposing subscription management broadly.
 - Treat the current scheduler, Azure storage implementation, and automatic webhook publishing as hardening work.
+- Existing tokens may require refresh or login during rollout; account refresh must remain available.
+- Do not auto-start or restart application processes; process management remains manual.

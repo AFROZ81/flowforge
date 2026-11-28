@@ -1,8 +1,10 @@
 using FlowForge.Application.Common.Constants;
+using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Services.Realtime;
+using FlowForge.Domain.Enums;
 
 using MediatR;
 
@@ -40,6 +42,11 @@ public sealed class EditWorkItemCommandHandler
         EditWorkItemCommand request,
         CancellationToken cancellationToken)
     {
+        if (_currentUser.User.Role != UserRole.Admin)
+        {
+            throw new ForbiddenException("Only admins can edit work items.");
+        }
+
         // ---------------------------------------------------------
         // 1. Load work item
         // ---------------------------------------------------------

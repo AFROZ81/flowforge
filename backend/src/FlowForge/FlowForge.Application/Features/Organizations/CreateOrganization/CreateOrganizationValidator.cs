@@ -15,7 +15,9 @@ public sealed class CreateOrganizationValidator : AbstractValidator<CreateOrgani
 
         RuleFor(x => x.Slug)
             .NotEmpty()
-            .MaximumLength(150);
+            .MaximumLength(150)
+            .Matches("^[a-z0-9]+(?:-[a-z0-9]+)*$")
+            .WithMessage("Slug can contain lowercase letters, numbers, and single hyphens only.");
 
         RuleFor(x => x.Description)
             .MaximumLength(1000);

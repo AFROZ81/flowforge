@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 
 import { authService } from "../services/auth.service";
 
@@ -13,6 +13,7 @@ import { useAuthStore } from "@/stores/auth.store";
 
 export function useLogin() {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const loginStore = useAuthStore((state) => state.login);
 
@@ -29,7 +30,23 @@ export function useLogin() {
                 response.data.expiresAtUtc
             );
 
-            navigate("/dashboard");
+            const invitationToken = new URLSearchParams(location.search)
+                .get("invitationToken")
+                ?.trim();
+
+            if (invitationToken) {
+                navigate(`/onboarding?invitationToken=${encodeURIComponent(invitationToken)}`, {
+                    replace: true,
+                });
+                return;
+            }
+
+            navigate(
+                useAuthStore.getState().user?.organizationId
+                    ? "/dashboard"
+                    : "/onboarding",
+                { replace: true }
+            );
         },
     });
 }

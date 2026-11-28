@@ -31,9 +31,10 @@ const STATE_FILE = join(HERE, "seed-state.json");
 const SQL_FILE = join(HERE, "backdate.sql");
 
 const DEMO_PASSWORD = "Seed2026pass";
+const DEMO_ORGANIZATION = { name: "Afroz Labs", slug: "afrozlabs" };
 
-/* Teammates. Registered into the existing organization so they appear in the
-   member list, the workload table and every assignee dropdown. */
+/* Teammates. Registered as accounts first, then joined to the demo workspace
+   through authenticated invitation acceptance. */
 const TEAM = [
     { fullName: "Priya Raghavan", email: "priya@afrozlabs.test" },
     { fullName: "Daniel Okafor", email: "daniel@afrozlabs.test" },
@@ -307,11 +308,13 @@ async function call(method, path, { token, body } = {}) {
     }
 
     if (!response.ok) {
-        throw new Error(
+        const error = new Error(
             `${method} ${path} -> ${response.status} ${
                 payload?.message ?? payload?.raw ?? text
             }`
         );
+        error.status = response.status;
+        throw error;
     }
 
     return payload;
@@ -380,19 +383,7 @@ function toSqlUtc(date) {
 
 /* ------------------------------------------------------------------- steps */
 
-async function resolveOrganizationId() {
-    const options = unwrap(await call("GET", "/api/Organizations/options"));
-
-    if (!Array.isArray(options) || options.length === 0) {
-        throw new Error(
-            "No organization is available to sign up into. Create one first."
-        );
-    }
-
-    return options[0].id;
-}
-
-async function ensureUser(organizationId, { fullName, email }) {
+async function ensureAccount({ fullName, email }) {
     try {
         await call("POST", "/api/Auth/register", {
             body: {
@@ -400,16 +391,89 @@ async function ensureUser(organizationId, { fullName, email }) {
                 email,
                 password: DEMO_PASSWORD,
                 confirmPassword: DEMO_PASSWORD,
-                organizationId,
             },
         });
 
         return "registered";
-    } catch {
-        /* Most likely "email already in use" from a previous run. The account
-           exists, which is all the seed needs from it. */
-        return "existing";
+    } catch (error) {
+        if (error.status === 409) return "existing";
+        throw error;
     }
+}
+
+async function myOrganizations(token) {
+    return listOf(await call("GET", "/api/Organizations/mine", { token }));
+}
+
+async function resolveWorkspace(operator) {
+    const outcome = await ensureAccount(operator);
+    console.log(`  ${outcome.padEnd(10)} ${operator.fullName}`);
+
+    let token = await login(operator.email);
+    const memberships = await myOrganizations(token);
+    let workspace = memberships.find(
+        (membership) => membership.slug === DEMO_ORGANIZATION.slug
+    );
+
+    if (!workspace) {
+        const created = unwrap(
+            await call("POST", "/api/Organizations", {
+                token,
+                body: DEMO_ORGANIZATION,
+            })
+        );
+
+        return {
+            organizationId: created.organizationId ?? created.id,
+            token: created.accessToken,
+        };
+    }
+
+    if (!workspace.isActive) {
+        throw new Error(
+            `Workspace ${DEMO_ORGANIZATION.slug} is archived. Restore it before seeding.`
+        );
+    }
+
+    const switched = unwrap(
+        await call("POST", "/api/Organizations/switch", {
+            token,
+            body: { organizationId: workspace.id },
+        })
+    );
+    token = switched.accessToken;
+
+    return { organizationId: workspace.id, token };
+}
+
+async function ensureMembership(operatorToken, organizationId, member) {
+    const outcome = await ensureAccount(member);
+    const token = await login(member.email);
+    const memberships = await myOrganizations(token);
+
+    if (memberships.some((membership) => membership.id === organizationId)) {
+        console.log(`  ${outcome.padEnd(10)} ${member.fullName}`);
+        return;
+    }
+
+    const invitation = unwrap(
+        await call("POST", "/api/Invitations", {
+            token: operatorToken,
+            body: { email: member.email, role: "Member" },
+        })
+    );
+    const accepted = unwrap(
+        await call("POST", "/api/Invitations/accept", {
+            token,
+            body: { token: invitation.token },
+        })
+    );
+
+    if (!accepted.accessToken) {
+        throw new Error(`Invitation acceptance for ${member.email} returned no session.`);
+    }
+
+    console.log(`  ${("invited").padEnd(10)} ${member.fullName}`);
 }
 
 async function login(email) {
@@ -441,15 +505,12 @@ async function main() {
         throw new Error(`API is not reachable at ${API}. Start it first.`);
     }
 
-    const organizationId = await resolveOrganizationId();
-
-    for (const member of TEAM) {
-        const outcome = await ensureUser(organizationId, member);
-        console.log(`  ${outcome.padEnd(10)} ${member.fullName}`);
-    }
-
     const operator = TEAM[0];
-    const token = await login(operator.email);
+    const { organizationId, token } = await resolveWorkspace(operator);
+
+    for (const member of TEAM.slice(1)) {
+        await ensureMembership(token, organizationId, member);
+    }
 
     const users = unwrap(await call("GET", "/api/Users", { token })) ?? [];
 

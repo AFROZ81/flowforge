@@ -625,13 +625,8 @@ namespace FlowForge.Infrastructure.Migrations
 
             modelBuilder.Entity("FlowForge.Domain.Entities.OrganizationUser", b =>
                 {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("ApplicationUserId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -643,13 +638,25 @@ namespace FlowForge.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsOwner")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("TokenVersion")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -658,11 +665,20 @@ namespace FlowForge.Infrastructure.Migrations
                     b.Property<Guid?>("UpdatedBy")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("UserId", "OrganizationId");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.HasIndex("ApplicationUserId");
+                    b.HasKey("Id");
 
                     b.HasIndex("OrganizationId");
+
+                    b.HasIndex("OrganizationId", "IsOwner")
+                        .IsUnique()
+                        .HasFilter("IsOwner = 1 AND IsDeleted = 0");
+
+                    b.HasIndex("UserId", "OrganizationId")
+                        .IsUnique()
+                        .HasFilter("IsDeleted = 0");
 
                     b.ToTable("OrganizationUsers");
                 });
@@ -838,6 +854,9 @@ namespace FlowForge.Infrastructure.Migrations
                     b.Property<DateTime?>("ReminderDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("ReminderNotifiedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -859,6 +878,8 @@ namespace FlowForge.Infrastructure.Migrations
                     b.HasIndex("ColumnId", "DisplayOrder");
 
                     b.HasIndex("ColumnId", "IsArchived");
+
+                    b.HasIndex("ReminderDate", "ReminderNotifiedAt");
 
                     b.ToTable("WorkItems", (string)null);
                 });
@@ -1307,14 +1328,16 @@ namespace FlowForge.Infrastructure.Migrations
 
             modelBuilder.Entity("FlowForge.Domain.Entities.OrganizationUser", b =>
                 {
-                    b.HasOne("FlowForge.Infrastructure.Identity.ApplicationUser", null)
-                        .WithMany("OrganizationUsers")
-                        .HasForeignKey("ApplicationUserId");
-
                     b.HasOne("FlowForge.Domain.Entities.Organization", "Organization")
                         .WithMany("Users")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FlowForge.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany("OrganizationUsers")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Organization");

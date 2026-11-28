@@ -47,6 +47,17 @@ public interface IEmailService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Sends a due work-item reminder to the assignee.
+    /// </summary>
+    Task<EmailSendResult> SendWorkItemReminderEmailAsync(
+        string to,
+        string assigneeName,
+        string workItemTitle,
+        string organizationName,
+        DateTime reminderAtUtc,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Tests SMTP connectivity/authentication/TLS without sending an email to
     /// any real recipient.
     /// </summary>

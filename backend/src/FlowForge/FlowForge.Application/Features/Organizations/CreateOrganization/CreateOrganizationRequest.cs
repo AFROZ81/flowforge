@@ -1,9 +1,11 @@
+using MediatR;
+
 namespace FlowForge.Application.Features.Organizations.CreateOrganization;
 
 /// <summary>
 /// Represents the request to create a new organization.
 /// </summary>
-public sealed class CreateOrganizationRequest
+public sealed class CreateOrganizationRequest : IRequest<CreateOrganizationResponse>
 {
     /// <summary>
     /// Organization name.

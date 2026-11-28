@@ -1,6 +1,9 @@
-using FlowForge.Application.Common.Time;
+using FlowForge.Application.Common.Constants;
 using FlowForge.Application.Interfaces;
+using FlowForge.Application.Services;
 using FlowForge.Application.Services.Notifications;
+using FlowForge.Application.Services.Realtime;
+using FlowForge.Application.Services.Users;
 using FlowForge.Domain.Common.Enums;
 using FlowForge.Domain.Enums;
 using FlowForge.Domain.Entities;
@@ -29,25 +32,27 @@ public sealed class ReminderJob
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+        var realtimeNotifier = scope.ServiceProvider.GetRequiredService<IRealtimeNotifier>();
+        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+        var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
 
         var now = DateTime.UtcNow;
-        var today = AppTime.TodayInIndia;
-        var dayStart = AppTime.IndiaDayStartUtc(today);
-        var nextDayStart = AppTime.IndiaDayStartUtc(today.AddDays(1));
 
         _logger.LogInformation("Running reminder job at {Time}", now);
 
-        // Find work items with reminders due today
+        // Pick reminders whose exact UTC time has arrived and that have not been sent.
         var workItemsWithReminders = await context.WorkItems
-            .AsNoTracking()
             .Where(w =>
                 !w.IsDeleted &&
+                !w.IsArchived &&
                 w.ReminderDate.HasValue &&
-                w.ReminderDate.Value >= dayStart &&
-                w.ReminderDate.Value < nextDayStart &&
+                w.ReminderDate.Value <= now &&
+                w.ReminderNotifiedAt == null &&
                 w.Status != WorkItemStatus.Completed &&
                 w.Status != WorkItemStatus.Blocked)
             .ToListAsync(cancellationToken);
+
+        var processedCount = 0;
 
         foreach (var workItem in workItemsWithReminders)
         {
@@ -63,20 +68,31 @@ public sealed class ReminderJob
                 if (orgId == Guid.Empty)
                     continue;
 
-                // Create reminder notification for assignee
+                var organizationName = await context.Organizations
+                    .AsNoTracking()
+                    .Where(x => x.Id == orgId)
+                    .Select(x => x.Name)
+                    .FirstOrDefaultAsync(cancellationToken) ?? "your organization";
+                var assignee = workItem.AssigneeId.HasValue
+                    ? await userService.GetByIdAsync(workItem.AssigneeId.Value, cancellationToken)
+                    : null;
+
+                var notifications = new List<Notification>();
+
+                // The assignee is the primary reminder recipient.
                 if (workItem.AssigneeId.HasValue)
                 {
-                    await notificationService.CreateAsync(
+                    notifications.Add(await notificationService.CreateAsync(
                         orgId,
                         workItem.AssigneeId.Value,
-                        NotificationType.WorkItemStatusChanged,
+                        NotificationType.WorkItemReminder,
                         "Work Item Reminder",
-                        $"Reminder for \"{workItem.Title}\" is due today.",
+                        $"Reminder for \"{workItem.Title}\" is due now.",
                         workItem.Id,
-                        cancellationToken);
+                        cancellationToken));
                 }
 
-                // Also notify watchers
+                // Preserve watcher notifications without duplicating the assignee.
                 var watchers = await context.WorkItemWatchers
                     .AsNoTracking()
                     .Where(w => w.WorkItemId == workItem.Id && w.UserId != workItem.AssigneeId)
@@ -85,16 +101,72 @@ public sealed class ReminderJob
 
                 foreach (var watcherId in watchers)
                 {
-                    await notificationService.CreateAsync(
+                    notifications.Add(await notificationService.CreateAsync(
                         orgId,
                         watcherId,
-                        NotificationType.WorkItemStatusChanged,
+                        NotificationType.WorkItemReminder,
                         "Work Item Reminder",
-                        $"Reminder for watched item \"{workItem.Title}\" is due today.",
+                        $"Reminder for watched item \"{workItem.Title}\" is due now.",
                         workItem.Id,
-                        cancellationToken);
+                        cancellationToken));
                 }
 
+                // Persist the notifications and the once-only marker together.
+                workItem.MarkReminderNotified(now);
+                await context.SaveChangesAsync(cancellationToken);
+
+                foreach (var notification in notifications)
+                {
+                    try
+                    {
+                        await realtimeNotifier.NotifyUserAsync(
+                            notification.RecipientId,
+                            RealtimeEvents.NotificationReceived,
+                            new
+                            {
+                                notification.Id,
+                                notification.Title,
+                                notification.Message,
+                                notification.Type,
+                                notification.CreatedAt,
+                                notification.WorkItemId
+                            },
+                            cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        // The persisted notification remains available after a refresh.
+                        _logger.LogWarning(ex, "Failed to broadcast reminder notification {NotificationId}", notification.Id);
+                    }
+                }
+
+                if (assignee is not null && !string.IsNullOrWhiteSpace(assignee.Email))
+                {
+                    try
+                    {
+                        var emailResult = await emailService.SendWorkItemReminderEmailAsync(
+                            assignee.Email,
+                            assignee.FullName,
+                            workItem.Title,
+                            organizationName,
+                            workItem.ReminderDate!.Value,
+                            cancellationToken);
+
+                        if (!emailResult.Success)
+                        {
+                            _logger.LogWarning(
+                                "Reminder email was not accepted for work item {WorkItemId}: {ErrorCode}",
+                                workItem.Id,
+                                emailResult.ErrorCode ?? "unknown");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send reminder email for work item {WorkItemId}", workItem.Id);
+                    }
+                }
+
+                processedCount++;
                 _logger.LogInformation("Processed reminder for work item {WorkItemId}", workItem.Id);
             }
             catch (Exception ex)
@@ -103,6 +175,6 @@ public sealed class ReminderJob
             }
         }
 
-        _logger.LogInformation("Reminder job completed. Processed {Count} reminders.", workItemsWithReminders.Count);
+        _logger.LogInformation("Reminder job completed. Processed {Count} reminders.", processedCount);
     }
 }

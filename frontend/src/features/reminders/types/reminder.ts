@@ -1,14 +1,13 @@
 export type Reminder = {
     workItemId: string;
     title: string;
-    dueDate: string;
+    dueDate: string | null;
     reminderDate?: string | null;
 };
 
 
 export type UpdateReminderRequest = {
     workItemId: string;
-    dueDate: string;
     reminderDate: string;
 };
 

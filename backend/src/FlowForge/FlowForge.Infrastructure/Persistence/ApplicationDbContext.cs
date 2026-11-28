@@ -82,14 +82,29 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser, Id
             entityType.SetQueryFilter(filter);
         }
 
-        modelBuilder.Entity<OrganizationUser>()
-            .HasKey(ou => new { ou.UserId, ou.OrganizationId });
+        modelBuilder.Entity<OrganizationUser>(entity =>
+        {
+            entity.HasKey(ou => ou.Id);
+            entity.Property(ou => ou.RowVersion).IsRowVersion();
 
-        modelBuilder.Entity<OrganizationUser>()
-            .HasOne(ou => ou.Organization)
-            .WithMany(o => o.Users)
-            .HasForeignKey(ou => ou.OrganizationId)
-            .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<ApplicationUser>()
+                .WithMany(u => u.OrganizationUsers)
+                .HasForeignKey(ou => ou.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(ou => ou.Organization)
+                .WithMany(o => o.Users)
+                .HasForeignKey(ou => ou.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(ou => ou.OrganizationId);
+            entity.HasIndex(ou => new { ou.UserId, ou.OrganizationId })
+                .IsUnique()
+                .HasFilter("IsDeleted = 0");
+            entity.HasIndex(ou => new { ou.OrganizationId, ou.IsOwner })
+                .IsUnique()
+                .HasFilter("IsOwner = 1 AND IsDeleted = 0");
+        });
 
         modelBuilder.Entity<WebhookSubscription>()
             .HasKey(w => w.Id);

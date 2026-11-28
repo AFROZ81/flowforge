@@ -1,6 +1,6 @@
-using System.Security.Claims;
+using FlowForge.Application.Interfaces;
+using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Services.Presence;
-using FlowForge.Application.Services.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,14 +12,17 @@ namespace FlowForge.Api.Controllers;
 public sealed class PresenceController : ControllerBase
 {
     private readonly IOnlineUserTracker _tracker;
-    private readonly IUserService _userService;
+    private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
     public PresenceController(
         IOnlineUserTracker tracker,
-        IUserService userService)
+        IApplicationDbContext context,
+        ICurrentUserService currentUser)
     {
         _tracker = tracker;
-        _userService = userService;
+        _context = context;
+        _currentUser = currentUser;
     }
 
     // GET: /api/Presence/online-users
@@ -27,28 +30,6 @@ public sealed class PresenceController : ControllerBase
     public async Task<IActionResult> GetOnlineUsers(
         CancellationToken cancellationToken)
     {
-        // Get the currently authenticated user.
-        var currentUserIdValue =
-            User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(
-                currentUserIdValue,
-                out var currentUserId))
-        {
-            return Unauthorized();
-        }
-
-        // Get the current user's organization.
-        var currentUser =
-            await _userService.GetByIdAsync(
-                currentUserId,
-                cancellationToken);
-
-        if (currentUser is null)
-        {
-            return Unauthorized();
-        }
-
         // Get all currently connected user IDs.
         var onlineUserIds =
             _tracker.GetOnlineUsers();
@@ -58,18 +39,20 @@ public sealed class PresenceController : ControllerBase
             return Ok(Array.Empty<object>());
         }
 
-        // Resolve IDs to actual users.
-        var users =
-            await _userService.GetDictionaryAsync(
-                onlineUserIds,
+        /*
+         * OrganizationUsers is the source of truth for membership.
+         * Filtering AspNetUsers.OrganizationId here misses multi-organization
+         * users, including Admins whose legacy organization id is unset.
+         */
+        var organizationUsers =
+            await _context.GetOrganizationUsersAsync(
+                _currentUser.User.OrganizationId,
                 cancellationToken);
 
-        // Only return users belonging to the
-        // current user's organization.
-        var result = users.Values
-            .Where(x =>
-                x.OrganizationId ==
-                currentUser.OrganizationId)
+        var onlineUserIdSet = onlineUserIds.ToHashSet();
+
+        var result = organizationUsers
+            .Where(x => onlineUserIdSet.Contains(x.Id))
             .Select(x => new
             {
                 userId = x.Id,

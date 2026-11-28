@@ -26,10 +26,11 @@ public sealed class SetReminderCommandHandler : IRequestHandler<SetReminderComma
         var workItem = await _rules.GetWorkItemAsync(request.WorkItemId, currentUser.OrganizationId, cancellationToken);
 
         _rules.EnsureWorkItemNotArchived(workItem);
+        _rules.EnsureWorkItemActive(workItem);
 
-        _rules.ValidateReminder(request.DueDate, request.ReminderDate);
+        _rules.ValidateReminder(workItem.DueDate, request.ReminderDate);
 
-        workItem.SetReminder(request.DueDate, request.ReminderDate);
+        workItem.SetReminder(request.ReminderDate);
 
         await _rules.SaveChangesAsync(cancellationToken);
 

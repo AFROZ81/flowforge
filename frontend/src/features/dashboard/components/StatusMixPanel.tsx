@@ -1,4 +1,4 @@
-import { Layers } from "lucide-react";
+import { Clock3, Layers } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatNumber, formatPercentage } from "@/lib/format";
@@ -22,7 +22,8 @@ import type { StatusMix } from "../types/dashboard.types";
  * active or blocked, and drawing it as a slice would count it twice.
  *
  * It keeps its own height in the stacked pair and lets the ring beside it take
- * the rest of the row, because three rows of a legend know how tall they are.
+ * the rest of the row, because the completion summary and three compact tiles
+ * know how tall they are.
  */
 export default function StatusMixPanel({ mix }: { mix: StatusMix }) {
     const segments = [
@@ -35,6 +36,9 @@ export default function StatusMixPanel({ mix }: { mix: StatusMix }) {
         { label: "Blocked", value: mix.blocked, className: "bg-destructive" },
     ];
 
+    const completionRate =
+        mix.total > 0 ? (mix.completed / mix.total) * 100 : 0;
+
     return (
         <DataSection
             className="shrink-0"
@@ -46,56 +50,93 @@ export default function StatusMixPanel({ mix }: { mix: StatusMix }) {
                     : undefined
             }
         >
-            <div className="space-y-4 px-4 py-4">
+            <div className="space-y-2.5 px-3 py-3">
                 {mix.total === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                        No work items in this workspace yet.
-                    </p>
+                    <div className="py-1">
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-foreground/5 text-muted-foreground">
+                            <Layers className="size-3.5" strokeWidth={1.8} />
+                        </span>
+                        <p className="mt-2 text-sm font-medium text-foreground">
+                            No work items yet
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                            Status distribution will appear here as work is added.
+                        </p>
+                    </div>
                 ) : (
                     <>
-                        <SegmentBar segments={segments} />
+                        <div className="flex items-end justify-between gap-3">
+                            <div>
+                                <p className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                                    Completion rate
+                                </p>
+                                <p className="mt-0.5 text-xl leading-none font-semibold tracking-[-0.03em] tabular-nums">
+                                    {formatPercentage(completionRate)}
+                                </p>
+                            </div>
 
-                        <dl className="space-y-2">
-                            {segments.map((segment) => (
-                                <div
-                                    key={segment.label}
-                                    className="flex items-center justify-between gap-4"
-                                >
-                                    <dt className="flex min-w-0 items-center gap-2 text-sm text-foreground">
-                                        <span
-                                            aria-hidden="true"
-                                            className={cn(
-                                                "size-2.5 shrink-0 rounded-full",
-                                                segment.className
-                                            )}
-                                        />
-                                        {segment.label}
-                                    </dt>
-                                    <dd className="flex shrink-0 items-center gap-3 text-sm tabular-nums">
-                                        <span className="w-11 text-right text-muted-foreground">
-                                            {formatPercentage(
-                                                mix.total > 0
-                                                    ? (segment.value /
-                                                          mix.total) *
-                                                          100
-                                                    : 0
-                                            )}
-                                        </span>
-                                        <span className="w-8 text-right font-medium">
-                                            {formatNumber(segment.value)}
-                                        </span>
-                                    </dd>
-                                </div>
-                            ))}
+                            <span className="rounded-full border bg-foreground/[0.02] px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                                {formatNumber(mix.total)} total
+                            </span>
+                        </div>
+
+                        <SegmentBar
+                            segments={segments}
+                            className="h-2 bg-foreground/[0.07]"
+                        />
+
+                        <dl className="grid grid-cols-3 gap-1.5">
+                            {segments.map((segment) => {
+                                const share =
+                                    mix.total > 0
+                                        ? (segment.value / mix.total) * 100
+                                        : 0;
+
+                                return (
+                                    <div
+                                        key={segment.label}
+                                        className="min-w-0 rounded-lg border bg-foreground/[0.02] px-2 py-1.5"
+                                    >
+                                        <dt className="flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground">
+                                            <span
+                                                aria-hidden="true"
+                                                className={cn(
+                                                    "size-1.5 shrink-0 rounded-full",
+                                                    segment.className
+                                                )}
+                                            />
+                                            <span className="truncate">
+                                                {segment.label}
+                                            </span>
+                                        </dt>
+                                        <dd className="mt-1 flex items-baseline justify-between gap-1">
+                                            <span className="text-base leading-none font-semibold tabular-nums">
+                                                {formatNumber(segment.value)}
+                                            </span>
+                                            <span className="text-[10px] tabular-nums text-muted-foreground">
+                                                {formatPercentage(
+                                                    Math.round(share)
+                                                )}
+                                            </span>
+                                        </dd>
+                                    </div>
+                                );
+                            })}
                         </dl>
 
                         {mix.overdue > 0 ? (
-                            <p className="border-t pt-3 text-xs text-muted-foreground">
-                                <span className="font-medium text-destructive tabular-nums">
-                                    {formatNumber(mix.overdue)}
-                                </span>{" "}
-                                of these are past their due date.
-                            </p>
+                            <div className="flex items-center justify-between gap-3 rounded-lg bg-destructive-subtle px-2.5 py-1.5 text-[10px] text-danger-foreground">
+                                <span className="flex items-center gap-1.5">
+                                    <Clock3
+                                        className="size-3"
+                                        strokeWidth={1.9}
+                                    />
+                                    Past due
+                                </span>
+                                <span className="font-semibold tabular-nums">
+                                    {formatNumber(mix.overdue)} items
+                                </span>
+                            </div>
                         ) : null}
                     </>
                 )}

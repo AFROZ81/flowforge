@@ -4,6 +4,7 @@ using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Common.Constants;
 using FlowForge.Application.Services.Realtime;
+using FlowForge.Domain.Enums;
 
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,11 @@ public sealed class UnassignWorkItemCommandHandler : IRequestHandler<UnassignWor
     public async Task<ApiResponse<UnassignWorkItemResponse>> Handle(UnassignWorkItemCommand request, CancellationToken cancellationToken)
     {
         var currentUser = _currentUser.User;
+
+        if (currentUser.Role != UserRole.Admin)
+        {
+            throw new ForbiddenException("Only admins can unassign work items.");
+        }
 
         var workItem = await _context.WorkItems
             .Include(x => x.Column)

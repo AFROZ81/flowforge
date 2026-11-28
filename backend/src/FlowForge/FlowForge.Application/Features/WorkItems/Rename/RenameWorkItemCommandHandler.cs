@@ -1,8 +1,10 @@
+using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Common.Responses;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Application.Common.Constants;
 using FlowForge.Application.Services.Realtime;
+using FlowForge.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 using MediatR;
@@ -27,6 +29,11 @@ public sealed class RenameWorkItemCommandHandler
 
     public async Task<ApiResponse<RenameWorkItemResponse>> Handle(RenameWorkItemCommand request, CancellationToken cancellationToken)
     {
+        if (_currentUser.User.Role != UserRole.Admin)
+        {
+            throw new ForbiddenException("Only admins can rename work items.");
+        }
+
         var workItem = await _rules.GetByIdAsync(request.WorkItemId, _currentUser.User.OrganizationId, cancellationToken);
 
         _rules.EnsureNotArchived(workItem);

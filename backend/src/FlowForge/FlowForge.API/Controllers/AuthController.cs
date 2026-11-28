@@ -41,10 +41,13 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpPost("refresh")]
-    [Authorize]
+    [Authorize(Policy = "RequireAccount")]
     public async Task<ActionResult<ApiResponse<LoginResponse>>> RefreshToken()
     {
-        var user = HttpContext.RequestServices.GetRequiredService<ICurrentUserService>().User;
+        var user = HttpContext.RequestServices.GetRequiredService<ICurrentUserService>().TryGetUser();
+
+        if (user is null)
+            return Unauthorized();
 
         var response = await _authService.RefreshTokenAsync(user);
 

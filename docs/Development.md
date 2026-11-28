@@ -100,7 +100,7 @@ dotnet ef migrations add <Name> --project FlowForge.Infrastructure --startup-pro
 dotnet ef database update --project FlowForge.Infrastructure --startup-project FlowForge.API
 ```
 
-Do not hand-edit generated designer files or the model snapshot.
+Do not hand-edit generated designer files or the model snapshot. Back up the database before applying `20261128130000_AddOrganizationManagement`; it fails when a non-deleted organization has no active Admin and deterministically assigns the oldest active Admin as Owner.
 
 ## Verification commands
 
@@ -112,18 +112,19 @@ dotnet test backend/src/FlowForge/FlowForge.Tests/FlowForge.Tests.csproj
 # Frontend
 npm --prefix frontend run build
 npm --prefix frontend run lint
-npm --prefix frontend exec -- vitest run --project unit --root frontend
+npm --prefix frontend run test:unit
 npm --prefix frontend run storybook
 ```
 
-The backend suite currently has 34 tests. Frontend unit tests cover the local AI feature, role helpers, and supporting utilities.
+The backend suite currently has 71 tests. Frontend unit tests cover local AI, role helpers, utilities, account-first authentication, onboarding, workspace switching, DB-backed route guarding, and permission-aware organization settings.
 
 ## Coding conventions
 
 - Keep controllers thin.
 - Put each operation in a feature/verb folder.
 - Validate requests with FluentValidation.
-- Use organization scope from claims, not untrusted route data.
+- Use active database membership and role from the validated session, never legacy `ApplicationUser.OrganizationId`, `ApplicationUser.Role`, or signed `orgIds`, as authorization authority.
+- Keep route organization IDs matched against the validated session organization.
 - Keep infrastructure behind Application contracts.
 - Use the shared Axios client on the client; do not use relative `fetch` calls for API endpoints.
 - Reuse design tokens and shared UI primitives.
@@ -133,7 +134,7 @@ The backend suite currently has 34 tests. Frontend unit tests cover the local AI
 
 - Solution and frontend build successfully.
 - Backend and frontend tests pass.
-- New migrations are included and applied locally.
-- Invitation/email flows are exercised when affected.
+- New migrations are included, their SQL Server script is reviewed, and the preflight is applied locally.
+- Account-only registration, onboarding, invitation acceptance, workspace switching, and Owner lifecycle actions are exercised when affected.
 - Realtime behavior is checked with two browsers when affected.
 - Relevant docs and the root README are updated.

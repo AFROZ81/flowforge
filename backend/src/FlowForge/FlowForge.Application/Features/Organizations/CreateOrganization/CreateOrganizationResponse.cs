@@ -19,4 +19,10 @@ public sealed class CreateOrganizationResponse
     /// URL-friendly slug.
     /// </summary>
     public string Slug { get; init; } = string.Empty;
+
+    public string AccessToken { get; init; } = string.Empty;
+
+    public DateTime ExpiresAtUtc { get; init; }
+
+    public Guid? OrganizationId { get; init; }
 }

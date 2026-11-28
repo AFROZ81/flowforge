@@ -22,7 +22,6 @@ import {
     Dialog,
     DialogBody,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -81,7 +80,7 @@ import {
 } from "../hooks/useUnassignWorkItem";
 
 import { useAuthStore } from "@/stores/auth.store";
-import { isMemberRole } from "@/lib/auth-roles";
+import { isAdminRole } from "@/lib/auth-roles";
 
 import {
     editWorkItemSchema,
@@ -177,7 +176,7 @@ export default function EditWorkItemDialog({
         useUnassignWorkItem();
 
     const currentUserRole = useAuthStore((state) => state.user?.role);
-    const canEdit = isMemberRole(currentUserRole);
+    const canEdit = isAdminRole(currentUserRole);
 
 
     const {
@@ -509,7 +508,7 @@ export default function EditWorkItemDialog({
 
             <DialogContent
                 className="
-                    max-h-[92dvh] gap-0 sm:max-w-xl
+                    max-h-[92dvh] sm:max-w-xl
                 "
             >
 
@@ -518,10 +517,6 @@ export default function EditWorkItemDialog({
                     <DialogTitle>
                         Edit work item
                     </DialogTitle>
-
-                    <DialogDescription>
-                        Only what you change is sent.
-                    </DialogDescription>
 
                 </DialogHeader>
 

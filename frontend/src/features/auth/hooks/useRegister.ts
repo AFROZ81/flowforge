@@ -9,9 +9,8 @@ import type {
 } from "../types/auth.types";
 
 /**
- * Creating an account deliberately does not sign anyone in — the endpoint
- * returns an id, not a token — so there is no store write and no navigation
- * here. The caller flips the card back to sign-in on success.
+ * Registration returns an account-only or invitation session. The caller writes
+ * it to the auth store and routes to onboarding or the accepted workspace.
  */
 export function useRegister() {
     return useMutation<

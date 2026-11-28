@@ -82,7 +82,6 @@ export default function BoardGrid({ projectId }: Props) {
             <div className="space-y-4">
                 <SectionHeader
                     title={`Boards${isLoading ? "" : ` · ${activeBoards.length}`}`}
-                    description="Each board holds its own columns and work items."
                     action={
                         isAdmin ? (
                             <div className="flex items-center gap-2">

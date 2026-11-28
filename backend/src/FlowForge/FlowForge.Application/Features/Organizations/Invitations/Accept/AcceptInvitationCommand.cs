@@ -8,4 +8,9 @@ namespace FlowForge.Application.Features.Organizations.Invitations.Accept;
 public sealed class AcceptInvitationCommand : IRequest<AcceptInvitationResponse>
 {
     public string Token { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Internal registration flow only. Public acceptance derives identity from auth.
+    /// </summary>
+    public Guid? AcceptingUserId { get; init; }
 }

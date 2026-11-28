@@ -6,7 +6,6 @@ import { NotificationBell } from "@/features/notifications"
 import { Button } from "@/components/ui/button"
 import { describeRoute } from "@/components/layout/navigation"
 import UserMenu from "@/components/layout/UserMenu"
-import OrgSwitcher from "@/components/layout/OrgSwitcher"
 import { cn } from "@/lib/utils"
 
 type TopbarProps = {
@@ -115,8 +114,6 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
           aria-hidden="true"
           className="mx-1 h-6 w-px shrink-0 self-center bg-border"
         />
-
-        <OrgSwitcher />
 
         <UserMenu />
       </div>

@@ -18,6 +18,7 @@ import {
 } from "@microsoft/signalr";
 
 import { useAuthStore } from "@/stores/auth.store";
+import api from "@/lib/api";
 
 import type {
     PresenceState,
@@ -182,9 +183,6 @@ const SIGNALR_BASE_URL =
 const HUB_URL =
     `${SIGNALR_BASE_URL}/hubs/notifications`;
 
-
-const PRESENCE_URL =
-    `${API_BASE_URL}/Presence/online-users`;
 
 
 /* =========================================================
@@ -595,7 +593,8 @@ export default function PresenceProvider({
 
                 if (
                     !token ||
-                    !isAuthenticated
+                    !isAuthenticated ||
+                    !useAuthStore.getState().user?.organizationId
                 ) {
 
                     return;
@@ -605,39 +604,12 @@ export default function PresenceProvider({
                 try {
 
                     const response =
-                        await fetch(
-                            PRESENCE_URL,
-                            {
-                                method:
-                                    "GET",
-
-                                headers: {
-                                    Authorization:
-                                        `Bearer ${token}`,
-
-                                    Accept:
-                                        "application/json",
-                                },
-                            }
+                        await api.get<unknown>(
+                            "/Presence/online-users"
                         );
-
-
-                    if (
-                        !response.ok
-                    ) {
-
-                        console.error(
-                            "Presence: failed to load online users:",
-                            response.status,
-                            response.statusText
-                        );
-
-                        return;
-                    }
-
 
                     const result: unknown =
-                        await response.json();
+                        response.data;
 
 
                     const rawUsers: unknown[] =
@@ -1912,37 +1884,35 @@ export default function PresenceProvider({
                    ROLE CHANGED
                    ============================================= */
 
+                const refreshMembershipSession = async () => {
+                    try {
+                        await useAuthStore.getState().refreshSession();
+                        await refreshPresence();
+                    } catch (error) {
+                        console.error("Presence: failed to refresh membership session:", error);
+                    }
+                };
+                
                 connection.on(
                     "RoleChanged",
-                    async (payload: { UserId: string; OrganizationId: string; Role: string }) => {
-                        if (!isMountedRef.current) {
-                            return;
+                    async (payload: unknown) => {
+                        if (!isMountedRef.current) return;
+                
+                        const value = payload as { UserId?: string; userId?: string };
+                        const affectedUserId = value.UserId ?? value.userId;
+                
+                        if (affectedUserId === authenticatedUserId) {
+                            await refreshMembershipSession();
                         }
-
-                        console.log("Presence: role changed:", payload);
-
-                        // If this is the current user, refresh their token
-                        if (payload.UserId === authenticatedUserId) {
-                            try {
-                                const response = await fetch(`${API_BASE_URL}/Auth/refresh`, {
-                                    method: "POST",
-                                    headers: {
-                                        Authorization: `Bearer ${accessTokenRef.current}`,
-                                        "Content-Type": "application/json",
-                                    },
-                                });
-
-                                if (response.ok) {
-                                    const result = await response.json();
-                                    if (result.success && result.data?.accessToken) {
-                                        useAuthStore.getState().login(result.data.accessToken, result.data.expiresAtUtc);
-                                        console.log("Presence: token refreshed after role change");
-                                    }
-                                }
-                            } catch (error) {
-                                console.error("Presence: failed to refresh token after role change:", error);
-                            }
-                        }
+                    }
+                );
+                
+                connection.on(
+                    "MembershipChanged",
+                    async () => {
+                        if (!isMountedRef.current) return;
+                
+                        await refreshMembershipSession();
                     }
                 );
 

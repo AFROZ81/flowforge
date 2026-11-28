@@ -40,7 +40,7 @@ import {
     getSelectableProfiles,
     formatBytes,
 } from "@/features/ai/modelRegistry";
-import { useOrganizationOptions } from "@/features/auth/hooks/useOrganizationOptions";
+import { useMyOrganizations } from "@/features/organizations/hooks/useOrganizations";
 
 import { useMembers } from "../hooks/useInvitations";
 
@@ -154,7 +154,13 @@ function FeatureToggleRow({
     onChange: () => void;
 }) {
     return (
-        <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+        <div
+            aria-disabled={disabled}
+            className={cn(
+                "flex items-center gap-3 px-4 py-3.5 sm:px-5",
+                disabled && "opacity-55"
+            )}
+        >
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-muted-foreground">
                 <Icon className="size-4" aria-hidden="true" />
             </span>
@@ -293,7 +299,7 @@ export default function GeneralSettings() {
     const { setEnabled, setFlag, setModelId } = useAiActions();
     const selectableModels = getSelectableProfiles();
     const membersQuery = useMembers(user?.organizationId ?? "");
-    const { data: workspaces } = useOrganizationOptions(true);
+    const { data: workspaces } = useMyOrganizations();
     const { onlineUserIds } = usePresence();
     const members = membersQuery.data;
     const workspace = workspaces?.find(
@@ -320,6 +326,12 @@ export default function GeneralSettings() {
         const next = !aiEnabled;
         setEnabled(next);
         setFlag("draftWithAi", next);
+
+        if (!next) {
+            setFlag("labelSuggestions", false);
+            setFlag("priorityRecommendation", false);
+            setFlag("effortEstimation", false);
+        }
     };
 
     return (
@@ -539,7 +551,7 @@ export default function GeneralSettings() {
                                     </div>
                 ) : null}
 
-                <div className={cn("border-t border-border", !aiEnabled && "opacity-70")}>
+                <div className="border-t border-border" aria-disabled={!aiEnabled}>
                     <div className="px-4 pb-1 pt-3 sm:px-5">
                         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             Draft options
@@ -551,7 +563,7 @@ export default function GeneralSettings() {
                             title={option.title}
                             description={option.description}
                             icon={option.icon}
-                            checked={aiFlags[option.key]}
+                            checked={aiEnabled && aiFlags[option.key]}
                             disabled={!aiEnabled}
                             onChange={() =>
                                 setFlag(option.key, !aiFlags[option.key])

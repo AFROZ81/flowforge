@@ -132,6 +132,31 @@ public sealed class SmtpEmailService : IEmailService
         return await SendAsync(to, subject, plainText, html, cancellationToken);
     }
 
+    public async Task<EmailSendResult> SendWorkItemReminderEmailAsync(
+        string to,
+        string assigneeName,
+        string workItemTitle,
+        string organizationName,
+        DateTime reminderAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var subject = $"Reminder: {workItemTitle}";
+        var reminderAtIst = AppTime.ToIndiaTime(reminderAtUtc)
+            .ToString("dd MMM yyyy hh:mm tt") + " IST";
+        var plainText = BuildPlainTextReminder(
+            assigneeName,
+            workItemTitle,
+            organizationName,
+            reminderAtIst);
+        var html = BuildHtmlReminder(
+            assigneeName,
+            workItemTitle,
+            organizationName,
+            reminderAtIst);
+
+        return await SendAsync(to, subject, plainText, html, cancellationToken);
+    }
+
     public async Task<EmailSendResult> TestSmtpConnectionAsync(CancellationToken cancellationToken = default)
     {
         var config = ReadSmtpConfig();
@@ -296,6 +321,76 @@ public sealed class SmtpEmailService : IEmailService
             IOException => "io_error",
             _ => "unknown",
         };
+
+    private static string BuildPlainTextReminder(
+        string assigneeName,
+        string workItemTitle,
+        string organizationName,
+        string reminderAtIst)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Hi {assigneeName},");
+        sb.AppendLine();
+        sb.AppendLine($"This is a reminder that \"{workItemTitle}\" in {organizationName} is due now.");
+        sb.AppendLine($"Reminder time: {reminderAtIst}");
+        sb.AppendLine();
+        sb.AppendLine("Open FlowForge to view the work item.");
+        return sb.ToString();
+    }
+
+    private static string BuildHtmlReminder(
+        string assigneeName,
+        string workItemTitle,
+        string organizationName,
+        string reminderAtIst)
+    {
+        var escapedName = System.Net.WebUtility.HtmlEncode(assigneeName);
+        var escapedTitle = System.Net.WebUtility.HtmlEncode(workItemTitle);
+        var escapedOrg = System.Net.WebUtility.HtmlEncode(organizationName);
+
+        return $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Work item reminder</title>
+</head>
+<body style='margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; line-height:1.6; color:#333; background:#f4f6f8;'>
+    <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0'>
+        <tr>
+            <td align='center' style='padding:20px 0;'>
+                <table role='presentation' width='600' cellspacing='0' cellpadding='0' border='0'
+                      style='max-width:600px; width:100%; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);'>
+                    <tr>
+                        <td align='center' style='background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); padding:32px 24px;'>
+                            <h1 style='margin:0; color:#ffffff; font-size:24px; font-weight:600;'>Work item reminder</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='padding:24px;'>
+                            <p style='margin:0 0 16px 0; font-size:16px;'>Hi {escapedName},</p>
+                            <p style='margin:0 0 16px 0; font-size:16px;'>
+                                This is a reminder that <strong>{escapedTitle}</strong> in <strong>{escapedOrg}</strong> is due now.
+                            </p>
+                            <p style='margin:0 0 24px 0; font-size:14px; color:#666;'>
+                                Reminder time: <strong>{System.Net.WebUtility.HtmlEncode(reminderAtIst)}</strong>
+                            </p>
+                            <p style='margin:0; font-size:14px; color:#666;'>Open FlowForge to view the work item.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align='center' style='padding:16px 24px; border-top:1px solid #eaeaea;'>
+                            <p style='margin:0; font-size:12px; color:#aaa;'>© {DateTime.UtcNow.Year} FlowForge. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+    }
 
     private static string BuildPlainTextInvitation(
         string organizationName,

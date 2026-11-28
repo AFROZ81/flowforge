@@ -25,6 +25,7 @@ export interface MemberResponse {
     email: string;
     fullName: string;
     role: UserRole | UserRoleNumber;
+    isOwner: boolean;
     joinedAt: string;
     isCurrentUser: boolean;
 }
@@ -34,6 +35,7 @@ export interface GetMembersResponse {
     email: string;
     fullName: string;
     role: UserRoleNumber;
+    isOwner: boolean;
     joinedAt: string;
     isCurrentUser: boolean;
 }

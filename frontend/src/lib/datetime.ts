@@ -87,20 +87,20 @@ function fromIstInput(
     const day = Number(match[3]);
     const hour = includeTime ? Number(match[4]) : 0;
     const minute = includeTime ? Number(match[5]) : 0;
-    const utcTime = Date.UTC(year, month - 1, day, hour, minute) - IST_OFFSET_MS;
-    const date = new Date(utcTime);
+    const wallClockTime = Date.UTC(year, month - 1, day, hour, minute);
+    const wallClockDate = new Date(wallClockTime);
 
     if (
-        date.getUTCFullYear() !== year ||
-        date.getUTCMonth() !== month - 1 ||
-        date.getUTCDate() !== day ||
-        date.getUTCHours() !== hour ||
-        date.getUTCMinutes() !== minute
+        wallClockDate.getUTCFullYear() !== year ||
+        wallClockDate.getUTCMonth() !== month - 1 ||
+        wallClockDate.getUTCDate() !== day ||
+        wallClockDate.getUTCHours() !== hour ||
+        wallClockDate.getUTCMinutes() !== minute
     ) {
         return null;
     }
 
-    return date.toISOString();
+    return new Date(wallClockTime - IST_OFFSET_MS).toISOString();
 }
 
 /** Converts an IST calendar date to the UTC instant for that date's API value. */

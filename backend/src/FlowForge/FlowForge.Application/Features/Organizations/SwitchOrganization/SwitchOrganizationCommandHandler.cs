@@ -31,29 +31,33 @@ public sealed class SwitchOrganizationCommandHandler : IRequestHandler<SwitchOrg
 
     public async Task<SwitchOrganizationResponse> Handle(SwitchOrganizationCommand request, CancellationToken cancellationToken)
     {
-        var user = _currentUser.User;
+        var user = _currentUser.TryGetUser()
+            ?? throw new UnauthorizedAccessException("User is not authenticated.");
 
-        // Check if user is a member of the target organization
-        bool isMember = await _context.OrganizationUsers
-            .AsNoTracking()
-            .AnyAsync(
-                ou => ou.UserId == user.UserId && ou.OrganizationId == request.OrganizationId,
-                cancellationToken);
-
-        if (!isMember)
-        {
-            throw new ForbiddenException("You are not a member of this organization.");
-        }
-
-        // Get user's role in the target organization
         var orgUser = await _context.OrganizationUsers
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                ou => ou.UserId == user.UserId && ou.OrganizationId == request.OrganizationId,
+                ou => ou.UserId == user.UserId &&
+                      ou.OrganizationId == request.OrganizationId &&
+                      !ou.IsDeleted &&
+                      ou.Organization.IsActive &&
+                      !ou.Organization.IsDeleted,
                 cancellationToken);
 
-        // Build authenticated user with switched organization
-        var organizationIds = user.OrganizationIds;
+        if (orgUser is null)
+        {
+            throw new ForbiddenException("You are not an active member of this organization.");
+        }
+
+        var organizationIds = await _context.OrganizationUsers
+            .AsNoTracking()
+            .Where(ou => ou.UserId == user.UserId &&
+                        !ou.IsDeleted &&
+                        ou.Organization.IsActive &&
+                        !ou.Organization.IsDeleted)
+            .Select(ou => ou.OrganizationId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
 
         var authenticatedUser = new AuthenticatedUser
         {
@@ -61,8 +65,10 @@ public sealed class SwitchOrganizationCommandHandler : IRequestHandler<SwitchOrg
             Email = user.Email,
             FullName = user.FullName,
             OrganizationId = request.OrganizationId,
+            MembershipId = orgUser.Id,
+            TokenVersion = orgUser.TokenVersion,
             OrganizationIds = organizationIds,
-            Role = orgUser?.Role ?? UserRole.Member
+            Role = orgUser.Role
         };
 
         var token = _tokenService.GenerateAccessToken(authenticatedUser);
@@ -70,7 +76,8 @@ public sealed class SwitchOrganizationCommandHandler : IRequestHandler<SwitchOrg
         return new SwitchOrganizationResponse
         {
             AccessToken = token.AccessToken,
-            ExpiresAtUtc = token.ExpiresAtUtc
+            ExpiresAtUtc = token.ExpiresAtUtc,
+            OrganizationId = request.OrganizationId
         };
     }
 }

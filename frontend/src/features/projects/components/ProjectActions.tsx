@@ -73,7 +73,6 @@ export default function ProjectActions({ project }: Props) {
             title: `Delete “${project.name}”?`,
             description: `${impact} The project and its data will be soft-deleted and retained.`,
             confirmLabel: "Delete",
-            confirmationText: project.name,
             tone: "destructive",
         });
 

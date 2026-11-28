@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using FlowForge.Application.Services.Authentication;
 using FlowForge.Infrastructure.Services.Authentication;
 using FlowForge.Application.Services.Organizations;
+using FlowForge.Application.Features.Organizations;
 using FlowForge.Infrastructure.Services.Organizations;
 using FlowForge.Application.Features.Projects;
 using FlowForge.Application.Features.Boards;
@@ -57,7 +58,8 @@ public static class InfrastructureServiceCollection
 
 services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-        services.AddScoped<IOrganizationService, OrganizationService>();
+        services.AddScoped<OrganizationRules>();
+        services.AddScoped<IOrganizationSessionService, OrganizationSessionService>();
 
         services.AddScoped<IAuthService, AuthService>();
 
@@ -66,6 +68,8 @@ services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredServic
         services.AddHttpContextAccessor();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.AddScoped<OrganizationSessionValidator>();
 
         services.AddScoped<IUserLookupService, UserLookupService>();
 

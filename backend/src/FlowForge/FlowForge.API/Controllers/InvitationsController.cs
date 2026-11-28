@@ -153,7 +153,7 @@ public sealed class InvitationsController : ControllerBase
     /// Accepts an organization invitation using a token.
     /// </summary>
     [HttpPost("accept")]
-    [AllowAnonymous]
+    [Authorize(Policy = "RequireAccount")]
     [ProducesResponseType(typeof(AcceptInvitationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -162,7 +162,9 @@ public sealed class InvitationsController : ControllerBase
     {
         try
         {
-            var response = await _mediator.Send(command, cancellationToken);
+            var response = await _mediator.Send(
+                new AcceptInvitationCommand { Token = command.Token },
+                cancellationToken);
             return Ok(response);
         }
         catch (InvalidOperationException ex)

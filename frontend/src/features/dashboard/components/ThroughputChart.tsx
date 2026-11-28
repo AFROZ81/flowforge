@@ -23,8 +23,8 @@ const SERIES = [
    inside the plot be stated in the same units as the box itself. A tooltip that
    sizes itself to its content can be pushed out of the card by the day it sits
    nearest the edge, which is the usual way these things get dropped. */
-const TOOLTIP_HALF = "4.5rem";
-const TOOLTIP_HEIGHT = "5rem";
+const TOOLTIP_HALF = "4rem";
+const TOOLTIP_HEIGHT = "4.5rem";
 
 /**
  * Work created against work completed, one pair of columns per day.
@@ -84,7 +84,10 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
     );
 
     const step = Math.max(1, Math.ceil(peak / 4));
-    const top = step * 4;
+
+    /* Leave a little room above the highest tick so its label and the tallest
+       rounded bar do not collide with the plot's top edge. */
+    const top = step * 4.25;
 
     /* Ascending, so the gridlines can be placed by value and the axis labels
        simply read it back in reverse. */
@@ -126,26 +129,26 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                 initial containing block - outside every scroller's clip, adding
                 its offset to the document's height. That is how a 1px invisible
                 span managed to make the page scroll ~870px past its own end. */}
-            <div className="relative flex flex-1 flex-col justify-center gap-3 px-4 py-4">
+            <div className="relative flex flex-1 flex-col justify-center gap-2 px-3 py-3">
                 {/* Totals, and only totals. This line describes the whole
                     fourteen days, so it stays put; the day under the pointer
                     belongs to the tooltip inside the plot, where it can sit
                     above the column it is talking about. */}
-                <div className="flex shrink-0 flex-wrap items-baseline gap-x-4 gap-y-1">
+                <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                     {SERIES.map((item) => (
                         <span
                             key={item.key}
-                            className="flex items-baseline gap-1.5 text-xs"
+                            className="flex items-center gap-1.5 rounded-lg border bg-foreground/[0.02] px-2 py-1"
                         >
                             <span
                                 aria-hidden="true"
-                                className="size-2 shrink-0 self-center rounded-full"
+                                className="size-1.5 shrink-0 rounded-[2px]"
                                 style={{ background: item.color }}
                             />
-                            <span className="text-muted-foreground">
+                            <span className="text-[10px] text-muted-foreground">
                                 {item.label}
                             </span>
-                            <span className="font-semibold tabular-nums text-foreground">
+                            <span className="text-xs font-semibold tabular-nums text-foreground">
                                 {formatNumber(totals[item.key])}
                             </span>
                         </span>
@@ -172,7 +175,7 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                     the plot instead collapsed row two to zero and let the axis
                     run sixteen pixels past the baseline, which reads as a
                     wrong scale. */}
-                <div className="grid min-h-0 flex-1 grid-cols-[auto_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] gap-x-3">
+                <div className="grid min-h-0 flex-1 grid-cols-[auto_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] gap-x-3 rounded-lg border bg-foreground/[0.018] px-2 py-1.5">
                     <div
                         aria-hidden="true"
                         className="relative min-h-0 w-7 text-right text-[10px] leading-none tabular-nums text-muted-foreground"
@@ -198,7 +201,7 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                     </div>
 
                     <div
-                        className="relative min-h-40 outline-none"
+                        className="relative min-h-36 outline-none"
                         tabIndex={0}
                         role="img"
                         aria-label={`Work created and completed over ${
@@ -239,7 +242,7 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                                 .map((tick) => (
                                     <span
                                         key={tick}
-                                        className="absolute inset-x-0 border-t border-dashed border-border/70"
+                                        className="absolute inset-x-0 border-t border-dashed border-border/60"
                                         style={{
                                             bottom: height(tick),
                                             transform: "translateY(50%)",
@@ -250,14 +253,14 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                             <span className="absolute inset-x-0 bottom-0 border-t border-border" />
                         </div>
 
-                        <div className="relative flex h-full gap-1">
+                        <div className="relative flex h-full gap-1 sm:gap-1.5">
                             {points.map((point, i) => (
                                 <div
                                     key={point.date}
                                     className={cn(
-                                        "flex min-w-0 flex-1 items-end justify-center gap-1 rounded-t-sm transition-colors",
+                                        "flex min-w-0 flex-1 items-end justify-center gap-1 rounded-t-md transition-colors",
                                         index === i
-                                            ? "bg-foreground/5"
+                                            ? "bg-foreground/[0.045]"
                                             : "bg-transparent"
                                     )}
                                     onPointerEnter={() => moveTo(i)}
@@ -265,19 +268,19 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                                     {SERIES.map((item) => (
                                         <span
                                             key={item.key}
-                                            className="w-full max-w-[20px] rounded-t-[2px] transition-[height] duration-200 ease-out"
+                                            className="w-full max-w-[16px] rounded-t-[3px] transition-[height,opacity] duration-200 ease-out"
                                             style={{
                                                 height: height(point[item.key]),
                                                 minHeight:
                                                     point[item.key] > 0
-                                                        ? "2px"
+                                                        ? "3px"
                                                         : "0",
-                                                background: item.color,
+                                                background: `linear-gradient(180deg, color-mix(in oklab, ${item.color} 78%, var(--surface)), ${item.color})`,
                                                 opacity:
                                                     index === null ||
                                                     index === i
                                                         ? 1
-                                                        : 0.55,
+                                                        : 0.42,
                                             }}
                                         />
                                     ))}
@@ -293,8 +296,8 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                             <div
                                 aria-hidden="true"
                                 className="
-                                    pointer-events-none absolute z-10 w-36 rounded-lg
-                                    border bg-popover px-2.5 py-2 shadow-lg
+                                    pointer-events-none absolute z-10 w-32 rounded-lg
+                                    border border-border/80 bg-popover/95 px-2.5 py-2 shadow-sm backdrop-blur-sm
                                 "
                                 style={{
                                     left: `clamp(${TOOLTIP_HALF}, ${slotCentre}%, calc(100% - ${TOOLTIP_HALF}))`,
@@ -306,7 +309,7 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                                     {dayLabel(hovered.date)}
                                 </div>
 
-                                <div className="mt-2 space-y-1">
+                                <div className="mt-1.5 space-y-1">
                                     {SERIES.map((item) => (
                                         <div
                                             key={item.key}
@@ -339,7 +342,7 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                         to know the other's widths. */}
                     <div
                         aria-hidden="true"
-                        className="col-start-2 flex gap-1 pt-1.5"
+                        className="col-start-2 flex gap-1 pt-1"
                     >
                         {points.map((point, i) => (
                             <span
@@ -347,7 +350,7 @@ export default function ThroughputChart({ points }: { points: TrendPoint[] }) {
                                 className={cn(
                                     "min-w-0 flex-1 text-center text-[10px] leading-none tabular-nums",
                                     index === i
-                                        ? "text-foreground"
+                                        ? "font-semibold text-foreground"
                                         : "text-muted-foreground"
                                 )}
                             >

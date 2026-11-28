@@ -4,21 +4,13 @@ import {
 
 import {
     Link,
-    useNavigate,
     useParams,
 } from "react-router";
 
-import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import ColumnGrid from "../components/ColumnGrid";
 import { useBoardDetails } from "../hooks/useBoardDetails";
-import { useBoardManagement } from "../hooks/useBoardManagement";
-import { Button } from "@/components/ui/button";
-import { useConfirm } from "@/components/common/confirm";
-import { toast } from "@/lib/toast";
-import { normalizeError } from "@/lib/errors";
-import { useAuthStore } from "@/stores/auth.store";
-import { isAdminRole } from "@/lib/auth-roles";
 
 import DetailLayout from "@/layouts/DetailLayout";
 
@@ -34,13 +26,6 @@ export default function BoardDetailsPage() {
         projectId,
         boardId,
     } = useParams();
-    const navigate = useNavigate();
-    const currentUserRole = useAuthStore((state) => state.user?.role);
-    const isAdmin = isAdminRole(currentUserRole);
-    const confirm = useConfirm();
-    const { remove } = useBoardManagement(projectId ?? "");
-    const isManaging = remove.isPending;
-
     const {
         data: board,
         isLoading,
@@ -95,39 +80,6 @@ export default function BoardDetailsPage() {
         leaveBoard,
     ]);
 
-
-    const handleDelete = async () => {
-        if (!isAdmin || !board) return;
-
-        const columnCount = board.columns.length;
-        const workItemCount = board.columns.reduce(
-            (total: number, column: { workItems: unknown[] }) => total + column.workItems.length,
-            0
-        );
-
-        const confirmed = await confirm({
-            title: `Delete “${board.name}”?`,
-            description:
-                `This board contains ${columnCount} column${columnCount === 1 ? "" : "s"} and ${workItemCount} work item${workItemCount === 1 ? "" : "s"}. This soft-deletes the board and retains its data. Deletion is blocked while active columns remain.`,
-            confirmLabel: "Delete",
-            confirmationText: board.name,
-            tone: "destructive",
-        });
-
-        if (!confirmed) return;
-
-        try {
-            await remove.mutateAsync(board.id);
-            toast.success("Board deleted.");
-            navigate(`/projects/${projectId}`);
-        } catch (error) {
-            const { title, description } = normalizeError(error, {
-                title: "Couldn't delete that board",
-                description: "Nothing was deleted. Check whether it still contains columns.",
-            });
-            toast.error(title, { description });
-        }
-    };
 
     /* =====================================================
        LOADING
@@ -272,29 +224,10 @@ export default function BoardDetailsPage() {
                     </div>
 
 
-                    {/* Presence and Admin actions */}
+                    {/* Presence */}
 
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 pt-1">
                         <BoardPresence />
-
-                        {isAdmin && (
-                            <>
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => void handleDelete()}
-                                    disabled={isManaging}
-                                >
-                                    {remove.isPending ? (
-                                        <Loader2 className="size-4 animate-spin" />
-                                    ) : (
-                                        <Trash2 className="size-4" />
-                                    )}
-                                    {remove.isPending ? "Deleting..." : "Delete"}
-                                </Button>
-                            </>
-                        )}
                     </div>
 
                 </div>

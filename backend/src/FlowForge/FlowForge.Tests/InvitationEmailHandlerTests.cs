@@ -128,6 +128,15 @@ public sealed class InvitationEmailHandlerTests
             return Task.FromResult(Result);
         }
 
+        public Task<EmailSendResult> SendWorkItemReminderEmailAsync(
+            string to,
+            string assigneeName,
+            string workItemTitle,
+            string organizationName,
+            DateTime reminderAtUtc,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Result);
+
         public Task<EmailSendResult> TestSmtpConnectionAsync(CancellationToken cancellationToken = default)
             => Task.FromResult(Result);
     }
@@ -149,13 +158,15 @@ public sealed class InvitationEmailHandlerTests
             ApplicationDbContext context,
             IUserLookupService userLookup,
             ITokenService tokenService,
-            IAuditLogService auditLogService)
+            IAuditLogService auditLogService,
+            ICurrentUserService currentUser)
         {
             _handler = new AcceptInvitationCommandHandler(
                 context,
                 userLookup,
                 tokenService,
-                auditLogService);
+                auditLogService,
+                currentUser);
         }
 
         public async Task<TResponse> Send<TResponse>(
@@ -755,7 +766,7 @@ public sealed class InvitationEmailHandlerTests
         await ctx.Db.SaveChangesAsync();
 
         var tokenService = new FakeTokenService();
-        var mediator = new FakeMediator(ctx.Db, ctx.UserLookup, tokenService, ctx.AuditLog);
+        var mediator = new FakeMediator(ctx.Db, ctx.UserLookup, tokenService, ctx.AuditLog, ctx.CurrentUser);
         var service = new AuthService(ctx.UserManager, ctx.Db, tokenService, mediator);
 
         var result = await service.RegisterAsync(
@@ -796,7 +807,7 @@ public sealed class InvitationEmailHandlerTests
         await ctx.Db.SaveChangesAsync();
 
         var tokenService = new FakeTokenService();
-        var mediator = new FakeMediator(ctx.Db, ctx.UserLookup, tokenService, ctx.AuditLog);
+        var mediator = new FakeMediator(ctx.Db, ctx.UserLookup, tokenService, ctx.AuditLog, ctx.CurrentUser);
         var service = new AuthService(ctx.UserManager, ctx.Db, tokenService, mediator);
 
         var ex = await Assert.ThrowsAsync<BadRequestException>(() =>
@@ -809,7 +820,7 @@ public sealed class InvitationEmailHandlerTests
     }
 
     [Fact]
-    public void Register_validator_requires_organization_only_without_invitation()
+    public void Register_validator_accepts_account_only_registration_and_invitations()
     {
         var validator = new RegisterValidator();
         var invitationRequest = InvitationRegistration("invitee@example.com", "invitation-token");
@@ -822,6 +833,6 @@ public sealed class InvitationEmailHandlerTests
         };
 
         Assert.True(validator.Validate(invitationRequest).IsValid);
-        Assert.False(validator.Validate(regularRequest).IsValid);
+        Assert.True(validator.Validate(regularRequest).IsValid);
     }
 }

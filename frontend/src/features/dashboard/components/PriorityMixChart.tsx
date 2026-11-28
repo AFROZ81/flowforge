@@ -9,11 +9,11 @@ import EmptyStatePanel from "./EmptyStatePanel";
 import type { PriorityMix } from "../types/dashboard.types";
 
 /**
- * The four hues the priority flags and badges already use, so a Medium item is
- * the same blue on the board as it is here.
+ * Low uses a calm success tone instead of neutral silver; the remaining hues
+ * match the priority badges used elsewhere in the app.
  */
 const SLICES = [
-    { key: "low", label: "Low", color: "var(--muted-foreground)" },
+    { key: "low", label: "Low", color: "var(--success)" },
     { key: "medium", label: "Medium", color: "var(--info)" },
     { key: "high", label: "High", color: "var(--warning)" },
     { key: "critical", label: "Critical", color: "var(--danger)" },
@@ -32,12 +32,7 @@ type Arc = {
 
 const CENTRE = 20;
 const RADIUS = 16;
-const RING = 5.5;
-
-/* Space between slices, in percentage-of-circle units. It is only paid for when
-   there is more than one slice: a lone full ring wearing a notch reads as a
-   rendering defect, not as a chart. */
-const GAP = 0.9;
+const RING = 3.8;
 
 /** Where the next slice begins: the end of the last one, or twelve o'clock. */
 function previousEnd(laid: Array<Arc>): number {
@@ -64,8 +59,8 @@ function previousEnd(laid: Array<Arc>): number {
  * distorting.
  *
  * Hover is answered by the pointer's *angle* around the centre rather than by
- * hit-testing the strokes, because whether a browser treats the gap half of a
- * dash pattern as unpainted is not something to build an interaction on.
+ * hit-testing the strokes, because the exact anti-aliased boundary between two
+ * slices is not something to build an interaction on.
  */
 export default function PriorityMixChart({ mix }: { mix: PriorityMix }) {
     const [index, setIndex] = useState<number | null>(null);
@@ -96,8 +91,6 @@ export default function PriorityMixChart({ mix }: { mix: PriorityMix }) {
         );
     }
 
-    const gap = arcs.length > 1 ? GAP : 0;
-
     /* Built with a fold rather than a running variable: nothing in render
        should be reassigned - the compiler rule that says so is right, since a
        stray `let` here would carry its value into the next render. Each slice
@@ -115,7 +108,7 @@ export default function PriorityMixChart({ mix }: { mix: PriorityMix }) {
     const active = index === null ? null : laid[index];
 
     /* With nothing picked, the middle of the ring states the whole. */
-    const readout = active ?? { label: "open", value: sum };
+    const readout = active ?? { label: "Open items", value: sum };
 
     const moveTo = (next: number) =>
         setIndex(Math.min(laid.length - 1, Math.max(0, next)));
@@ -148,11 +141,11 @@ export default function PriorityMixChart({ mix }: { mix: PriorityMix }) {
             note={`${formatNumber(sum)} items not finished yet`}
         >
             <div className="
-                flex min-h-[9rem] flex-1 flex-wrap items-center gap-x-6 gap-y-4 overflow-y-auto
-                px-4 py-4
+                flex min-h-0 flex-1 flex-wrap items-center gap-x-3 gap-y-3 overflow-y-auto
+                px-3 py-3
             ">
                 <div
-                    className="relative mx-auto size-[132px] shrink-0 cursor-pointer outline-none sm:mx-0"
+                    className="relative mx-auto size-28 shrink-0 cursor-pointer outline-none sm:mx-0"
                     tabIndex={0}
                     role="img"
                     aria-label={`Open work by priority: ${laid
@@ -188,7 +181,22 @@ export default function PriorityMixChart({ mix }: { mix: PriorityMix }) {
                         }
                     }}
                 >
-                    <svg viewBox="0 0 40 40" className="size-full">
+                    <span
+                        aria-hidden="true"
+                        className="absolute inset-2 rounded-full bg-foreground/[0.025] ring-1 ring-inset ring-foreground/[0.045]"
+                    />
+
+                    <svg viewBox="0 0 40 40" className="relative size-full">
+                        <circle
+                            cx={CENTRE}
+                            cy={CENTRE}
+                            r={RADIUS}
+                            fill="none"
+                            stroke="var(--foreground)"
+                            strokeWidth={RING}
+                            opacity={0.07}
+                        />
+
                         {/* Colour, dash and offset go through `style`, not
                             presentation attributes: var() is not resolved in an
                             attribute, and strokeDashoffset is only meaningful
@@ -201,18 +209,20 @@ export default function PriorityMixChart({ mix }: { mix: PriorityMix }) {
                                 r={RADIUS}
                                 fill="none"
                                 strokeWidth={RING}
+                                strokeLinecap="butt"
                                 pathLength={100}
                                 transform={`rotate(-90 ${CENTRE} ${CENTRE})`}
+                                className="transition-opacity duration-200 ease-out"
                                 style={{
                                     stroke: arc.color,
-                                    strokeDasharray: `${arc.share - gap} ${
-                                        100 - (arc.share - gap)
+                                    strokeDasharray: `${arc.share} ${
+                                        100 - arc.share
                                     }`,
-                                    strokeDashoffset: `${-(arc.start + gap / 2)}`,
+                                    strokeDashoffset: `${-arc.start}`,
                                     opacity:
                                         index === null || index === i
                                             ? 1
-                                            : 0.35,
+                                            : 0.32,
                                 }}
                             />
                         ))}
@@ -222,13 +232,18 @@ export default function PriorityMixChart({ mix }: { mix: PriorityMix }) {
                         has to stay crisp and it has room nobody else wants. */}
                     <div
                         aria-live="polite"
-                        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+                        className="pointer-events-none absolute inset-5 flex flex-col items-center justify-center px-1 text-center"
                     >
-                        <span className="text-xl leading-none font-semibold tabular-nums">
+                        <span className="text-[8px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                            Priority
+                        </span>
+                        <span className="mt-0.5 text-lg leading-none font-semibold tracking-[-0.03em] tabular-nums">
                             {formatNumber(readout.value)}
                         </span>
-                        <span className="mt-1 max-w-[70%] truncate text-[11px] leading-none text-muted-foreground">
-                            {readout.label}
+                        <span className="mt-0.5 max-w-16 truncate text-[9px] leading-none text-muted-foreground">
+                            {active
+                                ? `${active.label} ${Math.round(active.share)}%`
+                                : readout.label}
                         </span>
                     </div>
                 </div>
@@ -240,27 +255,50 @@ export default function PriorityMixChart({ mix }: { mix: PriorityMix }) {
                             onPointerEnter={() => setIndex(i)}
                             onPointerLeave={() => setIndex(null)}
                             className={cn(
-                                "flex items-center gap-2 rounded-md px-1.5 py-1 text-sm transition-colors",
+                                "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border px-2 py-1 transition-colors",
                                 index === i
-                                    ? "bg-foreground/5"
-                                    : "bg-transparent"
+                                    ? "border-border bg-foreground/[0.035]"
+                                    : "border-transparent hover:bg-foreground/[0.025]"
                             )}
                         >
                             <span
                                 aria-hidden="true"
-                                className="size-2.5 shrink-0 rounded-full"
-                                style={{ background: arc.color }}
-                            />
-                            <span className="min-w-0 flex-1 truncate">
-                                {arc.label}
+                                className="flex size-6 items-center justify-center rounded-md"
+                                style={{
+                                    background: `color-mix(in oklab, ${arc.color} 14%, transparent)`,
+                                    color: arc.color,
+                                }}
+                            >
+                                <span
+                                    className="size-1.5 rounded-full"
+                                    style={{ background: arc.color }}
+                                />
                             </span>
-                            <span className="shrink-0 tabular-nums text-muted-foreground">
-                                {/* Whole percents only. The exact count is two
-                                    columns away, so a decimal here would imply
-                                    the angle was measured to a tenth. */}
-                                {formatPercentage(Math.round(arc.share))}
-                            </span>
-                            <span className="w-8 shrink-0 text-right font-medium tabular-nums">
+
+                            <div className="min-w-0">
+                                <div className="flex items-center justify-between gap-2 text-[10px]">
+                                    <span className="truncate font-medium">
+                                        {arc.label}
+                                    </span>
+                                    <span className="shrink-0 tabular-nums text-muted-foreground">
+                                        {formatPercentage(
+                                            Math.round(arc.share)
+                                        )}
+                                    </span>
+                                </div>
+
+                                <span className="mt-1 block h-0.5 overflow-hidden rounded-full bg-foreground/10">
+                                    <span
+                                        className="block h-full rounded-full transition-[width] duration-200 ease-out"
+                                        style={{
+                                            width: `${arc.share}%`,
+                                            background: arc.color,
+                                        }}
+                                    />
+                                </span>
+                            </div>
+
+                            <span className="w-6 shrink-0 text-right text-xs font-semibold tabular-nums">
                                 {formatNumber(arc.value)}
                             </span>
                         </li>

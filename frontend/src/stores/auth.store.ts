@@ -19,9 +19,17 @@ export type AuthUser = {
     fullName: string | null;
     email: string | null;
     organizationId: string | null;
-    organizationIds: string[];
     role: string | null;
 };
+
+
+export const SESSION_CHANGED_EVENT = "flowforge:session-changed";
+
+function notifySessionChanged() {
+    if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(SESSION_CHANGED_EVENT));
+    }
+}
 
 
 /* =========================================================
@@ -41,6 +49,8 @@ type AuthState = {
     ) => void;
 
     switchOrganization: (organizationId: string) => Promise<void>;
+
+    refreshSession: () => Promise<boolean>;
 
     logout: () => void;
 };
@@ -133,38 +143,11 @@ function getClaim(
 }
 
 
-function getClaimArray(
-    payload: Record<string, unknown>,
-    keys: string[]
-): string[] {
-
-    for (const key of keys) {
-
-        const value =
-            payload[key];
-
-        if (
-            typeof value === "string" &&
-            value.trim().length > 0
-        ) {
-
-            try {
-                return JSON.parse(value.trim());
-            } catch {
-                return value.trim().split(",").map(s => s.trim());
-            }
-        }
-    }
-
-    return [];
-}
-
-
 /* =========================================================
    USER FROM JWT
    ========================================================= */
 
-function getUserFromToken(
+export function getUserFromToken(
     token: string
 ): AuthUser {
 
@@ -178,7 +161,6 @@ function getUserFromToken(
             fullName: null,
             email: null,
             organizationId: null,
-            organizationIds: [],
             role: null,
         };
     }
@@ -231,15 +213,6 @@ function getUserFromToken(
             ]
         );
 
-    const organizationIds =
-        getClaimArray(
-            payload,
-            [
-                "orgIds",
-                "OrgIds",
-            ]
-        );
-
     const role =
         getClaim(
             payload,
@@ -255,7 +228,6 @@ function getUserFromToken(
         fullName,
         email,
         organizationId,
-        organizationIds,
         role,
     };
 }
@@ -321,6 +293,8 @@ export const useAuthStore =
 
                     });
 
+                    notifySessionChanged();
+
                 },
 
 
@@ -344,36 +318,41 @@ export const useAuthStore =
                     const response =
                         await api.post(
                             "/Organizations/switch",
-                            { organizationId },
-                            {
-                                headers: {
-                                    Authorization:
-                                        `Bearer ${accessToken}`,
-                                },
-                            }
+                            { organizationId }
                         );
 
                     const {
                         accessToken: newToken,
                         expiresAtUtc,
-                    } = response.data.data;
+                    } = response.data;
 
-                    const user =
-                        getUserFromToken(
-                            newToken
-                        );
+                    if (!newToken || !expiresAtUtc) {
+                        throw new Error("Workspace switch did not return a session.");
+                    }
 
-                    set({
-                        accessToken:
-                            newToken,
-
-                        expiresAtUtc,
-
-                        user,
-
-                    });
+                    get().login(newToken, expiresAtUtc);
                 },
 
+
+                /* =============================================
+                   REFRESH SESSION
+                ============================================= */
+
+                refreshSession: async () => {
+                    const response = await api.post(
+                        "/Auth/refresh"
+                    );
+
+                    const session = response.data?.data;
+
+                    if (!session?.accessToken || !session?.expiresAtUtc) {
+                        throw new Error("Refresh did not return a session.");
+                    }
+
+                    get().login(session.accessToken, session.expiresAtUtc);
+
+                    return Boolean(get().user?.organizationId);
+                },
 
                 /* =============================================
                    LOGOUT
@@ -401,6 +380,8 @@ export const useAuthStore =
                             null,
 
                     });
+
+                    notifySessionChanged();
                 },
 
             }),

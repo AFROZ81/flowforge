@@ -1,4 +1,7 @@
+using System.Text.Json;
+
 using FlowForge.API.Controllers;
+using FlowForge.Api.Controllers;
 using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Features.Authentication.CurrentUser;
 using FlowForge.Application.Features.AuditLogs.GetAuditLogs;
@@ -15,6 +18,9 @@ using FlowForge.Application.Features.Projects.Delete;
 using FlowForge.Application.Features.Projects.GetAll;
 using FlowForge.Application.Features.Projects.Restore;
 using FlowForge.Application.Features.Projects.Update;
+using FlowForge.Application.Features.Reminders;
+using FlowForge.Application.Features.Reminders.Remove;
+using FlowForge.Application.Features.Reminders.Set;
 using FlowForge.Application.Features.WorkItems;
 using FlowForge.Application.Features.WorkItems.Delete;
 using FlowForge.Application.Features.WorkItems.Restore;
@@ -29,7 +35,9 @@ using FlowForge.Domain.Enums;
 using FlowForge.Domain.Events;
 using FlowForge.Infrastructure.Identity;
 using FlowForge.Infrastructure.Persistence;
+using FlowForge.Infrastructure.Services.WorkItemHistories;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -42,9 +50,16 @@ public sealed class SoftDeleteAccessTests
     [Fact]
     public void StructuralAndDeleteEndpointsRequireAdminPolicy()
     {
+        AssertPolicy(typeof(WorkItemsController), "Rename", "RequireAdmin");
+        AssertPolicy(typeof(WorkItemsController), "Edit", "RequireAdmin");
+        AssertPolicy(typeof(WorkItemsController), "Assign", "RequireAdmin");
+        AssertPolicy(typeof(WorkItemsController), "Unassign", "RequireAdmin");
         AssertPolicy(typeof(WorkItemsController), "Archive", "RequireAdmin");
         AssertPolicy(typeof(WorkItemsController), "Restore", "RequireAdmin");
         AssertPolicy(typeof(WorkItemsController), "Delete", "RequireAdmin");
+
+        AssertPolicy(typeof(RemindersController), "SetReminder", "RequireViewer");
+        AssertPolicy(typeof(RemindersController), "RemoveReminder", "RequireViewer");
 
         AssertPolicy(typeof(ProjectsController), "Create", "RequireAdmin");
         AssertPolicy(typeof(ProjectsController), "Update", "RequireAdmin");
@@ -67,7 +82,7 @@ public sealed class SoftDeleteAccessTests
     {
         foreach (var method in new[]
         {
-            "Create", "Rename", "Edit", "Move", "Complete", "Block", "Activate", "Assign", "Unassign"
+            "Create", "Move", "Complete", "Block", "Activate"
         })
         {
             AssertPolicy(typeof(WorkItemsController), method, "RequireMember");
@@ -86,8 +101,6 @@ public sealed class SoftDeleteAccessTests
         AssertPolicy(typeof(ChecklistsController), "Uncomplete", "RequireMember");
         AssertPolicy(typeof(ChecklistsController), "Delete", "RequireMember");
         AssertPolicy(typeof(ChecklistsController), "Reorder", "RequireMember");
-        AssertPolicy(typeof(RemindersController), "SetReminder", "RequireMember");
-        AssertPolicy(typeof(RemindersController), "RemoveReminder", "RequireMember");
         AssertPolicy(typeof(WorkItemWatchersController), "Create", "RequireMember");
         AssertPolicy(typeof(WorkItemWatchersController), "Delete", "RequireMember");
         AssertPolicy(typeof(LabelsController), "Create", "RequireMember");
@@ -95,6 +108,121 @@ public sealed class SoftDeleteAccessTests
         AssertPolicy(typeof(LabelsController), "Delete", "RequireMember");
         AssertPolicy(typeof(LabelsController), "Assign", "RequireMember");
         AssertPolicy(typeof(LabelsController), "Remove", "RequireMember");
+    }
+
+    [Theory]
+    [InlineData(UserRole.Admin)]
+    [InlineData(UserRole.Member)]
+    [InlineData(UserRole.Viewer)]
+    public async Task EveryRoleCanManageRemindersOnActiveWorkItems(UserRole role)
+    {
+        await using var fixture = await CreateFixtureAsync(role);
+        var dueDate = DateTime.UtcNow.AddDays(2);
+        var reminderDate = DateTime.UtcNow.AddDays(1);
+        fixture.WorkItem.Edit(null, WorkItemPriority.Medium, dueDate);
+        await fixture.Db.SaveChangesAsync();
+
+        var rules = new ReminderRules(fixture.Db);
+        var historyService = new WorkItemHistoryService(fixture.Db);
+        var setHandler = new SetReminderCommandHandler(rules, fixture.CurrentUser, historyService);
+        var setResult = await setHandler.Handle(
+            new SetReminderCommand
+            {
+                WorkItemId = fixture.WorkItem.Id,
+                ReminderDate = reminderDate,
+            },
+            CancellationToken.None);
+
+        Assert.True(setResult.Success);
+        Assert.Equal(reminderDate, fixture.WorkItem.ReminderDate);
+        Assert.Equal(dueDate, fixture.WorkItem.DueDate);
+
+        var removeHandler = new RemoveReminderCommandHandler(rules, fixture.CurrentUser, historyService);
+        var removeResult = await removeHandler.Handle(
+            new RemoveReminderCommand { WorkItemId = fixture.WorkItem.Id },
+            CancellationToken.None);
+
+        Assert.True(removeResult.Success);
+        Assert.Null(fixture.WorkItem.ReminderDate);
+        Assert.Equal(dueDate, fixture.WorkItem.DueDate);
+
+        var histories = await fixture.Db.WorkItemHistories.ToListAsync();
+        Assert.Contains(histories, x => x.Action == WorkItemHistoryAction.ReminderUpdated);
+        Assert.Contains(histories, x => x.Action == WorkItemHistoryAction.ReminderRemoved);
+    }
+
+    [Theory]
+    [InlineData(WorkItemStatus.Completed)]
+    [InlineData(WorkItemStatus.Blocked)]
+    public async Task ReminderHandlersRejectNonActiveWorkItems(WorkItemStatus status)
+    {
+        await using var fixture = await CreateFixtureAsync(UserRole.Member);
+        var dueDate = DateTime.UtcNow.AddDays(2);
+        var reminderDate = DateTime.UtcNow.AddDays(1);
+        fixture.WorkItem.Edit(null, WorkItemPriority.Medium, dueDate);
+        fixture.WorkItem.SetReminder(reminderDate);
+
+        if (status == WorkItemStatus.Completed)
+            fixture.WorkItem.MarkCompleted();
+        else
+            fixture.WorkItem.MarkBlocked();
+
+        await fixture.Db.SaveChangesAsync();
+
+        var rules = new ReminderRules(fixture.Db);
+        var historyService = new WorkItemHistoryService(fixture.Db);
+        var setHandler = new SetReminderCommandHandler(rules, fixture.CurrentUser, historyService);
+        var setException = await Assert.ThrowsAsync<BadRequestException>(() =>
+            setHandler.Handle(
+                new SetReminderCommand
+                {
+                    WorkItemId = fixture.WorkItem.Id,
+                    ReminderDate = DateTime.UtcNow.AddHours(1),
+                },
+                CancellationToken.None));
+        Assert.Contains("active work items", setException.Message);
+
+        var removeHandler = new RemoveReminderCommandHandler(rules, fixture.CurrentUser, historyService);
+        var removeException = await Assert.ThrowsAsync<BadRequestException>(() =>
+            removeHandler.Handle(
+                new RemoveReminderCommand { WorkItemId = fixture.WorkItem.Id },
+                CancellationToken.None));
+        Assert.Contains("active work items", removeException.Message);
+
+        Assert.Equal(reminderDate, fixture.WorkItem.ReminderDate);
+        Assert.Equal(dueDate, fixture.WorkItem.DueDate);
+        Assert.Empty(await fixture.Db.WorkItemHistories.ToListAsync());
+    }
+
+    [Fact]
+    public async Task ReminderHandlersRejectArchivedWorkItems()
+    {
+        await using var fixture = await CreateFixtureAsync(UserRole.Viewer);
+        var reminderDate = DateTime.UtcNow.AddDays(1);
+        fixture.WorkItem.SetReminder(reminderDate);
+        fixture.WorkItem.Archive();
+        await fixture.Db.SaveChangesAsync();
+
+        var rules = new ReminderRules(fixture.Db);
+        var historyService = new WorkItemHistoryService(fixture.Db);
+        var setHandler = new SetReminderCommandHandler(rules, fixture.CurrentUser, historyService);
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            setHandler.Handle(
+                new SetReminderCommand
+                {
+                    WorkItemId = fixture.WorkItem.Id,
+                    ReminderDate = DateTime.UtcNow.AddHours(1),
+                },
+                CancellationToken.None));
+
+        var removeHandler = new RemoveReminderCommandHandler(rules, fixture.CurrentUser, historyService);
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            removeHandler.Handle(
+                new RemoveReminderCommand { WorkItemId = fixture.WorkItem.Id },
+                CancellationToken.None));
+
+        Assert.Equal(reminderDate, fixture.WorkItem.ReminderDate);
+        Assert.Empty(await fixture.Db.WorkItemHistories.ToListAsync());
     }
 
     [Fact]
@@ -580,6 +708,39 @@ public sealed class SoftDeleteAccessTests
         }
     }
 
+    [Theory]
+    [InlineData(UserRole.Admin)]
+    [InlineData(UserRole.Member)]
+    [InlineData(UserRole.Viewer)]
+    public async Task OnlineUsersIncludeEveryOrganizationRole(UserRole role)
+    {
+        await using var fixture = await CreateFixtureAsync(role);
+
+        // Reproduce the multi-organization case: the legacy user organization id
+        // is not authoritative, while the membership row is the source of truth.
+        var user = await fixture.Db.Users.SingleAsync(x => x.Id == fixture.UserId);
+        user.OrganizationId = Guid.Empty;
+        fixture.Db.OrganizationUsers.Add(new OrganizationUser
+        {
+            UserId = fixture.UserId,
+            OrganizationId = fixture.OrganizationId,
+            Role = role,
+        });
+        await fixture.Db.SaveChangesAsync();
+
+        var controller = new PresenceController(
+            new FakeOnlineUserTracker(fixture.UserId),
+            fixture.Db,
+            fixture.CurrentUser);
+
+        var result = await controller.GetOnlineUsers(CancellationToken.None);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var json = JsonSerializer.Serialize(ok.Value);
+
+        Assert.Contains($"\"userId\":\"{fixture.UserId}\"", json);
+        Assert.Contains("Test Admin", json);
+    }
+
     private static void AssertPolicy(Type controllerType, string methodName, string policy)
     {
         var method = controllerType.GetMethod(methodName)
@@ -696,6 +857,32 @@ public sealed class SoftDeleteAccessTests
                 await Connection.DisposeAsync();
             }
         }
+    }
+
+    private sealed class FakeOnlineUserTracker : IOnlineUserTracker
+    {
+        private readonly HashSet<Guid> _onlineUsers;
+
+        public FakeOnlineUserTracker(params Guid[] userIds)
+        {
+            _onlineUsers = userIds.ToHashSet();
+        }
+
+        public Task UserConnectedAsync(Guid userId)
+        {
+            _onlineUsers.Add(userId);
+            return Task.CompletedTask;
+        }
+
+        public Task UserDisconnectedAsync(Guid userId)
+        {
+            _onlineUsers.Remove(userId);
+            return Task.CompletedTask;
+        }
+
+        public bool IsOnline(Guid userId) => _onlineUsers.Contains(userId);
+
+        public IReadOnlyCollection<Guid> GetOnlineUsers() => _onlineUsers.ToArray();
     }
 
     private sealed class FakeCurrentUserService : ICurrentUserService

@@ -18,31 +18,52 @@ JWT bearer tokens are required for protected endpoints:
 Authorization: Bearer <access_token>
 ```
 
-Tokens include the user id, active organization, all organization ids, active role, email, and display name.
+Account-only tokens contain identity claims and no organization context. Organization tokens add `organizationId`, `membershipId`, `tokenVersion`, and the current role. On every authenticated request, `OnTokenValidated` reloads the membership, organization state, role, owner flag, and token version from the database; stale organization context is stripped while the account remains authenticated so refresh can recover.
 
 ### Auth endpoints
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| `POST` | `/api/Auth/register` | Normal workspace registration or invitation registration. |
+| `POST` | `/api/Auth/register` | Create an account only, or create an account and accept an invitation atomically. |
 | `POST` | `/api/Auth/login` | Email/password login. |
-| `POST` | `/api/Auth/refresh` | Issue a fresh token for the current identity. |
+| `POST` | `/api/Auth/refresh` | Reload authoritative memberships and issue an organization or account-only session. |
 
-Normal registration requires `organizationId`. Invitation registration instead sends `invitationToken`; the server validates that the email matches the invitation, creates the account, accepts the invitation, and returns `accessToken` and `expiresAtUtc`.
+Normal registration accepts only account fields and never accepts `organizationId`. It returns an account-only session. Invitation registration sends `invitationToken`; the server validates the token and email, creates the account, accepts the invitation, and returns an organization session. Login returns an organization session when an active membership exists, otherwise an account-only session.
 
-### Organization switching
+### Organizations and switching
 
-`POST /api/Organizations/switch` validates membership in the requested organization and returns a new token with that organization active.
+`GET /api/Organizations/mine` is the client's membership directory. It returns database-backed names, slugs, roles, active state, and owner state, including archived workspaces but excluding terminally deleted organizations. The former public `GET /api/Organizations/options` route has been removed.
+
+`POST /api/Organizations/switch` validates an active membership and returns a fresh organization session.
+
+| Method | Route | Policy | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/Organizations/mine` | `RequireAccount` | List the caller's memberships. |
+| `POST` | `/api/Organizations` | `RequireAccount` | Atomically create a workspace and Owner/Admin membership. |
+| `POST` | `/api/Organizations/switch` | `RequireAccount` | Switch to an active membership. |
+| `GET` | `/api/Organizations/{organizationId}` | `RequireOrganizationSession` | Read the active organization profile. |
+| `PUT` | `/api/Organizations/{organizationId}` | `RequireAdmin` | Update name, description, and logo URL; slug is immutable. |
+| `GET` | `/api/Organizations/{organizationId}/members` | `RequireOrganizationSession` | List members with owner state. |
+| `PUT` | `/api/Organizations/{organizationId}/members/{userId}/role` | `RequireAdmin` | Change a non-owner member's role. |
+| `DELETE` | `/api/Organizations/{organizationId}/members/{userId}` | `RequireAdmin` | Soft-delete a non-owner membership. |
+| `POST` | `/api/Organizations/{organizationId}/leave` | `RequireOrganizationSession` | Leave after owner and last-Admin checks. |
+| `POST` | `/api/Organizations/{organizationId}/transfer-ownership` | `RequireOwner` | Promote a member to Owner/Admin and demote the former Owner. |
+| `POST` | `/api/Organizations/{organizationId}/archive` | `RequireOwner` | Archive the workspace and revoke pending invitations. |
+| `POST` | `/api/Organizations/{organizationId}/restore` | `RequireAccount` | Owner-only restore of an archived workspace. |
+| `DELETE` | `/api/Organizations/{organizationId}` | `RequireAccount` | Owner-only terminal soft delete after archive and slug confirmation. |
+
+Session-changing organization responses include `accessToken`, `expiresAtUtc`, and nullable `organizationId`. Route IDs must match the validated session organization; mismatches return `404`.
 
 ## Authorization
 
 Policies are registered in `Program.cs`:
 
-- `RequireAdmin`
-- `RequireMember`
-- `RequireViewer`
+- `RequireAccount` — any authenticated account, including accounts with zero memberships.
+- `RequireOrganizationSession` — authenticated account plus a DB-validated active membership, active organization, matching membership token version, and current DB role.
+- `RequireViewer`, `RequireMember`, and `RequireAdmin` — hierarchical policies over the validated organization session.
+- `RequireOwner` — validated organization session plus the DB-backed owner flag.
 
-Most resource access is scoped to the active organization in the token. Admin-only surfaces include audit logs and member/settings management.
+Signed role and `orgIds` claims are never authorization authority. `OrganizationUser` is the sole membership authority; legacy `ApplicationUser.OrganizationId` and `ApplicationUser.Role` are not used for authorization.
 
 ## Response formats
 
@@ -84,7 +105,7 @@ Errors use a common shape with `success`, `message`, `traceId`, and optional `er
 | `DELETE` | `/api/Invitations/{id}` | Admin | Revoke an invitation. |
 | `POST` | `/api/Invitations/{id}/resend` | Admin | Rotate token, extend expiry, retry email. |
 | `GET` | `/api/Invitations/validate?token=…` | Anonymous | Read invitation details without accepting. |
-| `POST` | `/api/Invitations/accept` | Anonymous | Accept using a token. |
+| `POST` | `/api/Invitations/accept` | Authenticated account | Accept using a token bound to the authenticated email. |
 | `GET` | `/api/Invitations/smtp-diagnostics` | Admin | Test SMTP connectivity without sending to a recipient. |
 
 ### Creation rules
@@ -102,7 +123,8 @@ Errors use a common shape with `success`, `message`, `traceId`, and optional `er
 - Tokens are secure, random, and unique.
 - Standard expiry is seven days.
 - Resend rotates the token, extends expiry, and enforces a five-minute cooldown.
-- Acceptance creates the membership with the invited role and marks the invitation accepted.
+- Acceptance derives the user from authentication and requires normalized email equality with the invitation.
+- Acceptance creates or restores the historical membership row with the invited role, clears ownership, increments `TokenVersion`, and marks the invitation accepted.
 - Invitation registration wraps account creation and acceptance in one relational transaction.
 - A successful acceptance returns a JWT for the invited organization.
 
@@ -122,17 +144,17 @@ Previously emailed links do not change; resend to generate a link with the curre
 
 ## Work item, project, and board permissions
 
-| Resource | Member access | Admin-only access |
-| --- | --- | --- |
-| Work items | Create, edit, move, assign, complete, block, activate | Archive, restore, soft delete |
-| Projects | View | Create, update, archive, restore, soft delete |
-| Boards | View | Create, update, archive, restore, soft delete |
+| Resource | All authenticated roles | Member access | Admin-only access |
+| --- | --- | --- | --- |
+| Work items | View; set/remove reminders on Active, unarchived items | Create, move, complete, block, activate | Rename, edit, assign, unassign, archive, restore, soft delete |
+| Projects | View | — | Create, update, archive, restore, soft delete |
+| Boards | View | — | Create, update, archive, restore, soft delete |
 
 Soft-delete endpoints are `DELETE /api/WorkItems/{id}`, `DELETE /api/Projects/{id}`, and `DELETE /api/Boards/{id}`. They set `IsDeleted`/`DeletedAt`; no rows or attachment files are physically removed. Global query filters hide soft-deleted entities from normal queries. Project deletion returns `409` while active boards exist; board deletion returns `409` while active columns exist. Work-item deletion also soft-deletes its dependent records in one transaction. The existing Admin-only restore endpoints can restore soft-deleted records, including work-item dependents.
 
 Archived projects are included in `GET /api/Projects` only for Admins. `GET /api/Boards?includeArchived=true` likewise returns archived boards only for Admins; Members and Viewers always receive active boards.
 
-Viewer accounts are read-only for work-item mutations. Creating/editing work items, moving them, changing status or assignees, and mutating attachments, comments, labels, watchers, reminders, and checklists require `RequireMember` (which also allows Admins).
+Viewer accounts are read-only for work-item mutations except reminder management. Creating and moving work items, changing status, and mutating attachments, comments, labels, watchers, and checklists require `RequireMember` (which also allows Admins). Renaming/editing work-item fields and assigning/unassigning users require `RequireAdmin`. Setting and removing reminders require `RequireViewer`, so Admins, Members, and Viewers can manage them; the server rejects archived, Completed, and Blocked work items. Reminder changes never modify the work item's due date.
 
 ## Webhooks
 

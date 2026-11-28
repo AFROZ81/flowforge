@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "react-router";
 
@@ -29,11 +29,12 @@ export default function AuthCard() {
     const reduceMotion = useReducedMotion();
 
     const invitationToken = params.get("invitationToken")?.trim() || undefined;
-    const mode: Mode = invitationToken || params.get("mode") === "register"
-        ? "register"
-        : "signin";
-
-    const [prefillEmail, setPrefillEmail] = useState("");
+    const requestedMode = params.get("mode");
+    const mode: Mode = requestedMode === "signin"
+        ? "signin"
+        : requestedMode === "register" || invitationToken
+            ? "register"
+            : "signin";
 
     const cardRef = useRef<HTMLDivElement>(null);
 
@@ -60,14 +61,18 @@ export default function AuthCard() {
 
         focusIsPending.current = true;
 
-        setParams(next === "register" ? { mode: "register" } : {}, {
+        const nextParams = new URLSearchParams();
+
+        if (invitationToken) {
+            nextParams.set("invitationToken", invitationToken);
+            nextParams.set("mode", next);
+        } else if (next === "register") {
+            nextParams.set("mode", "register");
+        }
+
+        setParams(nextParams, {
             preventScrollReset: true,
         });
-    };
-
-    const handleRegistered = (email: string) => {
-        setPrefillEmail(email);
-        goTo("signin");
     };
 
     const face = flipFace();
@@ -91,12 +96,10 @@ export default function AuthCard() {
                         {mode === "register" ? (
                             <RegisterForm
                                 invitationToken={invitationToken}
-                                onRegistered={handleRegistered}
                                 onSwitchToLogin={() => goTo("signin")}
                             />
                         ) : (
                             <LoginForm
-                                defaultEmail={prefillEmail}
                                 onSwitchToRegister={() => goTo("register")}
                             />
                         )}

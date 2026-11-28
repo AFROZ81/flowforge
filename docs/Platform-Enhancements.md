@@ -4,15 +4,20 @@ This guide covers the capabilities added after the original backend release. For
 
 ## 1. Multi-organization RBAC
 
-Users belong to organizations through `OrganizationUser`, which stores a per-organization role.
+Users belong to organizations through `OrganizationUser`, the sole membership authority. Each membership stores a role, Owner flag, token version, concurrency token, and soft-delete state.
 
 | Role | Value | Capabilities |
 | --- | --- | --- |
+| Owner | Admin + `IsOwner` | Admin capabilities plus ownership transfer, archive/restore, and terminal delete. |
 | Admin | 1 | Member/settings management, invitations, audit logs, diagnostics. |
 | Member | 2 | Normal project and work-item operations. |
 | Viewer | 3 | Read-only access. |
 
-JWTs include `organizationId`, `orgIds`, and the active role. `POST /api/Organizations/switch` validates membership and returns a token for the selected workspace. The client shows an organization switcher when more than one membership exists.
+Registration creates an account only. Any authenticated account can create a workspace and becomes its Owner/Admin. Existing workspaces can be joined only through an invitation bound to the authenticated email. `/onboarding` supports workspace creation, invitation acceptance, active-workspace recovery, and archived-Owner recovery.
+
+`GET /api/Organizations/mine` supplies database-backed names, slugs, roles, active state, and Owner state. `POST /api/Organizations/switch` validates an active membership and returns a fresh session. Organization requests revalidate membership, role, organization state, and token version from the database; signed role and `orgIds` claims are not authorization authority.
+
+Owners cannot be demoted, removed, or leave without transferring ownership. Role/removal/leave operations preserve at least one active Admin. Archive freezes access and revokes pending invitations; restore is Owner-only; terminal soft delete requires archive state and exact slug confirmation.
 
 ## 2. Invitations and member management
 
@@ -26,7 +31,9 @@ JWTs include `organizationId`, `orgIds`, and the active role. `POST /api/Organiz
 - Resend rotates the token, extends expiry, and enforces a five-minute cooldown.
 - Revoke soft-deletes the invitation.
 - Validation is anonymous and does not accept the invitation.
-- Acceptance creates the membership with the invited role and returns a JWT.
+- Acceptance requires an authenticated account and a normalized email match.
+- Acceptance creates or restores the historical membership with the invited role and returns a JWT.
+- Rejoin clears ownership and increments the existing token version, so old tokens stay invalid.
 
 ### Register and accept
 
@@ -114,7 +121,7 @@ The solution includes:
 Current limitations:
 
 - The scheduler checks every minute but `IsTimeToRun` always returns true.
-- Reminder and overdue jobs run every check, not on their commented cron schedules.
+- Reminders are scanned every check with once-only delivery; the overdue job still runs every check rather than its commented cron schedule.
 - Export processing is commented out in the runner.
 - Excel/PDF export output is placeholder text; CSV generation is implemented.
 - In-memory state is lost on process recycle.
@@ -132,10 +139,10 @@ The active `IFileStorageProvider` and attachment storage service use local disk.
 | Command palette | Quick navigation and actions with keyboard support. |
 | Board keyboard navigation | Card selection and movement hooks. |
 | Accessibility | Shared announcer, live-region toasts, focus-visible styling. |
-| Organization switcher | Multi-workspace token switching. |
+| Organization switcher | Database-backed named workspaces, roles, active state, and authenticated workspace creation. |
 | Notifications | Dedicated inbox, unread state, read/unread/delete actions. |
 | Audit logs | Admin-only filterable timeline. |
-| Settings | General, Members, and Labels sections with URL-addressable tabs. |
+| Settings | General, Organization, and Labels sections with URL-addressable tabs; Organization includes profile, members/invitations, ownership transfer, leave, archive/restore, and terminal delete. |
 | AI drafting | On-device model selection and heuristic fallback. |
 | PWA | Branded FlowForge icons, offline indicator, manifest, service worker, API/image caching; no custom install prompt. |
 | Motion | Shared animation presets. |
@@ -144,8 +151,8 @@ The active `IFileStorageProvider` and attachment storage service use local disk.
 
 ## 10. Testing and tooling
 
-- Backend: 21 xUnit tests in `FlowForge.Tests`.
-- Frontend: Vitest unit project for AI and utility behavior.
+- Backend: 72 xUnit tests in `FlowForge.Tests`.
+- Frontend: 107 Vitest unit tests covering AI, utilities, account-first auth, onboarding, switching, route guarding, and settings permissions.
 - Storybook browser-test project is configured.
 - `npm run build`, `npm run lint`, and `dotnet test` are the main local verification commands.
 - CI is not configured yet.
@@ -154,7 +161,7 @@ The active `IFileStorageProvider` and attachment storage service use local disk.
 
 ```text
 Organization
-├── OrganizationUser        membership + role
+├── OrganizationUser        membership Id · role · IsOwner · TokenVersion · rowversion
 ├── OrganizationInvitation   token, expiry, acceptance, delivery status
 ├── AuditLog                 typed audit trail
 └── WebhookSubscription      outbound endpoint configuration

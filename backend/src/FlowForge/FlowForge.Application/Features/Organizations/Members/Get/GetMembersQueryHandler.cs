@@ -1,4 +1,5 @@
 using FlowForge.Application.Features.Organizations.Members.Get;
+using FlowForge.Application.Common.Exceptions;
 using FlowForge.Application.Interfaces;
 using FlowForge.Application.Services.Authentication;
 using MediatR;
@@ -25,6 +26,20 @@ public sealed class GetMembersQueryHandler : IRequestHandler<GetMembersQuery, Li
     public async Task<List<GetMembersResponse>> Handle(GetMembersQuery request, CancellationToken cancellationToken)
     {
         var currentUser = _currentUser.User;
+
+        if (request.OrganizationId != currentUser.OrganizationId)
+            throw new NotFoundException("Organization not found.");
+
+        var isMember = await _context.OrganizationUsers
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.UserId == currentUser.UserId &&
+                     x.OrganizationId == request.OrganizationId &&
+                     !x.IsDeleted,
+                cancellationToken);
+
+        if (!isMember)
+            throw new ForbiddenException("You are not a member of this organization.");
 
         // Get all organization users with their roles
         var orgUsers = await _context.OrganizationUsers
@@ -55,6 +70,7 @@ public sealed class GetMembersQueryHandler : IRequestHandler<GetMembersQuery, Li
                 Email = details.Email,
                 FullName = details.FullName,
                 Role = ou.Role,
+                IsOwner = ou.IsOwner,
                 JoinedAt = ou.CreatedAt,
                 IsCurrentUser = ou.UserId == currentUser.UserId
             };

@@ -54,8 +54,8 @@ public sealed class ScheduledJobRunner : BackgroundService
 
         var now = DateTime.UtcNow;
 
-        // Run reminder job daily at midnight
-        if (IsTimeToRun("ReminderJob", "0 0 * * *", context))
+        // Run the due-time reminder scan every minute; ReminderNotifiedAt prevents duplicates.
+        if (IsTimeToRun("ReminderJob", "* * * * *", context))
         {
             var reminderJob = scope.ServiceProvider.GetRequiredService<ReminderJob>();
             await reminderJob.ExecuteAsync(cancellationToken);

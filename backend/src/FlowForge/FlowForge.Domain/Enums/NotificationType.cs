@@ -6,5 +6,6 @@ public enum NotificationType
     WorkItemStatusChanged = 2,
     CommentAdded = 3,
     AttachmentAdded = 4,
-    LabelAssigned = 5
+    LabelAssigned = 5,
+    WorkItemReminder = 6
 }

@@ -10,7 +10,7 @@ FlowForge uses **Microsoft SQL Server** with **Entity Framework Core 10** and co
 | --- | --- |
 | `ApplicationUser` | Identity account, email, password hash, display name. |
 | `Organization` | Workspace boundary. |
-| `OrganizationUser` | User-to-organization membership and role. |
+| `OrganizationUser` | Surrogate membership key, user/organization pair, role, Owner flag, token version, concurrency token, and soft-delete state. |
 | `OrganizationInvitation` | Email invitation, token, expiry, acceptance, and delivery status. |
 | `Project` | Group of boards within an organization. |
 | `Board` | Kanban board within a project. |
@@ -49,9 +49,11 @@ ApplicationUser
 
 ## Multi-organization model
 
-A user is not limited to one organization. `OrganizationUser` is the membership join entity and stores the role for that organization. JWTs contain the active `organizationId`, all `orgIds`, and the active role.
+A user is not limited to one organization. `OrganizationUser` is the sole membership authority and uses inherited `Id` as its primary key. It stores `Role`, `IsOwner`, `TokenVersion`, and a SQL Server `rowversion`. An Owner is an Admin membership with `IsOwner = true`.
 
-Resource authorization is organization-scoped. Handlers generally derive scope from the authenticated user and validate route ids against that scope.
+Filtered unique indexes enforce one active row per `(UserId, OrganizationId)` and one active Owner per organization. Removal and leave soft-delete membership rows; invitation rejoin restores the same historical row, assigns the invited role, clears ownership, and increments the existing token version. Legacy `ApplicationUser.OrganizationId` and `ApplicationUser.Role` remain only for migration compatibility and are not authorization sources.
+
+Resource authorization uses active DB membership, current DB role, organization state, and token version. Client workspace lists come from `GET /api/Organizations/mine`, not JWT `orgIds`.
 
 ## Invitation data
 
@@ -92,8 +94,12 @@ Important recent migrations:
 - `20261118094916_SeedOrganizationUsersData`
 - `20261118104242_FixOrganizationUsersRoles`
 - `20261124055305_AddInvitationEmailDeliveryStatus`
+- `20261128120000_AddReminderNotifiedAt`
+- `20261128130000_AddOrganizationManagement`
 
-Apply them from `backend/src/FlowForge`:
+Back up the database before applying `20261128130000_AddOrganizationManagement`. It backfills membership GUIDs, replaces the composite key, adds Owner/token/rowversion columns, fails with offending organization IDs when any non-deleted organization has no active Admin, deterministically assigns the oldest active Admin as Owner, and creates filtered indexes. Verify the generated SQL Server script and foreign keys before production deployment.
+
+Apply migrations from `backend/src/FlowForge`:
 
 ```powershell
 dotnet ef database update --project FlowForge.Infrastructure --startup-project FlowForge.API
@@ -102,9 +108,10 @@ dotnet ef migrations list --project FlowForge.Infrastructure --startup-project F
 
 ## Data integrity
 
-- Foreign keys enforce ownership and membership relationships.
+- Filtered unique indexes enforce one active membership per user/organization and one active Owner per organization.
 - Invitation tokens have a unique index.
 - Organization/email invitation lookups are indexed.
+- Organization archive uses `IsActive`; terminal delete uses `IsDeleted` and retains rows/history.
 - Work-item ordering uses a gap strategy to avoid mass rewrites.
 - Business rules remain in handlers; the database does not replace application validation.
 - Pending-invitation uniqueness is currently enforced in application logic, not by a filtered unique index.

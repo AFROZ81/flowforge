@@ -3,6 +3,7 @@ bin/
 obj/
 dist/
 dist-ssr/
+artifacts/
 *.tsbuildinfo
 
 # Visual Studio / publish profiles

@@ -2,15 +2,17 @@ import { useMemo, useState } from "react";
 import {
     ArrowDownWideNarrow,
     Check,
+    ChevronDown,
     CircleAlert,
     Clock,
     Loader2,
     Mail,
-    MoreHorizontal,
+    Pencil,
     RefreshCw,
     Search,
     Send,
     ShieldCheck,
+    UserMinus,
     UserPlus,
     UsersRound,
     X,
@@ -40,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useConfirm } from "@/components/common/confirm";
 import { toast } from "@/lib/toast";
 import { normalizeError } from "@/lib/errors";
 import { usePresence } from "@/features/presence";
@@ -150,6 +153,7 @@ type MemberRow = {
     email: string;
     fullName: string;
     role: number;
+    isOwner: boolean;
     joinedAt: string;
     isCurrentUser: boolean;
     online: boolean;
@@ -157,7 +161,12 @@ type MemberRow = {
     work: AssigneeSummary | null;
 };
 
-export default function MembersSettings() {
+type Props = {
+    isAdmin?: boolean;
+};
+
+export default function MembersSettings({ isAdmin: isAdminOverride }: Props = {}) {
+    const confirm = useConfirm();
     const workload = useMemberWorkload();
     const { onlineUserIds } = usePresence();
     const selfId = useAuthStore((state) => state.user?.id);
@@ -165,7 +174,8 @@ export default function MembersSettings() {
         (state) => state.user?.organizationId
     );
     const currentUserRole = useAuthStore((state) => state.user?.role);
-    const isAdmin = isAdminRole(currentUserRole);
+    const tokenIsAdmin = isAdminRole(currentUserRole);
+    const isAdmin = isAdminOverride ?? tokenIsAdmin;
 
     const invitations = useInvitations(
         isAdmin ? currentOrganizationId ?? "" : ""
@@ -349,9 +359,15 @@ export default function MembersSettings() {
     const handleRevoke = async (invitationId: string) => {
         if (!isAdmin) return;
 
-        if (!confirm("Are you sure you want to revoke this invitation?")) {
-            return;
-        }
+        const confirmed = await confirm({
+            title: "Revoke this invitation?",
+            description:
+                "The invitation will no longer be usable. You can send a new invitation later.",
+            confirmLabel: "Revoke invitation",
+            tone: "destructive",
+        });
+
+        if (!confirmed) return;
 
         try {
             await deleteInvitation.mutateAsync(invitationId);
@@ -359,6 +375,21 @@ export default function MembersSettings() {
         } catch {
             toast.error("Failed to revoke invitation");
         }
+    };
+
+    const handleRemoveMember = async (userId: string) => {
+        if (!isAdmin) return;
+
+        const confirmed = await confirm({
+            title: "Remove this member?",
+            description:
+                "They will lose access to this workspace. Their work items and history remain retained.",
+            confirmLabel: "Remove member",
+            tone: "destructive",
+        });
+
+        if (!confirmed) return;
+        removeMember.mutate(userId);
     };
 
     const handleResend = async (invitationId: string) => {
@@ -376,6 +407,7 @@ export default function MembersSettings() {
     };
 
     const totalMembers = membersQuery.data?.length ?? 0;
+    const adminCount = (membersQuery.data ?? []).filter((member) => member.role === 1).length;
     const isFiltering =
         search.trim().length > 0 || onlineOnly || roleFilter !== "all";
 
@@ -408,31 +440,42 @@ export default function MembersSettings() {
     }
 
     return (
-        <div className="space-y-5">
+        <section
+            aria-labelledby="members-settings-heading"
+            className="min-w-0 space-y-5 rounded-2xl border border-border bg-card p-4 shadow-xs sm:p-5"
+        >
             {/* ---------------- Header ---------------- */}
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-                <div className="min-w-0">
-                    <h2 className="font-heading text-lg font-semibold tracking-[-0.01em] text-foreground">
-                        Members
-                    </h2>
-                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                        {formatNumber(totalMembers)}{" "}
-                        {totalMembers === 1 ? "member" : "members"}
-                        {"  ·  "}
-                        <span className="inline-flex items-center gap-1.5">
-                            <span
-                                aria-hidden="true"
-                                className="size-1.5 rounded-full bg-success"
-                            />
-                            {formatNumber(onlineCount)} online
-                        </span>
-                        {isFiltering ? (
-                            <>
-                                {"  ·  "}
-                                showing {formatNumber(rows.length)}
-                            </>
-                        ) : null}
-                    </p>
+                <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary-subtle text-primary">
+                        <UsersRound className="size-5" strokeWidth={1.8} />
+                    </span>
+                    <div className="min-w-0">
+                        <h2
+                            id="members-settings-heading"
+                            className="font-heading text-lg font-semibold tracking-[-0.01em] text-foreground"
+                        >
+                            Members
+                        </h2>
+                        <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                            {formatNumber(totalMembers)}{" "}
+                            {totalMembers === 1 ? "member" : "members"}
+                            {"  ·  "}
+                            <span className="inline-flex items-center gap-1.5">
+                                <span
+                                    aria-hidden="true"
+                                    className="size-1.5 rounded-full bg-success"
+                                />
+                                {formatNumber(onlineCount)} online
+                            </span>
+                            {isFiltering ? (
+                                <>
+                                    {"  ·  "}
+                                    showing {formatNumber(rows.length)}
+                                </>
+                            ) : null}
+                        </p>
+                    </div>
                 </div>
 
                 {isAdmin ? (
@@ -734,6 +777,10 @@ export default function MembersSettings() {
                             aria-hidden="true"
                             className="pointer-events-none absolute left-2.5 size-4 text-muted-foreground"
                         />
+                        <ChevronDown
+                            aria-hidden="true"
+                            className="pointer-events-none absolute right-2.5 size-3.5 text-muted-foreground"
+                        />
                         <select
                             value={roleFilter}
                             onChange={(event) =>
@@ -761,6 +808,10 @@ export default function MembersSettings() {
                         <ArrowDownWideNarrow
                             aria-hidden="true"
                             className="pointer-events-none absolute left-2.5 size-4 text-muted-foreground"
+                        />
+                        <ChevronDown
+                            aria-hidden="true"
+                            className="pointer-events-none absolute right-2.5 size-3.5 text-muted-foreground"
                         />
                         <select
                             value={sort}
@@ -863,7 +914,7 @@ export default function MembersSettings() {
                                     >
                                         Clear filters
                                     </Button>
-                                ) : (
+                                ) : isAdmin ? (
                                     <Button
                                         onClick={() =>
                                             setIsInviteDialogOpen(true)
@@ -872,13 +923,13 @@ export default function MembersSettings() {
                                         <UserPlus />
                                         Invite member
                                     </Button>
-                                )
+                                ) : null
                             }
                         />
                     ) : (
-                        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        <ul className="space-y-2.5">
                             {rows.map((row) => (
-                                <MemberCard
+                                <MemberListItem
                                     key={row.userId}
                                     row={row}
                                     isAdmin={isAdmin}
@@ -887,44 +938,37 @@ export default function MembersSettings() {
                                             userId: row.userId,
                                             fullName: row.fullName,
                                             role: row.role ?? 2,
-                                });
-                                setIsEditDialogOpen(true);
-                            }}
-                            onRemove={() => {
-                                if (
-                                    confirm(
-                                        "Are you sure you want to remove this member?"
-                                    )
-                                ) {
-                                    removeMember.mutate(row.userId);
-                                }
-                            }}
+                                        });
+                                        setIsEditDialogOpen(true);
+                                    }}
+                            onRemove={() => void handleRemoveMember(row.userId)}
                             changingRole={changeMemberRole.isPending}
                             removing={removeMember.isPending}
+                            isLastAdmin={row.role === 1 && adminCount <= 1}
                         />
                     ))}
                         </ul>
                     )}
                 </section>
             ) : null}
-        </div>
+        </section>
     );
 }
 
 /* =========================================================
-   MEMBER CARD
-   The avatar + presence is the hero; name, role and workload
-   support it. Actions surface on hover / focus and are always
-   in the tab order.
+   MEMBER LIST ITEM
+   The avatar + presence leads the row; name, role and workload
+   support it. Actions stay visible and keyboard accessible.
    ========================================================= */
 
-function MemberCard({
+function MemberListItem({
     row,
     isAdmin,
     onEdit,
     onRemove,
     changingRole,
     removing,
+    isLastAdmin,
 }: {
     row: MemberRow;
     isAdmin: boolean;
@@ -932,20 +976,14 @@ function MemberCard({
     onRemove: () => void;
     changingRole: boolean;
     removing: boolean;
+    isLastAdmin: boolean;
 }) {
     const assigned = row.work?.assigned ?? 0;
     const active = row.work?.active ?? 0;
 
     return (
-        <li
-            className={cn(
-                "group relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-xs",
-                "transition-all duration-(--transition-fast)",
-                "hover:border-border-strong hover:shadow-sm",
-                "focus-within:border-border-strong"
-            )}
-        >
-            <div className="flex items-start gap-3">
+        <li className="flex flex-col gap-3 rounded-xl border border-border/70 bg-surface-muted/20 p-3.5 transition-colors hover:border-border-strong hover:bg-surface-muted/35 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
                 <Avatar
                     name={row.fullName}
                     size="md"
@@ -962,76 +1000,37 @@ function MemberCard({
                 />
 
                 <div className="min-w-0 flex-1">
-                    <div className="flex items-start gap-2">
-                        <div className="min-w-0 flex-1">
-                            <div className="flex min-w-0 items-center gap-1.5">
-                                <h3 className="min-w-0 truncate text-sm font-semibold text-foreground">
-                                    {row.fullName}
-                                </h3>
-                                {row.isSelf ? (
-                                    <span className="shrink-0 rounded-full border border-border px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                        You
-                                    </span>
-                                ) : null}
-                            </div>
-                            {row.email ? (
-                                <a
-                                    href={`mailto:${row.email}`}
-                                    className="mt-0.5 block truncate text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                                >
-                                    {row.email}
-                                </a>
-                            ) : (
-                                <p className="mt-0.5 text-xs text-muted-foreground">
-                                    No email
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Actions: always in the tab order, visually quiet
-                            until the card is hovered or holds focus. */}
-                        {isAdmin && !row.isSelf ? (
-                            <div
-                                className={cn(
-                                    "flex shrink-0 items-center gap-0.5 transition-opacity",
-                                    "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-                                )}
-                            >
-                                <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={onEdit}
-                                    disabled={changingRole}
-                                    aria-label={`Edit ${row.fullName}`}
-                                    title="Edit role"
-                                >
-                                    <MoreHorizontal />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={onRemove}
-                                    disabled={removing}
-                                    aria-label={`Remove ${row.fullName}`}
-                                    title="Remove member"
-                                    className="text-muted-foreground hover:bg-danger-subtle hover:text-danger-foreground"
-                                >
-                                    {removing ? (
-                                        <span
-                                            aria-hidden="true"
-                                            className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-                                        />
-                                    ) : (
-                                        <X />
-                                    )}
-                                </Button>
-                            </div>
+                    <div className="flex min-w-0 items-center gap-1.5">
+                        <h3 className="min-w-0 truncate text-sm font-semibold text-foreground">
+                            {row.fullName}
+                        </h3>
+                        {row.isSelf ? (
+                            <span className="shrink-0 rounded-full border border-border px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                You
+                            </span>
+                        ) : null}
+                        {row.isOwner ? (
+                            <span className="shrink-0 rounded-full border border-warning/25 bg-warning-subtle px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-warning-foreground">
+                                Owner
+                            </span>
                         ) : null}
                     </div>
+                    {row.email ? (
+                        <a
+                            href={`mailto:${row.email}`}
+                            className="mt-0.5 block truncate text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                        >
+                            {row.email}
+                        </a>
+                    ) : (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                            No email
+                        </p>
+                    )}
                 </div>
             </div>
 
-            <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border/60 pt-3 sm:justify-end sm:border-0 sm:pt-0">
                 <RoleBadge role={row.role} />
 
                 <div className="flex items-center gap-3 text-xs tabular-nums">
@@ -1054,6 +1053,39 @@ function MemberCard({
                         </span>
                     ) : null}
                 </div>
+
+                {isAdmin && !row.isSelf && !row.isOwner && !isLastAdmin ? (
+                    <div className="flex shrink-0 items-center gap-0.5">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={onEdit}
+                            disabled={changingRole}
+                            aria-label={`Edit ${row.fullName}`}
+                            title="Edit role"
+                        >
+                            <Pencil />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={onRemove}
+                            disabled={removing}
+                            aria-label={`Remove ${row.fullName}`}
+                            title="Remove member"
+                            className="text-muted-foreground hover:bg-danger-subtle hover:text-danger-foreground"
+                        >
+                            {removing ? (
+                                <span
+                                    aria-hidden="true"
+                                    className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                                />
+                            ) : (
+                                <UserMinus />
+                            )}
+                        </Button>
+                    </div>
+                ) : null}
             </div>
         </li>
     );
@@ -1100,13 +1132,13 @@ function PendingInvitations({
                 </span>
             </div>
 
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="space-y-2.5">
                 {invitations.map((invitation) => (
                     <li
                         key={invitation.id}
-                        className="flex flex-col gap-3 rounded-xl border border-dashed border-border bg-card/60 p-4"
+                        className="flex flex-col gap-3 rounded-xl border border-dashed border-border bg-surface-muted/20 p-3.5 sm:flex-row sm:items-center sm:gap-4"
                     >
-                        <div className="flex items-start gap-3">
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
                             <span
                                 aria-hidden="true"
                                 className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-dashed border-border-strong bg-surface-muted text-muted-foreground"
@@ -1130,7 +1162,7 @@ function PendingInvitations({
                             </div>
                         </div>
 
-                        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 sm:justify-end">
                             <div className="flex flex-wrap items-center gap-2">
                                 <RoleBadge role={roleToNumber(invitation.role)} />
                                 {invitation.emailStatus === "Failed" && (
@@ -1181,10 +1213,10 @@ function PendingInvitations({
 
 function MembersSkeleton() {
     return (
-        <div
+        <section
             role="status"
             aria-label="Loading members"
-            className="space-y-5"
+            className="min-w-0 space-y-5 rounded-2xl border border-border bg-card p-4 shadow-xs sm:p-5"
         >
             <div className="flex items-center justify-between gap-4">
                 <div className="space-y-2">
@@ -1201,11 +1233,11 @@ function MembersSkeleton() {
                 <Skeleton className="h-9 w-28 rounded-lg" />
             </div>
 
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="space-y-2.5">
                 {Array.from({ length: 6 }).map((_, index) => (
                     <li
                         key={index}
-                        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-xs"
+                        className="flex flex-col gap-3 rounded-xl border border-border/70 bg-surface-muted/20 p-3.5 sm:flex-row sm:items-center"
                     >
                         <div className="flex items-start gap-3">
                             <Skeleton className="size-9 rounded-full" />
@@ -1221,6 +1253,6 @@ function MembersSkeleton() {
                     </li>
                 ))}
             </ul>
-        </div>
+        </section>
     );
 }

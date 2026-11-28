@@ -21,6 +21,8 @@ public sealed class WorkItem : EntityBase
 
     public DateTime? ReminderDate { get; private set; }
 
+    public DateTime? ReminderNotifiedAt { get; private set; }
+
     public Guid? AssigneeId { get; private set; }
 
     public bool IsArchived { get; private set; }
@@ -137,16 +139,23 @@ public sealed class WorkItem : EntityBase
         AssigneeId = null;
     }
 
-    public void SetReminder(DateTime? dueDate, DateTime? reminderDate)
+    public void SetReminder(DateTime? reminderDate)
     {
-        DueDate = dueDate;
         ReminderDate = reminderDate;
+        ReminderNotifiedAt = null;
+    }
+
+    public void MarkReminderNotified(DateTime notifiedAtUtc)
+    {
+        if (!ReminderDate.HasValue || ReminderNotifiedAt.HasValue) return;
+
+        ReminderNotifiedAt = notifiedAtUtc;
     }
 
     public void ClearReminder()
     {
-        DueDate = null;
         ReminderDate = null;
+        ReminderNotifiedAt = null;
     }
 
     public void Delete()

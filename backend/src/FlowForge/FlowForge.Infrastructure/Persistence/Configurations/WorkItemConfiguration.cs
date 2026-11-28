@@ -39,6 +39,14 @@ public sealed class WorkItemConfiguration : IEntityTypeConfiguration<WorkItem>
 
         builder.Property(x => x.ReminderDate);
 
+        builder.Property(x => x.ReminderNotifiedAt);
+
+        builder.HasIndex(x => new
+        {
+            x.ReminderDate,
+            x.ReminderNotifiedAt
+        });
+
         builder.HasOne(x => x.Column)
             .WithMany(c => c.WorkItems)
             .HasForeignKey(x => x.ColumnId)

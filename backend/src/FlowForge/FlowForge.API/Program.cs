@@ -4,6 +4,7 @@ using FlowForge.Application.Common.Settings;
 using FlowForge.Application.DependencyInjection;
 using FlowForge.Infrastructure.DependencyInjection;
 using FlowForge.Infrastructure.Persistence;
+using FlowForge.Infrastructure.Services.Authentication;
 using FlowForge.Application.Common.Responses;
 using FlowForge.API.Hubs;
 using FlowForge.API.SignalR;
@@ -388,7 +389,7 @@ builder.Services
                 // ====================================================
 
                 OnTokenValidated =
-                    context =>
+                    async context =>
                     {
                         var userId =
                             context.Principal?
@@ -401,15 +402,85 @@ builder.Services
                                     "sub"
                                 )?.Value;
 
-
                         Log.Information(
                             "JWT token validated successfully. UserId: {UserId}, Path: {Path}",
                             userId,
-                            context.HttpContext.Request.Path
-                        );
+                            context.HttpContext.Request.Path);
 
+                        if (context.Principal?.Identity is not ClaimsIdentity identity ||
+                            !Guid.TryParse(userId, out var parsedUserId))
+                        {
+                            return;
+                        }
 
-                        return Task.CompletedTask;
+                        var organizationIdClaim = identity.FindFirst("organizationId")?.Value;
+
+                        if (!Guid.TryParse(organizationIdClaim, out var organizationId))
+                        {
+                            foreach (var type in new[]
+                            {
+                                "organizationId", "orgIds", "membershipId",
+                                "tokenVersion", ClaimTypes.Role, "isOwner", "sessionState"
+                            })
+                            {
+                                foreach (var claim in identity.FindAll(type).ToList())
+                                    identity.RemoveClaim(claim);
+                            }
+
+                            identity.AddClaim(new Claim("sessionState", "account"));
+                            return;
+                        }
+
+                        var membershipId = Guid.TryParse(
+                            identity.FindFirst("membershipId")?.Value,
+                            out var parsedMembershipId)
+                            ? parsedMembershipId
+                            : (Guid?)null;
+
+                        var tokenVersion = int.TryParse(
+                            identity.FindFirst("tokenVersion")?.Value,
+                            out var parsedTokenVersion)
+                            ? parsedTokenVersion
+                            : 0;
+
+                        var validator = context.HttpContext.RequestServices
+                            .GetRequiredService<OrganizationSessionValidator>();
+                        var session = await validator.ValidateAsync(
+                            parsedUserId,
+                            organizationId,
+                            membershipId,
+                            tokenVersion,
+                            context.HttpContext.RequestAborted);
+
+                        foreach (var type in new[]
+                        {
+                            ClaimTypes.Role, "isOwner", "sessionState"
+                        })
+                        {
+                            foreach (var claim in identity.FindAll(type).ToList())
+                                identity.RemoveClaim(claim);
+                        }
+
+                        if (session is null)
+                        {
+                            foreach (var type in new[]
+                            {
+                                "organizationId", "orgIds", "membershipId", "tokenVersion"
+                            })
+                            {
+                                foreach (var claim in identity.FindAll(type).ToList())
+                                    identity.RemoveClaim(claim);
+                            }
+
+                            identity.AddClaim(new Claim("sessionState", "account"));
+                            return;
+                        }
+
+                        identity.AddClaim(new Claim("sessionState", "organization"));
+                        identity.AddClaim(new Claim(ClaimTypes.Role, session.Role.ToString()));
+                        identity.AddClaim(new Claim(
+                            "isOwner",
+                            session.IsOwner ? "true" : "false"));
                     }
             };
     });
@@ -422,27 +493,54 @@ builder.Services
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(
+        "RequireAccount",
+        policy => policy.RequireAuthenticatedUser()
+    );
+
+    options.AddPolicy(
+        "RequireOrganizationSession",
+        policy => policy.RequireAuthenticatedUser().RequireClaim("sessionState", "organization")
+    );
+
+    options.AddPolicy(
+        "RequireOwner",
+        policy => policy
+            .RequireAuthenticatedUser()
+            .RequireClaim("sessionState", "organization")
+            .RequireClaim("isOwner", "true")
+    );
+
+    options.AddPolicy(
         "RequireAdmin",
-        policy => policy.RequireClaim(ClaimTypes.Role, UserRole.Admin.ToString())
+        policy => policy
+            .RequireAuthenticatedUser()
+            .RequireClaim("sessionState", "organization")
+            .RequireClaim(ClaimTypes.Role, UserRole.Admin.ToString())
     );
 
     options.AddPolicy(
         "RequireMember",
-        policy => policy.RequireClaim(
-            ClaimTypes.Role,
-            UserRole.Admin.ToString(),
-            UserRole.Member.ToString()
-        )
+        policy => policy
+            .RequireAuthenticatedUser()
+            .RequireClaim("sessionState", "organization")
+            .RequireClaim(
+                ClaimTypes.Role,
+                UserRole.Admin.ToString(),
+                UserRole.Member.ToString()
+            )
     );
 
     options.AddPolicy(
         "RequireViewer",
-        policy => policy.RequireClaim(
-            ClaimTypes.Role,
-            UserRole.Admin.ToString(),
-            UserRole.Member.ToString(),
-            UserRole.Viewer.ToString()
-        )
+        policy => policy
+            .RequireAuthenticatedUser()
+            .RequireClaim("sessionState", "organization")
+            .RequireClaim(
+                ClaimTypes.Role,
+                UserRole.Admin.ToString(),
+                UserRole.Member.ToString(),
+                UserRole.Viewer.ToString()
+            )
     );
 });
 

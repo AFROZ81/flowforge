@@ -26,6 +26,7 @@ import NotificationsPage from "@/features/notifications/pages/NotificationsPage"
 
 import SettingsPage from "@/features/settings/pages/SettingsPage";
 import AuditLogsPage from "@/features/audit-logs/pages/AuditLogsPage";
+import OnboardingPage from "@/features/organizations/pages/OnboardingPage";
 import AdminRoute from "@/routes/AdminRoute";
 
 
@@ -113,6 +114,11 @@ export const router =
                         <ProtectedRoute />,
 
                     children: [
+
+                        {
+                            path: "/onboarding",
+                            element: <OnboardingPage />,
+                        },
 
                         /* -----------------------------------------
                            DASHBOARD

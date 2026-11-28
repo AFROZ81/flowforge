@@ -37,20 +37,27 @@ backend/src/FlowForge
 ## Authentication
 
 - ASP.NET Core Identity stores users and password hashes.
-- JWT access tokens are issued at login, refresh, organization switch, and invitation acceptance.
-- `TokenService` includes the active organization, all organization ids, and active role.
-- `CurrentUserService` reconstructs an `AuthenticatedUser` from claims.
-- Anonymous first-run organization creation and public organization options remain available.
-- Invitation validation and acceptance are anonymous; the token identifies the invitation.
+- JWT access tokens are issued at login, refresh, organization switch, workspace creation, and invitation acceptance.
+- Account-only tokens carry identity claims; organization tokens add `organizationId`, `membershipId`, `tokenVersion`, and the current role.
+- `CurrentUserService` reconstructs an `AuthenticatedUser` from claims, while `OrganizationSessionValidator` reloads authoritative membership, organization state, role, owner state, and token version from the database.
+- Stale organization claims are stripped without rejecting account authentication, allowing refresh to recover.
+- Workspace creation is authenticated and atomic; the public organization-options route has been removed.
+- Invitation validation is anonymous; invitation acceptance requires an authenticated account and a matching normalized email.
 
 ## Invitation registration
 
 `POST /api/Auth/register` supports two modes:
 
-- **Normal registration:** requires `organizationId` and creates the initial membership.
-- **Invitation registration:** requires `invitationToken`; validates the token, expiry, acceptance state, and email match; creates the account; accepts the invitation through MediatR; and returns an access token.
+- **Normal registration:** accepts account fields only and creates no membership. It returns an account-only session.
+- **Invitation registration:** requires `invitationToken`; validates the token, expiry, acceptance state, and email match; creates the account; accepts the invitation through MediatR; and returns an organization session.
 
 For relational databases, invitation registration and acceptance share a transaction so a failed acceptance does not leave a partial account.
+
+## Organization lifecycle
+
+`OrganizationUser` uses a surrogate `Id`, `IsOwner`, `TokenVersion`, and a rowversion concurrency token. Filtered unique indexes allow one active membership per user/organization and one active Owner per organization. Role changes, removal, leave, rejoin, ownership transfer, archive/restore, and delete invalidate affected sessions.
+
+Owners are Admin members with `IsOwner = true`. Owners cannot be demoted, removed, or leave without transferring ownership. Demotion, removal, and leave preserve at least one active Admin. Archive freezes organization access and revokes pending invitations; restore is Owner-only; terminal delete requires an archived organization and exact slug confirmation. Lifecycle mutations are transactional, audited, concurrency-protected, and emit membership events.
 
 ## Infrastructure services
 
@@ -59,6 +66,8 @@ For relational databases, invitation registration and acceptance share a transac
 | `IAuthService` | `AuthService` | Registration, login, refresh. |
 | `ICurrentUserService` | `CurrentUserService` | Claims-to-user context. |
 | `IUserLookupService` | `UserLookupService` | Identity lookups for handlers. |
+| `IOrganizationSessionService` | `OrganizationSessionService` | Issues account or organization sessions from active DB memberships. |
+| `OrganizationSessionValidator` | `OrganizationSessionValidator` | Validates membership, organization state, role, owner state, and token version per request. |
 | `IEmailService` | `SmtpEmailService` | Invitation delivery and SMTP diagnostics. |
 | `IAuditLogService` | `AuditLogService` | Explicit audit entries, filters, pagination, statistics. |
 | `IWebhookService` | `WebhookService` | Subscription CRUD and test delivery. |
@@ -101,7 +110,7 @@ Validation responses include an `errors` array. Unexpected failures return a gen
 Current scheduler limitations:
 
 - The runner checks every minute, but `IsTimeToRun` currently always returns true.
-- Reminder and overdue jobs therefore run on every check rather than on their commented cron schedules.
+- The reminder job intentionally scans due reminders every minute, persists and broadcasts in-app notifications, emails the assignee through `IEmailService`, and uses `ReminderNotifiedAt` for once-only delivery; the overdue job still runs on every check rather than its commented cron schedule.
 - Export processing is not invoked by the runner.
 - Excel/PDF export generation is placeholder output; CSV generation is implemented.
 
@@ -115,4 +124,4 @@ From the repository root:
 dotnet test backend/src/FlowForge/FlowForge.Tests/FlowForge.Tests.csproj
 ```
 
-The current suite contains 43 tests covering exception mapping, SMTP behavior, invitation creation, duplicate/rate-limit rules, invitation registration and acceptance, role assignment, link generation, RBAC policy enforcement, organization isolation, Admin-only archived project/board visibility, soft-delete retention/restoration, dependent records, global query filters, and relational transaction rollback.
+The current suite contains 72 tests covering account-first registration/login/refresh, stale-session rejection, organization policies and isolation, membership invariants, invitation email binding and rejoin, ownership transfer, archive/restore/delete, migration/model invariants, exception mapping, SMTP behavior, invitation creation and rate limits, RBAC enforcement, presence, reminders, soft-delete retention/restoration, global query filters, and relational transaction rollback.

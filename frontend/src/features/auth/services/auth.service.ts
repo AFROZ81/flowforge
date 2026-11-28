@@ -6,7 +6,6 @@ import type {
     CreateOrganizationResponse,
     LoginRequest,
     LoginResponse,
-    OrganizationOption,
     RegisterRequest,
     RegisterResponse,
 } from "../types/auth.types";
@@ -31,24 +30,8 @@ export const authService = {
     },
 
     /**
-     * Workspaces a new account may join.
-     *
-     * This returns a bare array rather than the usual ApiResponse envelope,
-     * matching how OrganizationsController is already written — the create
-     * action returns its response object directly.
-     */
-    async getOrganizationOptions() {
-        const response = await api.get<OrganizationOption[]>(
-            "/Organizations/options"
-        );
-
-        return response.data;
-    },
-
-    /**
-     * Creates a workspace. Also anonymous, and used only when the option list
-     * came back empty: an account has to be created inside a workspace, so a
-     * fresh database needs one before it needs a user.
+     * Creates a workspace for the authenticated account and returns its
+     * organization session.
      */
     async createOrganization(input: CreateOrganizationRequest) {
         const response = await api.post<CreateOrganizationResponse>(

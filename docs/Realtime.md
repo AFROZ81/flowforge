@@ -28,7 +28,8 @@ On connect, a user joins their user and organization groups. `JoinBoard` and `Le
 | `ProjectDeleted` | Organization | Project soft deletion. |
 | `BoardDeleted` | Board | Board soft deletion. |
 | `CommentAdded` / `Updated` / `Deleted` | Board | Received by the client and re-dispatched as DOM events. |
-| `RoleChanged` | User | Client refreshes its token when its own role changes. |
+| `RoleChanged` | User | Client refreshes its shared session when its own role changes. |
+| `MembershipChanged` | User | Client refreshes the session and organization queries after removal, leave, archive/restore, delete, or ownership changes. |
 | `TypingStarted` / `TypingStopped` | Board except sender | Subscribed by the client; no UI currently invokes the hub methods. |
 
 `NotifyOrganizationAsync` is used for project soft deletion. `RealtimeEvents.BoardUpdated` is defined but not broadcast.
@@ -54,7 +55,7 @@ Work-item and comment events are converted to window custom events such as `flow
 
 ## Presence
 
-Online presence is tracked per user. Board presence is tracked per connection, so multiple tabs do not incorrectly share board membership and closing one tab does not mark the user offline while another remains connected.
+Online presence is tracked per user. The online-user endpoint resolves the active organization through `OrganizationUsers`, not the legacy `ApplicationUser.OrganizationId`, so multi-organization members are included correctly. Presence is role-agnostic within the organization: Admins, Members, and Viewers all see the same online roster. Board presence is tracked per connection, so multiple tabs do not incorrectly share board membership and closing one tab does not mark the user offline while another remains connected.
 
 Presence trackers are in memory. An app-pool recycle clears them and drops hub connections; clients reconnect automatically.
 

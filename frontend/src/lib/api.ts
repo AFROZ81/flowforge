@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosError } from "axios";
 
 import {
     useAuthStore,
@@ -74,6 +74,61 @@ api.interceptors.request.use(
         return Promise.reject(
             error
         );
+    }
+);
+
+
+let refreshRequest: Promise<boolean> | null = null;
+
+
+/* =========================================================
+   RESPONSE INTERCEPTOR
+   ========================================================= */
+
+api.interceptors.response.use(
+    (response) => response,
+    async (error: AxiosError) => {
+        const config = error.config;
+        const url = config?.url ?? "";
+        const isAuthEndpoint =
+            url.includes("/Auth/login") ||
+            url.includes("/Auth/register") ||
+            url.includes("/Auth/refresh");
+
+        if (error.response?.status !== 401 || !config || isAuthEndpoint) {
+            return Promise.reject(error);
+        }
+
+        const retryConfig = config as typeof config & { _retry?: boolean };
+
+        if (retryConfig._retry) {
+            return Promise.reject(error);
+        }
+
+        retryConfig._retry = true;
+
+        try {
+            refreshRequest ??= useAuthStore
+                .getState()
+                .refreshSession();
+
+            await refreshRequest;
+
+            const token = useAuthStore.getState().accessToken;
+
+            if (!token) {
+                useAuthStore.getState().logout();
+                return Promise.reject(error);
+            }
+
+            retryConfig.headers.Authorization = `Bearer ${token}`;
+            return api(retryConfig);
+        } catch (refreshError) {
+            useAuthStore.getState().logout();
+            return Promise.reject(refreshError);
+        } finally {
+            refreshRequest = null;
+        }
     }
 );
 

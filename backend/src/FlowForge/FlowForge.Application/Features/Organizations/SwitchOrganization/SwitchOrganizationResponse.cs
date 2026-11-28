@@ -14,4 +14,6 @@ public sealed class SwitchOrganizationResponse
     /// UTC timestamp when the new token expires.
     /// </summary>
     public DateTime ExpiresAtUtc { get; init; }
+
+    public Guid? OrganizationId { get; init; }
 }

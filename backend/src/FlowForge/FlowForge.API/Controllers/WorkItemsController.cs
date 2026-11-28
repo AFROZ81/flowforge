@@ -43,7 +43,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/rename")]
-    [Authorize(Policy = "RequireMember")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Rename(Guid id, RenameWorkItemCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -57,7 +57,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/edit")]
-    [Authorize(Policy = "RequireMember")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Edit(Guid id, [FromBody] EditWorkItemCommand command, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -211,7 +211,7 @@ public sealed class WorkItemsController : ControllerBase
 
     
     [HttpPatch("{workItemId:guid}/assign/{userId:guid}")]
-    [Authorize(Policy = "RequireMember")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Assign(Guid workItemId, Guid userId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(
@@ -226,7 +226,7 @@ public sealed class WorkItemsController : ControllerBase
     }
 
     [HttpPatch("{workItemId:guid}/unassign")]
-    [Authorize(Policy = "RequireMember")]
+    [Authorize(Policy = "RequireAdmin")]
     public async Task<IActionResult> Unassign(Guid workItemId, CancellationToken cancellationToken)
     {
         var response = await _mediator.Send(

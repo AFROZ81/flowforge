@@ -14,14 +14,15 @@ import {
 import LabelManagement from "@/features/labels/components/LabelManagement";
 
 import GeneralSettings from "../components/GeneralSettings";
-import MembersSettings from "../components/MembersSettings";
+import OrganizationSettings from "@/features/organizations/components/OrganizationSettings";
 
-type SettingsSection = "general" | "members" | "labels";
+type SettingsSection = "general" | "organization" | "labels";
 
 type SectionDefinition = {
     id: SettingsSection;
     label: string;
     title: string;
+    description?: string;
 };
 
 const SECTIONS: SectionDefinition[] = [
@@ -31,9 +32,9 @@ const SECTIONS: SectionDefinition[] = [
         title: "General",
     },
     {
-        id: "members",
-        label: "Members",
-        title: "Members",
+        id: "organization",
+        label: "Organization",
+        title: "Organization",
     },
     {
         id: "labels",
@@ -75,7 +76,7 @@ export default function SettingsPage() {
 
     return (
         <DetailLayout>
-            <div className="space-y-6">
+            <div className="w-full space-y-6">
                 <PageHeader
                     back={
                         /*
@@ -98,6 +99,7 @@ export default function SettingsPage() {
                         </Link>
                     }
                     title="Settings"
+                    description={active.description}
                     /* Same slot the Reports switcher uses, so a view picker sits
                        on the heading line on every page that has one. */
                     center={
@@ -123,7 +125,7 @@ export default function SettingsPage() {
                     className="min-h-[50vh]"
                 >
                     {section === "general" ? <GeneralSettings /> : null}
-                    {section === "members" ? <MembersSettings /> : null}
+                    {section === "organization" ? <OrganizationSettings /> : null}
                     {section === "labels" ? <LabelManagement /> : null}
                 </section>
             </div>

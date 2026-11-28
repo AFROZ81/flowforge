@@ -28,12 +28,13 @@ attachments, comments, watchers, a reminder and an activity history.
 
 | Area | What works |
 | --- | --- |
-| Authentication | JWT access tokens (8 h default), ASP.NET Core Identity, refresh, and multi-organization switching |
-| Roles (RBAC) | Admin / Member / Viewer roles per organization, enforced with `RequireAdmin` / `RequireMember` / `RequireViewer` policies |
-| Invitations | Email invitations with delivery status, retry, resend, revoke, validate, accept, and register-and-accept; member role management |
+| Authentication | Account-first registration, JWT access tokens (8 h default), ASP.NET Core Identity, DB-validated refresh, and multi-organization switching |
+| Roles (RBAC) | Admin / Member / Viewer roles per organization plus Owner invariants, enforced with `RequireAccount` / `RequireOrganizationSession` / `RequireOwner` / role policies |
+| Invitations | Email invitations with delivery status, retry, resend, revoke, validate, authenticated accept, and atomic register-and-accept; member role management |
+| Organization lifecycle | Profile editing, ownership transfer, leave, archive/restore, and terminal soft delete with slug confirmation |
 | Structure | Organizations, projects, boards, columns, work items |
-| Work items | Create, rename, edit, assign, move, complete, block, activate, archive, restore, Admin-only soft delete |
-| Item detail | Checklists, labels, attachments, comments, watchers, reminder, activity history |
+| Work items | Member create/move/status workflow; Admin rename/edit/assign/archive/restore/delete |
+| Item detail | Checklists, labels, attachments, comments, watchers, reminders for Active work items (all roles), activity history |
 | Boards | Five default columns, Admin-only create/edit/archive/delete, HTML5 drag-and-drop ordering, live board presence, keyboard-first navigation |
 | AI drafting | On-device AI turns a prompt into a title + two-sentence description (local, free, no API keys) — see [docs/AI-Drafting.md](docs/AI-Drafting.md) |
 | Dashboard | One composed snapshot: own workload, status mix, priority mix, project health, team workload, throughput, recent activity |
@@ -60,8 +61,8 @@ attachments, comments, watchers, a reminder and an activity history.
 | Client | React 19, TypeScript ~6, Vite 8, Tailwind 4 + CVA + tailwind-merge, Base UI primitives |
 | Client data | TanStack Query 5 + Table 8, Zustand 5 (`persist`), react-hook-form + Zod 4 |
 | Client extras | framer-motion 12, sonner toasts, lucide-react icons, next-themes, Geist font, Vite PWA, Transformers.js |
-| Email & storage | SMTP invitation delivery with status tracking; local attachment storage by default, Azure Blob implementation available but not active |
-| Testing | xUnit backend suite (43 tests), Vitest unit project (87 tests), Storybook stories and browser-test configuration |
+| Email & storage | SMTP invitation delivery with status tracking plus assignee reminder emails; local attachment storage by default, Azure Blob implementation available but not active |
+| Testing | xUnit backend suite (72 tests), Vitest unit project (107 tests), Storybook stories and browser-test configuration |
 
 ---
 
@@ -111,7 +112,7 @@ FlowForge.Domain         Entities · Enums — no dependencies
 
 ```text
 Organization
-├── OrganizationUser        membership + UserRole (Admin · Member · Viewer)
+├── OrganizationUser        membership Id · UserRole · IsOwner · TokenVersion · rowversion
 ├── OrganizationInvitation   email · token · expiry · acceptance · SMTP delivery status
 ├── AuditLog                 typed audit trail (AuditLogType)
 ├── WebhookSubscription      outbound event subscriptions (WebhookEventType)
@@ -126,8 +127,7 @@ Organization
 
 New boards arrive with five columns: **Backlog, To Do, In Progress, Review, Done**. Names are
 unique per board; items hang off exactly one column. A reminder is not an entity — it is
-`DueDate` plus `ReminderDate` on the item. Users may belong to multiple organizations; the
-JWT's `organizationId` selects the active workspace and `orgIds` lists all memberships.
+`DueDate` plus `ReminderDate` on the item. Users may belong to multiple organizations; `OrganizationUser` is the sole membership authority. The active workspace is selected from database-backed memberships, and every organization request revalidates membership, role, Owner state, organization state, and token version. Legacy user organization/role columns are not authorization sources.
 
 Draw.io sources for these two aggregates live in
 [`docs/Diagrams`](docs/Diagrams) — `ProjectAggregate.drawio` and `BoardAggregate.drawio` carry
@@ -145,7 +145,7 @@ the field lists, unique indexes and cascade/restrict behaviour; `Architecture.dr
 Three rules explain most behaviour:
 
 - **Status lives on the item, not the column** — dragging into *Done* does not complete it.
-- **Every query is organization-scoped** from the JWT `organizationId` claim
+- **Every query is organization-scoped** from the DB-validated active membership and organization
   (`x.Column.Board.Project.OrganizationId`), which matters more than any id in a route.
 - **Soft-deleted rows are always filtered out**; archived rows appear only when a query opts
   in (`IncludeArchived`, an `IsArchived` filter) and refuse mutation. `EntityBase` stamps
@@ -243,27 +243,21 @@ and the hub URL is this value with the trailing `/api` stripped.
 
 ### 6. First account — and the workspace it needs
 
-Registration requires an `organizationId`, so **a brand-new database has nothing to
-sign up into**. The form resolves that itself: when the workspace list comes back
-empty it shows a **Workspace name** field in place of the dropdown, creates that
-workspace, and registers you inside it. `GET /api/Organizations/options` and
-`POST /api/Organizations` are both anonymous, which is what lets a signed-out page
-chain the two.
+Registration creates only an Identity account. Choose **Create account** on
+http://localhost:5173 and fill it in; Identity requires 8+ characters with a digit, an
+uppercase and a lowercase letter, and emails are unique. The new account lands on
+`/onboarding`, where it can create a workspace or accept an invitation. There is no public
+organization directory and normal registration never accepts `organizationId`.
 
-Choose **Create account** on http://localhost:5173 and fill it in. Identity requires
-8+ characters with a digit, an uppercase and a lowercase letter; emails are unique.
-Once the workspace exists the field is a dropdown again for everyone after you, and
-you land on the dashboard — add a project, then a board, and the five default
-columns are created for you.
+Creating a workspace requires the account session and atomically creates the organization
+plus an Owner/Admin membership. You then land on the dashboard — add a project, then a board,
+and the five default columns are created for you. Existing workspaces can be joined only by
+accepting an invitation sent to the account's email.
 
-To make the workspace by hand instead — a headless box, or you would rather use the
-API — `POST /api/Organizations` takes no token:
-
-```powershell
-Invoke-RestMethod -Method Post -Uri http://localhost:5045/api/Organizations `
-  -ContentType "application/json" `
-  -Body '{"name":"My Company","slug":"my-company","description":null}'
-```
+For a headless flow, register and log in first, then call `POST /api/Organizations` with the
+returned bearer token and `{ "name": "My Company", "slug": "my-company" }`. The response
+contains a new organization session. `GET /api/Organizations/mine` lists only the caller's
+workspaces; the former anonymous options endpoint has been removed.
 
 ---
 
@@ -477,7 +471,7 @@ Recorded so nobody searches the code for a thing that does not exist.
 | Search is API-only | `GET /api/Search/workitems` exists; the command palette searches pages/actions rather than work items |
 | Typing indicators are backend-only | The client subscribes, but no UI invokes `StartTyping` / `StopTyping` |
 | `ReminderOverview` unused | The component is written; no page imports it — reminders are set in the item dialog |
-| CI | Backend (43 tests) and frontend unit suites (87 tests) exist, but no CI pipeline is configured |
+| CI | Backend (72 tests) and frontend unit suites (107 tests) exist, but no CI pipeline is configured |
 | AI cold start | First draft downloads the model (one-time, can take minutes); the 20 s deadline covers generation only — see [docs/AI-Drafting.md](docs/AI-Drafting.md) |
 | No Docker or Redis | Not started. Hosting is one MonsterASP.NET site serving API and SPA from the same origin — see [docs/Deployment.md](docs/Deployment.md) |
 

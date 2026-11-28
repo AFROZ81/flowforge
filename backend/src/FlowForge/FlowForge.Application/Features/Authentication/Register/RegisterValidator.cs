@@ -26,11 +26,6 @@ public sealed class RegisterValidator : AbstractValidator<RegisterRequest>
             .Equal(x => x.Password)
             .WithMessage("Passwords do not match.");
 
-        RuleFor(x => x.OrganizationId)
-            .NotEqual(Guid.Empty)
-            .WithMessage("Organization is required.")
-            .When(x => string.IsNullOrWhiteSpace(x.InvitationToken));
-
         RuleFor(x => x.InvitationToken)
             .MaximumLength(256)
             .When(x => !string.IsNullOrWhiteSpace(x.InvitationToken));
